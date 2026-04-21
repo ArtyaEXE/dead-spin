@@ -1,0 +1,70 @@
+# Render Blueprint — автодеплой API и Bot из монорепо.
+# Frontend (apps/game) деплоится отдельно на Cloudflare Pages (статика).
+#
+# Как применить:
+#   1) Запушить в GitHub.
+#   2) Render Dashboard → New → Blueprint → выбрать репо с этим render.yaml.
+#   3) Render создаст два сервиса и спросит значения для `sync: false` полей.
+#   4) Перед первым запуском API выполнится preDeployCommand (миграции).
+
+services:
+  # ---------- API (HTTP) ----------
+  - type: web
+    name: dead-spin-api
+    runtime: node
+    plan: free
+    region: frankfurt
+    rootDir: .
+    buildCommand: corepack enable && pnpm install --frozen-lockfile
+    startCommand: pnpm --filter @dead-spin/api run start:prod
+    preDeployCommand: pnpm --filter @dead-spin/api run db:migrate
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Render инжектит свой PORT — мы его читаем в apps/api/src/config.ts.
+      - key: DATABASE_URL          # из Neon: postgresql://...neon.tech/...
+        sync: false
+      - key: JWT_SECRET            # 32+ байта, сгенерировать — "openssl rand -hex 32"
+        generateValue: true
+      - key: TELEGRAM_BOT_TOKEN    # токен @BotFather
+        sync: false
+      - key: TEST
+        value: "0"
+      - key: FAKE_USER_PASSWORD
+        value: ""
+      - key: MONGO_URL
+        value: ""
+      - key: CORS_ORIGINS          # e.g. "https://dead-spin.pages.dev"
+        sync: false
+
+  # ---------- Bot (polling) ----------
+  - type: web
+    name: dead-spin-bot
+    runtime: node
+    plan: free
+    region: frankfurt
+    rootDir: .
+    buildCommand: corepack enable && pnpm install --frozen-lockfile
+    startCommand: pnpm --filter @dead-spin/bot run start:prod
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Делим DATABASE_URL с API — один и тот же Postgres.
+      - fromService:
+          type: web
+          name: dead-spin-api
+          envVarKey: DATABASE_URL
+      - fromService:
+          type: web
+          name: dead-spin-api
+          envVarKey: TELEGRAM_BOT_TOKEN
+      - key: WEB_APP_URL          # "https://dead-spin.pages.dev"
+        sync: false
+      - key: BOT_MODE
+        value: polling
+      - key: ALLOWLIST_OPEN
+        value: "0"

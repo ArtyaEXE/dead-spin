@@ -1,0 +1,53 @@
+import {z} from 'zod';
+
+
+const EnvSchema = z.object({
+	NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+	PORT: z.coerce.number().int().positive().default(3001),
+
+	DATABASE_URL: z.string().url(),
+
+	JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 bytes'),
+
+	TELEGRAM_BOT_TOKEN: z.string().default(''),
+
+	TEST: z.coerce.number().int().min(0).max(1).default(0),
+	FAKE_USER_PASSWORD: z.string().default(''),
+
+	MONGO_URL: z.string().default(''),
+
+	CORS_ORIGINS: z.string().default('*'),
+});
+
+
+export type Env = z.infer<typeof EnvSchema>;
+
+
+function devDefaults(raw: Record<string, string | undefined>): Record<string, string | undefined> {
+	if ((raw['NODE_ENV'] ?? 'development') !== 'development') return raw;
+	return {
+		DATABASE_URL: 'postgres://deadspin:deadspin@localhost:5432/deadspin',
+		JWT_SECRET: 'dev-secret-dev-secret-dev-secret-dev-secret-32b',
+		...raw,
+	};
+}
+
+
+function parseEnv(): Env {
+	const raw = devDefaults(process.env);
+	const result = EnvSchema.safeParse(raw);
+	if (!result.success) {
+		const issues = result.error.issues.map(i => `  • ${i.path.join('.')}: ${i.message}`).join('\n');
+		throw new Error(`Invalid environment variables:\n${issues}`);
+	}
+	return result.data;
+}
+
+
+export const env: Env = parseEnv();
+
+
+export const isProd = env.NODE_ENV === 'production';
+export const isDev = env.NODE_ENV === 'development';
+export const isTest = env.NODE_ENV === 'test';
+export const isTestMode = env.TEST === 1;

@@ -1,0 +1,27 @@
+{
+	"name": "@dead-spin/bot",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "tsx watch --env-file=.env src/index.ts",
+		"start": "node --env-file=.env --import tsx src/index.ts",
+		"start:prod": "node --import tsx src/index.ts",
+		"typecheck": "tsc --noEmit",
+		"test": "vitest run"
+	},
+	"dependencies": {
+		"@dead-spin/db": "workspace:*",
+		"@dead-spin/shared": "workspace:*",
+		"drizzle-orm": "^0.36.0",
+		"grammy": "^1.31.0",
+		"postgres": "^3.4.4",
+		"zod": "^3.23.8"
+	},
+	"devDependencies": {
+		"@types/node": "^22.7.5",
+		"tsx": "^4.19.1",
+		"typescript": "^5.6.3",
+		"vitest": "^2.1.2"
+	}
+}

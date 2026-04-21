@@ -1,0 +1,118 @@
+import {
+	pgTable,
+	text,
+	integer,
+	timestamp,
+	primaryKey,
+	uniqueIndex,
+	index,
+	check,
+} from 'drizzle-orm/pg-core';
+import {sql} from 'drizzle-orm';
+import {FUEL_INITIAL} from '@dead-spin/shared';
+
+
+/**
+ * users — игроки. `tg_id` уникален, остальные поля лениво обновляются при
+ * логине (username/locale меняются через бот Telegram).
+ * `fuel_updated_at` — метка последнего обновления fuel; ленивая регенерация
+ * читает эту метку вместо фонового воркера (см. lib/fuel.ts).
+ */
+export const users = pgTable('users', {
+	id: text('id').primaryKey().default(sql`gen_random_uuid()::text`),
+	tgId: text('tg_id').notNull(),
+	username: text('username').notNull(),
+	locale: text('locale').notNull().default('en'),
+
+	fuel: integer('fuel').notNull().default(FUEL_INITIAL),
+	fuelUpdatedAt: timestamp('fuel_updated_at', {withTimezone: true}).notNull().defaultNow(),
+
+	coins: integer('coins').notNull().default(0),
+	details: integer('details').notNull().default(0),
+
+	createdAt: timestamp('created_at', {withTimezone: true}).notNull().defaultNow(),
+	updatedAt: timestamp('updated_at', {withTimezone: true}).notNull().defaultNow(),
+}, (table) => ({
+	tgIdIdx: uniqueIndex('users_tg_id_idx').on(table.tgId),
+}));
+
+
+/**
+ * progresses — агрегат по юзеру (сейчас только summary звёзд).
+ */
+export const progresses = pgTable('progresses', {
+	userId: text('user_id').primaryKey().references(() => users.id, {onDelete: 'cascade'}),
+	summaryStars: integer('summary_stars').notNull().default(0),
+	updatedAt: timestamp('updated_at', {withTimezone: true}).notNull().defaultNow(),
+});
+
+
+/**
+ * progress_levels — результат прохождения уровня: лучший рекорд игрока.
+ * Primary key (user_id, level) — один рекорд на пару.
+ * Индекс по (level, stars desc, time_ms asc) — основа лидерборда.
+ */
+export const progressLevels = pgTable('progress_levels', {
+	userId: text('user_id').notNull().references(() => users.id, {onDelete: 'cascade'}),
+	level: integer('level').notNull(),
+	stars: integer('stars').notNull(),
+	timeMs: integer('time_ms').notNull(),
+	fuelSpent: integer('fuel_spent').notNull(),
+	updatedAt: timestamp('updated_at', {withTimezone: true}).notNull().defaultNow(),
+}, (table) => ({
+	pk: primaryKey({columns: [table.userId, table.level]}),
+	starsCheck: check('progress_levels_stars_check', sql`${table.stars} between 0 and 3`),
+	leaderboardIdx: index('progress_levels_leaderboard_idx').on(table.level, table.stars, table.timeMs),
+}));
+
+
+/**
+ * payments — Telegram Stars (XTR) платежи; в исходной системе хранились
+ * неявно, тут выносим в отдельную таблицу с `tg_charge_id` для
+ * идемпотентности.
+ */
+export const payments = pgTable('payments', {
+	id: text('id').primaryKey().default(sql`gen_random_uuid()::text`),
+	tgChargeId: text('tg_charge_id').notNull(),
+	userId: text('user_id').notNull().references(() => users.id),
+	lotId: text('lot_id').notNull(),
+	amount: integer('amount').notNull(),
+	currency: text('currency').notNull().default('XTR'),
+	createdAt: timestamp('created_at', {withTimezone: true}).notNull().defaultNow(),
+}, (table) => ({
+	chargeIdx: uniqueIndex('payments_tg_charge_id_idx').on(table.tgChargeId),
+	userIdx: index('payments_user_idx').on(table.userId),
+}));
+
+
+/**
+ * allowlist — список Telegram-ID, которым разрешён вход в игру.
+ * Заменяет массив `telegram.wl` из Meteor-settings.
+ */
+export const allowlist = pgTable('allowlist', {
+	tgId: text('tg_id').primaryKey(),
+	note: text('note').default(''),
+	addedAt: timestamp('added_at', {withTimezone: true}).notNull().defaultNow(),
+});
+
+
+/**
+ * editor_admins — кому разрешён доступ к редактору уровней.
+ */
+export const editorAdmins = pgTable('editor_admins', {
+	tgId: text('tg_id').primaryKey().references(() => allowlist.tgId, {onDelete: 'cascade'}),
+	addedAt: timestamp('added_at', {withTimezone: true}).notNull().defaultNow(),
+});
+
+
+export type User = typeof users.$inferSelect;
+export type NewUser = typeof users.$inferInsert;
+
+export type Progress = typeof progresses.$inferSelect;
+export type NewProgress = typeof progresses.$inferInsert;
+
+export type ProgressLevel = typeof progressLevels.$inferSelect;
+export type NewProgressLevel = typeof progressLevels.$inferInsert;
+
+export type Payment = typeof payments.$inferSelect;
+export type NewPayment = typeof payments.$inferInsert;
