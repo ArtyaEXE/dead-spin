@@ -1,11 +1,9 @@
 # Render Blueprint — автодеплой API и Bot из монорепо.
 # Frontend (apps/game) деплоится отдельно на Cloudflare Pages (статика).
 #
-# Как применить:
-#   1) Запушить в GitHub.
-#   2) Render Dashboard → New → Blueprint → выбрать репо с этим render.yaml.
-#   3) Render создаст два сервиса и спросит значения для `sync: false` полей.
-#   4) Перед первым запуском API выполнится preDeployCommand (миграции).
+# Free tier особенности:
+#   - preDeployCommand недоступен → миграции прогоняем в startCommand api.
+#   - Сервисы засыпают через 15 мин без HTTP → cold start ~30–60 c.
 
 services:
   # ---------- API (HTTP) ----------
@@ -16,17 +14,16 @@ services:
     region: frankfurt
     rootDir: .
     buildCommand: corepack enable && pnpm install --frozen-lockfile
-    startCommand: pnpm --filter @dead-spin/api run start:prod
-    preDeployCommand: pnpm --filter @dead-spin/api run db:migrate
+    startCommand: pnpm --filter @dead-spin/api run db:migrate && pnpm --filter @dead-spin/api run start:prod
     healthCheckPath: /healthz
     autoDeploy: true
     envVars:
       - key: NODE_ENV
         value: production
-      # Render инжектит свой PORT — мы его читаем в apps/api/src/config.ts.
+      # Render инжектит PORT автоматом — читаем его в src/config.ts.
       - key: DATABASE_URL          # из Neon: postgresql://...neon.tech/...
         sync: false
-      - key: JWT_SECRET            # 32+ байта, сгенерировать — "openssl rand -hex 32"
+      - key: JWT_SECRET            # 32+ байта
         generateValue: true
       - key: TELEGRAM_BOT_TOKEN    # токен @BotFather
         sync: false
@@ -54,15 +51,17 @@ services:
       - key: NODE_ENV
         value: production
       # Делим DATABASE_URL с API — один и тот же Postgres.
-      - fromService:
+      - key: DATABASE_URL
+        fromService:
           type: web
           name: dead-spin-api
           envVarKey: DATABASE_URL
-      - fromService:
+      - key: TELEGRAM_BOT_TOKEN
+        fromService:
           type: web
           name: dead-spin-api
           envVarKey: TELEGRAM_BOT_TOKEN
-      - key: WEB_APP_URL          # "https://dead-spin.pages.dev"
+      - key: WEB_APP_URL           # "https://dead-spin.pages.dev"
         sync: false
       - key: BOT_MODE
         value: polling
