@@ -13,7 +13,7 @@ services:
     plan: free
     region: frankfurt
     rootDir: .
-    buildCommand: corepack enable && pnpm install --frozen-lockfile
+    buildCommand: corepack enable && pnpm install --frozen-lockfile --prod=false
     startCommand: pnpm --filter @dead-spin/api run db:migrate && pnpm --filter @dead-spin/api run start:prod
     healthCheckPath: /healthz
     autoDeploy: true
@@ -43,7 +43,7 @@ services:
     plan: free
     region: frankfurt
     rootDir: .
-    buildCommand: corepack enable && pnpm install --frozen-lockfile
+    buildCommand: corepack enable && pnpm install --frozen-lockfile --prod=false
     startCommand: pnpm --filter @dead-spin/bot run start:prod
     healthCheckPath: /healthz
     autoDeploy: true

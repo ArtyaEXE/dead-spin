@@ -1,0 +1,10 @@
+# Cloudflare Worker со Static Assets — выкладывает собранный фронт apps/game/dist.
+# Документация: https://developers.cloudflare.com/workers/static-assets/
+
+name = "dead-spin"
+compatibility_date = "2024-11-06"
+
+[assets]
+directory = "./apps/game/dist"
+# SPA: все неизвестные пути отдают index.html (роутинг на клиенте).
+not_found_handling = "single-page-application"

@@ -38,6 +38,9 @@ importers:
       postgres:
         specifier: ^3.4.4
         version: 3.4.9
+      tsx:
+        specifier: ^4.19.1
+        version: 4.21.0
       zod:
         specifier: ^3.23.8
         version: 3.25.76
@@ -51,9 +54,6 @@ importers:
       mongodb:
         specifier: ^6.10.0
         version: 6.21.0
-      tsx:
-        specifier: ^4.19.1
-        version: 4.21.0
       typescript:
         specifier: ^5.6.3
         version: 5.9.3
@@ -78,6 +78,9 @@ importers:
       postgres:
         specifier: ^3.4.4
         version: 3.4.9
+      tsx:
+        specifier: ^4.19.1
+        version: 4.21.0
       zod:
         specifier: ^3.23.8
         version: 3.25.76
@@ -85,9 +88,6 @@ importers:
       '@types/node':
         specifier: ^22.7.5
         version: 22.19.17
-      tsx:
-        specifier: ^4.19.1
-        version: 4.21.0
       typescript:
         specifier: ^5.6.3
         version: 5.9.3
