@@ -153,6 +153,45 @@ html, body, #root {
 .login-error { color: #FF5555; font-size: 20px; text-shadow: 0 0 6px #000; }
 
 
+/* ---------- Preload screen ---------- */
+
+.preload-root {
+	position: absolute; inset: 0;
+	background: url(/main-menu-bg.png) 0 0 / cover no-repeat;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 24px;
+	padding: 24px;
+}
+.preload-logo {
+	max-width: 80%;
+	opacity: 0.95;
+}
+.preload-bar {
+	width: 70%;
+	max-width: 320px;
+	height: 14px;
+	background: rgba(0, 0, 0, 0.55);
+	border: 2px solid var(--gold);
+	border-radius: 8px;
+	overflow: hidden;
+	box-shadow: 0 0 8px #000 inset;
+}
+.preload-bar-fill {
+	height: 100%;
+	background: linear-gradient(90deg, var(--gold) 0%, var(--accent) 100%);
+	transition: width 120ms linear;
+}
+.preload-pct {
+	color: var(--gold);
+	font-size: 36px;
+	text-shadow: 0 0 8px #000;
+	line-height: 1;
+}
+
+
 /* ---------- Main menu ---------- */
 
 .mm-root {

@@ -11,6 +11,10 @@ import {ResultScreen, type ResultKind} from './ResultScreen';
 
 
 const ZOOM_STEP = 0.2;
+// Задержка показа overlay ResultScreen — соответствует оригинальному
+// `delay: result === 'pause' ? 0 : 500` в ResultScreen.svelte.
+// Shake и взрыв при этом работают сразу, overlay появляется после.
+const RESULT_OVERLAY_DELAY_MS = 500;
 
 
 export function GameScreen(props: {
@@ -24,9 +28,14 @@ export function GameScreen(props: {
 	const [fuel, setFuel] = createSignal(0);
 	const [stars, setStars] = createSignal(0);
 	const [time, setTime] = createSignal(0);
+	// result — "игра окончена" состояние (физика заморожена).
 	const [result, setResult] = createSignal<GameResult | null>(null);
+	// showOverlay — виден ли экран с итогами. Для loose/win задерживаем показ.
+	const [showOverlay, setShowOverlay] = createSignal(false);
 	const [pause, setPause] = createSignal(false);
 	const [shake, setShake] = createSignal(false);
+
+	let overlayTimer: number | null = null;
 
 	const initWorld = (levelNumber: number) => {
 		const level = getLevelByNumber(levelNumber);
@@ -40,10 +49,19 @@ export function GameScreen(props: {
 			onResult: async (r) => {
 				setResult(r);
 
+				// Shake запускается сразу — параллельно со взрывом (оригинал
+				// shakeTimeout = 501мс сразу после explosionPos).
 				if (r.type === 'loose') {
 					setShake(true);
 					setTimeout(() => setShake(false), 500);
 				}
+
+				// Показ overlay откладываем, чтобы была видна анимация взрыва.
+				if (overlayTimer !== null) clearTimeout(overlayTimer);
+				overlayTimer = window.setTimeout(
+					() => setShowOverlay(true),
+					RESULT_OVERLAY_DELAY_MS,
+				);
 
 				if (r.type === 'win') {
 					progressStore.getState().recordLocal(levelNumber, r.stars, r.timeMs, r.fuelSpent);
@@ -70,11 +88,16 @@ export function GameScreen(props: {
 	};
 
 	onMount(() => initWorld(props.levelNumber));
-	onCleanup(() => world?.destroy());
+	onCleanup(() => {
+		if (overlayTimer !== null) clearTimeout(overlayTimer);
+		world?.destroy();
+	});
 
 	const retry = () => {
 		const u = authStore.getState().user;
+		if (overlayTimer !== null) { clearTimeout(overlayTimer); overlayTimer = null; }
 		setResult(null);
+		setShowOverlay(false);
 		setStars(0);
 		setTime(0);
 		setPause(false);
@@ -87,6 +110,7 @@ export function GameScreen(props: {
 		if (result()?.type === 'win' || result()?.type === 'loose') return;
 		const next = !pause();
 		setPause(next);
+		setShowOverlay(next); // пауза показывает overlay сразу, без задержки
 		world?.setPaused(next);
 	};
 
@@ -113,7 +137,7 @@ export function GameScreen(props: {
 				onBoost={() => world?.boost()}
 			/>
 
-			<Show when={result() || pause()}>
+			<Show when={showOverlay()}>
 				<ResultScreen
 					result={resultKind()}
 					stars={result()?.stars ?? 0}

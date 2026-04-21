@@ -303,6 +303,16 @@ function resumeMusic(): void {
 }
 
 
+async function prewarm(): Promise<void> {
+	if (!ctx) return;
+	const urls = [
+		...Object.values(SOUNDS),
+		...Object.values(MUSIC).map(m => m.url),
+	];
+	await Promise.all(urls.map(url => getBuffer(url).catch(() => null)));
+}
+
+
 export const audio = {
 	init,
 	play,
@@ -311,4 +321,5 @@ export const audio = {
 	stopMusic,
 	pauseMusic,
 	resumeMusic,
+	prewarm,
 };

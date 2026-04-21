@@ -12,7 +12,7 @@ export type StarSprite = {
 };
 
 
-const STAR_SIZE = 35;
+const STAR_SIZE = 28;
 
 
 /**

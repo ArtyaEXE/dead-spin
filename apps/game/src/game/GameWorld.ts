@@ -347,18 +347,7 @@ export class GameWorld {
 		// Скрываем корабль — выглядит как при оригинале (player = null в Game.svelte).
 		this.playerSprite.container.visible = false;
 
-		// Замораживаем физику сразу, но overlay ResultScreen-а показываем с
-		// задержкой 500мс (как в оригинале: `delay: result === 'pause' ? 0 : 500`) —
-		// чтобы игрок успел увидеть взрыв до того как экран затемнится.
-		this.result = {
-			type: 'loose',
-			stars: this.collected,
-			timeMs: this.time,
-			fuelSpent: Math.max(0, this.initialFuel - this.fuel),
-		};
-		setTimeout(() => {
-			if (this.result) this.callbacks.onResult(this.result);
-		}, 500);
+		this.finish('loose');
 	}
 
 
@@ -369,11 +358,10 @@ export class GameWorld {
 			timeMs: this.time,
 			fuelSpent: Math.max(0, this.initialFuel - this.fuel),
 		};
-		// Для win — та же задержка 500мс (плавное появление overlay, как в оригинале).
-		const delay = type === 'win' ? 500 : 0;
-		setTimeout(() => {
-			if (this.result) this.callbacks.onResult(this.result);
-		}, delay);
+		// Сообщаем сразу — UI сам решит когда показывать overlay. Это позволяет
+		// запустить shake/вспышку параллельно со взрывом, а показ ResultScreen
+		// отложить в GameScreen (через setTimeout на его стороне).
+		this.callbacks.onResult(this.result);
 	}
 
 
@@ -401,9 +389,12 @@ export class GameWorld {
 		this.camera.follow({x: this.player.x, y: this.player.y}, this.zoom);
 
 		if (this.walls) {
+			// Параллакс задней стены: tilePosition=0.5·player → визуально текстура
+			// движется со скоростью 0.5 от мира (коэф 1 - 0.5 = 0.5). Ближе ощущение,
+			// чем оригинальное 1/8 — слишком "далеко" выглядело.
 			this.walls.innerCave.tilePosition.set(
-				this.player.x * (7 / 8),
-				this.player.y * (7 / 8),
+				this.player.x * 0.5,
+				this.player.y * 0.5,
 			);
 		}
 	}
