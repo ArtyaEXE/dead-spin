@@ -4,6 +4,10 @@ import type {Point} from '@dead-spin/shared';
 
 type Smoke = {
 	sprites: Sprite[];
+	// baseScale[i] = finalSize / texture.width для спрайта i. Нужен потому, что
+	// каждый tick мы перезаписываем sprite.scale, и без множителя размер
+	// получается равным native-размеру текстуры (у explosion-кадров — сотни пикселей).
+	baseScales: number[];
 	startedAt: number;
 	duration: number;
 	// Позиция + плавный дрейф: оригинал использует CSS `transition: left/top 1.5s ease-out`,
@@ -53,21 +57,26 @@ export function createSmokeSystem(explosionFrames: Texture[]): SmokeSystem {
 			const finalSize = size * randRange(0.75, 1.25);
 			const rot = randRange(-Math.PI, Math.PI);
 			const sprites: Sprite[] = [];
+			const baseScales: number[] = [];
 
 			for (const tex of frameTextures) {
 				const s = new Sprite(tex);
 				s.anchor.set(0.5);
 				s.alpha = 0;
-				s.width = finalSize;
-				s.height = finalSize;
 				s.rotation = rot;
+				// finalSize задаёт 100%-размер клуба в мировых пикселях,
+				// на него поверх умножается анимационный множитель 0.3→1.5.
+				const baseScale = finalSize / (tex.width || finalSize);
+				s.scale.set(baseScale * 0.3);
 				sprites.push(s);
+				baseScales.push(baseScale);
 				container.addChild(s);
 			}
 
 			const now = performance.now();
 			const smoke: Smoke = {
 				sprites,
+				baseScales,
 				startedAt: now,
 				duration,
 				fromX: point.x,
@@ -109,7 +118,8 @@ export function createSmokeSystem(explosionFrames: Texture[]): SmokeSystem {
 					const phase = local / animDur;
 					const eased = easeOut(phase);
 					// scale 0.3→1.5, alpha 0→0.5→0 — оба с ease-out, как в оригинальном CSS animation.
-					sprite.scale.set(0.3 + eased * 1.2);
+					const anim = 0.3 + eased * 1.2;
+					sprite.scale.set(sm.baseScales[fi]! * anim);
 					sprite.alpha = phase < 0.2
 						? (phase / 0.2) * 0.5
 						: 0.5 * (1 - easeOut((phase - 0.2) / 0.8));
