@@ -72,6 +72,15 @@ export class GameWorld {
 	private zoom = 1;
 	private paused = false;
 
+	// Анимации входа/выхода из дыры: на старте корабль "вылетает" из дыры
+	// (разворачивается и увеличивается в размере, крутясь); на финише —
+	// засасывается в дыру (скручивается и сжимается в точку).
+	private animState: 'spawn' | 'running' | 'finishing' = 'spawn';
+	private animStart = 0;
+	private finishFrom: {x: number; y: number} | null = null;
+	private readonly SPAWN_MS = 900;
+	private readonly FINISH_MS = 800;
+
 
 	constructor(private level: Level, private callbacks: GameCallbacks) {}
 
@@ -106,6 +115,7 @@ export class GameWorld {
 		this.buildScene();
 		this.resetPlayer();
 		this.prepareSpatialIndex();
+		this.beginSpawnAnim();
 
 		this.loop = createLoop(
 			(dt) => this.step(dt),
@@ -148,6 +158,16 @@ export class GameWorld {
 		this.world.removeChildren();
 		this.buildScene();
 		this.resetPlayer();
+		this.beginSpawnAnim();
+	}
+
+
+	private beginSpawnAnim(): void {
+		this.animState = 'spawn';
+		this.animStart = performance.now();
+		this.playerSprite.container.visible = true;
+		this.playerSprite.container.scale.set(0);
+		this.playerSprite.booster.visible = false;
 	}
 
 
@@ -288,6 +308,9 @@ export class GameWorld {
 
 	private step(dt: number): void {
 		if (this.result || this.paused) return;
+		// Во время анимаций появления/засасывания физика заморожена,
+		// столкновения не считаются, таймер не тикает.
+		if (this.animState !== 'running') return;
 
 		let r = this.player.r + this.player.vr * dt;
 		while (r < -180) r += 360;
@@ -318,7 +341,7 @@ export class GameWorld {
 
 		const finishCircle = {x: this.level.finishPoint.x, y: this.level.finishPoint.y, radius: FINISH_RADIUS};
 		if (Physics.resolveCollision(this.player, finishCircle) && this.player.speed < 40) {
-			this.finish('win');
+			this.beginFinishAnim();
 			return;
 		}
 
@@ -351,6 +374,15 @@ export class GameWorld {
 	}
 
 
+	private beginFinishAnim(): void {
+		this.animState = 'finishing';
+		this.animStart = performance.now();
+		this.finishFrom = {x: this.player.x, y: this.player.y};
+		this.player.vx = 0;
+		this.player.vy = 0;
+	}
+
+
 	private finish(type: 'win' | 'loose'): void {
 		this.result = {
 			type,
@@ -368,7 +400,42 @@ export class GameWorld {
 	private draw(): void {
 		const now = performance.now();
 
-		if (this.playerSprite.container.visible) {
+		if (this.animState === 'spawn') {
+			const elapsed = now - this.animStart;
+			const t = Math.min(1, elapsed / this.SPAWN_MS);
+			// ease-out — быстро вылетает и тормозит
+			const eased = 1 - (1 - t) * (1 - t);
+			const spinRad = t * Math.PI * 6; // ~3 оборота за время анимации
+			this.playerSprite.container.position.set(this.player.x, this.player.y);
+			this.playerSprite.container.scale.set(eased);
+			this.playerSprite.container.rotation = spinRad;
+			this.playerSprite.booster.visible = false;
+			if (t >= 1) {
+				this.animState = 'running';
+				this.playerSprite.container.scale.set(1);
+				// синхронизируем физический угол с визуальным, чтобы не было прыжка
+				this.player.r = ((spinRad * 180) / Math.PI) % 360;
+			}
+		} else if (this.animState === 'finishing') {
+			const elapsed = now - this.animStart;
+			const t = Math.min(1, elapsed / this.FINISH_MS);
+			// ease-in — начинает медленно, ускоряется к центру дыры
+			const eased = t * t;
+			const from = this.finishFrom ?? {x: this.player.x, y: this.player.y};
+			const fp = this.level.finishPoint;
+			this.player.x = from.x + (fp.x - from.x) * eased;
+			this.player.y = from.y + (fp.y - from.y) * eased;
+			const spinRad = t * Math.PI * 8; // ~4 оборота, быстрее к концу
+			this.playerSprite.container.position.set(this.player.x, this.player.y);
+			this.playerSprite.container.scale.set(1 - eased);
+			this.playerSprite.container.rotation = (this.player.r * Math.PI) / 180 + spinRad;
+			this.playerSprite.booster.visible = false;
+			if (t >= 1) {
+				this.playerSprite.container.visible = false;
+				this.animState = 'running'; // флаг нужен, чтобы step() не перезапустил анимацию
+				this.finish('win');
+			}
+		} else if (this.playerSprite.container.visible) {
 			this.playerSprite.container.position.set(this.player.x, this.player.y);
 			this.playerSprite.container.rotation = (this.player.r * Math.PI) / 180;
 			this.playerSprite.booster.visible = now < this.boostVisibleUntil;
