@@ -33,9 +33,21 @@ export default function App() {
 
 	onMount(() => {
 		void authStore.getState().refresh();
-		const tg = (window as unknown as {Telegram?: {WebApp?: {expand?: () => void; ready?: () => void}}}).Telegram?.WebApp;
-		tg?.expand?.();
+		const tg = (window as unknown as {Telegram?: {WebApp?: {
+			expand?: () => void;
+			ready?: () => void;
+			requestFullscreen?: () => void;
+			disableVerticalSwipes?: () => void;
+		}}}).Telegram?.WebApp;
 		tg?.ready?.();
+		tg?.expand?.();
+		// Bot API 8.0+ — true fullscreen (прячет header Telegram, заходит под notch).
+		// На старых клиентах метод undefined и просто пропускается, expand() работает
+		// как фоллбэк.
+		tg?.requestFullscreen?.();
+		// Блокируем свайп-вниз-закрыть во время игры — иначе случайный жест
+		// на игровом экране закроет приложение.
+		tg?.disableVerticalSwipes?.();
 	});
 
 	// Прелоадим весь контент сразу после успешной авторизации —
