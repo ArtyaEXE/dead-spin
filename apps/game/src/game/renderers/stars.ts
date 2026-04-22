@@ -9,16 +9,17 @@ export type StarSprite = {
 	pos: Point;
 	radius: number;
 	spawnAt: number;
+	baseScale: number;
 };
 
 
-const STAR_SIZE = 28;
+// Чуть меньше корабля (80px) — ~55px визуально.
+const STAR_SIZE = 55;
 
 
 /**
- * Спрайт звезды из star.png. Размер подобран под ощущение оригинала
- * (в Game.svelte div 60×60 с background: cover, но видимая звезда в PNG
- * занимает около 75% контейнера — визуально ≈45px).
+ * Спрайт звезды из star.png. `baseScale` считается один раз из native-размера
+ * текстуры, чтобы анимация scale в animateStar не затирала физический размер.
  */
 export function createStar(id: string, pos: Point, tex: Texture): StarSprite {
 	const container = new Container();
@@ -26,11 +27,11 @@ export function createStar(id: string, pos: Point, tex: Texture): StarSprite {
 
 	const sprite = new Sprite(tex);
 	sprite.anchor.set(0.5);
-	sprite.width = STAR_SIZE;
-	sprite.height = STAR_SIZE;
+	const baseScale = STAR_SIZE / (tex.width || STAR_SIZE);
+	sprite.scale.set(baseScale);
 	container.addChild(sprite);
 
-	return {id, container, sprite, pos, radius: 20, spawnAt: performance.now()};
+	return {id, container, sprite, pos, radius: 20, spawnAt: performance.now(), baseScale};
 }
 
 
@@ -62,7 +63,7 @@ export function animateStar(star: StarSprite, now: number): void {
 	const rotDeg = -3 + 10 * smooth;
 
 	star.sprite.position.set(0, yOffset);
-	star.sprite.scale.set(scale);
+	star.sprite.scale.set(star.baseScale * scale);
 	star.sprite.rotation = (rotDeg * Math.PI) / 180;
 }
 

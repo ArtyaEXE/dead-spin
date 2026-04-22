@@ -294,9 +294,11 @@ html, body, #root {
 	box-sizing: border-box;
 	background: url(/screen-bold.png) 100% 100% no-repeat;
 	background-size: 100% 100%;
-	padding: clamp(8px, 2.5%, 20px) clamp(8px, 3%, 16px) clamp(12px, 4%, 30px);
+	/* Асимметричный padding как в оригинале (20/30) — смещает контент чуть
+	   выше геометрического центра, совпадая с "экраном" на png-рамке. */
+	padding: 14% 10% 20%;
 	color: var(--gold);
-	font-size: clamp(26px, 6vmin, 50px);
+	font-size: clamp(24px, 5.2vmin, 44px);
 	line-height: 1;
 	display: flex;
 	align-items: center;

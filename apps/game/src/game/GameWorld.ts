@@ -272,6 +272,8 @@ export class GameWorld {
 
 	boost(): void {
 		if (this.result || this.paused) return;
+		// Во время анимаций выхода/захода в дыру — буст недоступен.
+		if (this.animState !== 'running') return;
 		if (this.fuel < FUEL_CONSUMPTION_PER_BOOST) return;
 
 		Physics.applyForce(this.player, BOOST_FORCE);
