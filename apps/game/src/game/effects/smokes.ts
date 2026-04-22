@@ -6,9 +6,21 @@ type Smoke = {
 	sprites: Sprite[];
 	startedAt: number;
 	duration: number;
-	x: number;
-	y: number;
+	// Позиция + плавный дрейф: оригинал использует CSS `transition: left/top 1.5s ease-out`,
+	// значит нам нужно интерполировать (fromX,fromY) → (toX,toY) за DRIFT_MS.
+	fromX: number;
+	fromY: number;
+	toX: number;
+	toY: number;
+	driftStart: number;
 };
+
+
+const DRIFT_MS = 1500;
+// ease-out как в CSS ease-out (квадратичный) — быстрый старт, плавное затухание
+function easeOut(t: number): number {
+	return 1 - (1 - t) * (1 - t);
+}
 
 
 /**
@@ -53,21 +65,18 @@ export function createSmokeSystem(explosionFrames: Texture[]): SmokeSystem {
 				container.addChild(s);
 			}
 
+			const now = performance.now();
 			const smoke: Smoke = {
 				sprites,
-				startedAt: performance.now(),
+				startedAt: now,
 				duration,
-				x: point.x,
-				y: point.y,
+				fromX: point.x,
+				fromY: point.y,
+				toX: point.x + (move?.x ?? 0),
+				toY: point.y + (move?.y ?? 0),
+				driftStart: now,
 			};
 			active.push(smoke);
-
-			if (move) {
-				setTimeout(() => {
-					smoke.x += move.x;
-					smoke.y += move.y;
-				}, 1);
-			}
 		},
 		tick(now) {
 			for (let i = active.length - 1; i >= 0; i--) {
@@ -78,6 +87,13 @@ export function createSmokeSystem(explosionFrames: Texture[]): SmokeSystem {
 					active.splice(i, 1);
 					continue;
 				}
+
+				// Плавный дрейф from→to за DRIFT_MS с ease-out — эквивалент
+				// CSS `transition: left/top 1.5s ease-out` из оригинала.
+				const driftT = Math.min(1, (now - sm.driftStart) / DRIFT_MS);
+				const d = easeOut(driftT);
+				const cx = sm.fromX + (sm.toX - sm.fromX) * d;
+				const cy = sm.fromY + (sm.toY - sm.fromY) * d;
 
 				const animDur = sm.duration * 0.7;
 				const perFrameDelay = (sm.duration - animDur) / sm.sprites.length;
@@ -91,10 +107,13 @@ export function createSmokeSystem(explosionFrames: Texture[]): SmokeSystem {
 						continue;
 					}
 					const phase = local / animDur;
-					// scale 0.3→1.5, alpha 0→0.5→0
-					sprite.scale.set(0.3 + phase * 1.2);
-					sprite.alpha = phase < 0.2 ? (phase / 0.2) * 0.5 : 0.5 * (1 - (phase - 0.2) / 0.8);
-					sprite.position.set(sm.x, sm.y);
+					const eased = easeOut(phase);
+					// scale 0.3→1.5, alpha 0→0.5→0 — оба с ease-out, как в оригинальном CSS animation.
+					sprite.scale.set(0.3 + eased * 1.2);
+					sprite.alpha = phase < 0.2
+						? (phase / 0.2) * 0.5
+						: 0.5 * (1 - easeOut((phase - 0.2) / 0.8));
+					sprite.position.set(cx, cy);
 				}
 			}
 		},
