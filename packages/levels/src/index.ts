@@ -15,11 +15,9 @@ import l12 from './data/12.json' with {type: 'json'};
 import l13 from './data/13.json' with {type: 'json'};
 import l14 from './data/14.json' with {type: 'json'};
 import l15 from './data/15.json' with {type: 'json'};
-import l16 from './data/16.json' with {type: 'json'};
-import l17 from './data/17.json' with {type: 'json'};
 
 
-const raw = [l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16, l17];
+const raw = [l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15];
 
 
 export const levels: readonly Level[] = raw.map((data, idx) => {

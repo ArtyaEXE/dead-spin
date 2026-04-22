@@ -8,6 +8,7 @@ import {GameWorld, type GameResult} from '../game/GameWorld';
 import {TopBar} from './TopBar';
 import {BottomBar} from './BottomBar';
 import {ResultScreen, type ResultKind} from './ResultScreen';
+import {TutorialOverlay, computeTutorialQueue, markSeen} from './Tutorial';
 
 
 const ZOOM_STEP = 0.2;
@@ -34,6 +35,10 @@ export function GameScreen(props: {
 	const [showOverlay, setShowOverlay] = createSignal(false);
 	const [pause, setPause] = createSignal(false);
 	const [shake, setShake] = createSignal(false);
+	// Очередь туториалов: управление на L1 + первое знакомство с mine/stone/worm.
+	// Мир монтируется только после того, как очередь опустеет, чтобы spawn-анимация
+	// игралась уже "на глазах" у игрока.
+	const [tutorialQueue, setTutorialQueue] = createSignal<ReturnType<typeof computeTutorialQueue>>([]);
 
 	let overlayTimer: number | null = null;
 
@@ -87,7 +92,21 @@ export function GameScreen(props: {
 		void world.mount(hostRef, user?.fuel ?? 10_000);
 	};
 
-	onMount(() => initWorld(props.levelNumber));
+	onMount(() => {
+		const queue = computeTutorialQueue(props.levelNumber);
+		setTutorialQueue(queue);
+		if (queue.length === 0) initWorld(props.levelNumber);
+	});
+
+	const dismissTutorial = () => {
+		const q = tutorialQueue();
+		if (q.length === 0) return;
+		markSeen(q[0]!);
+		const rest = q.slice(1);
+		setTutorialQueue(rest);
+		if (rest.length === 0) initWorld(props.levelNumber);
+	};
+
 	onCleanup(() => {
 		if (overlayTimer !== null) clearTimeout(overlayTimer);
 		world?.destroy();
@@ -136,6 +155,10 @@ export function GameScreen(props: {
 				onZoomIn={() => world?.addZoom(ZOOM_STEP)}
 				onBoost={() => world?.boost()}
 			/>
+
+			<Show when={tutorialQueue().length > 0}>
+				<TutorialOverlay tutorial={tutorialQueue()[0]!} onDismiss={dismissTutorial} />
+			</Show>
 
 			<Show when={showOverlay()}>
 				<ResultScreen
