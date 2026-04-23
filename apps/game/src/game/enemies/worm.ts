@@ -52,10 +52,11 @@ export function createWorm(
 
 	const segments: Segment[] = [];
 	for (let i = 4; i >= 0; i--) {
-		// i=0 — хвост (s3), i=4 — голова (s1). В оригинале SS[0] — голова.
-		// Тут индексация обратная: i=4 — голова (создаётся первой),
-		// поэтому texture = worm1 (голова).
-		const tex = i === 4 ? textures.worm1 : i === 0 ? textures.worm3 : textures.worm2;
+		// 1:1 с Worm.svelte:106-113: i=0 → s1 (голова), i=4 → s3 (хвост),
+		// остальные — s2 (тело). Голова получает наибольший initialDistance
+		// по сплайну (4-i=4), то есть идёт впереди цепочки; хвост плетётся
+		// сзади (initialDistance=0).
+		const tex = i === 0 ? textures.worm1 : i === 4 ? textures.worm3 : textures.worm2;
 
 		const lrr = i === 0 || i === 4 ? 7.5 : 15;
 		const sprite = new Sprite(tex);
@@ -105,8 +106,11 @@ export function createWorm(
 				smokeTime += dt;
 				if (smokeTime > 1) {
 					smokeTime = 0;
-					const tail = segments[4]!.pos;
-					smokes.add(tail, 120, 3000);
+					// 1:1 с оригиналом (Worm.svelte:173): дым эмитится от segments[4] —
+					// последнего элемента массива. Push-порядок i=4..0 означает
+					// что segments[4] = i=0 = голова, то есть дым идёт ЗА головой.
+					const head = segments[4]!.pos;
+					smokes.add(head, 120, 3000);
 				}
 			}
 

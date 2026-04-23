@@ -29,8 +29,12 @@ export function createMine(setup: MineSetup, tex: Texture): Enemy {
 		container,
 		step(player) {
 			const t = (performance.now() - startedAt) / 1000;
-			// sin ±5 каждые 3 секунды
-			sprite.position.set(0, Math.sin((t / 3) * Math.PI * 2) * 5);
+			// Повторяет CSS-keyframes из оригинала:
+			// {0%: 0, 50%: -5, 100%: 0} с ease-in-out — мина "всплывает" на 5px
+			// и возвращается обратно, не ныряя вниз. sin(π · phase) даёт именно
+			// такую форму (0→1→0) с плавным ease-in-out.
+			const phase = (t % 3) / 3;
+			sprite.position.set(0, -Math.sin(Math.PI * phase) * 5);
 			return getDistanceBtwPoints(setup, player) <= setup.radius + player.radius;
 		},
 		destroy() { container.destroy({children: true}); },
