@@ -259,6 +259,17 @@ html, body, #root {
 	max-width: 80%;
 	opacity: 0.95;
 }
+.preload-gear {
+	width: clamp(56px, 12vmin, 90px);
+	height: clamp(56px, 12vmin, 90px);
+	object-fit: contain;
+	filter: drop-shadow(0 0 10px #000);
+	animation: preload-gear-spin 3s linear infinite;
+}
+@keyframes preload-gear-spin {
+	from { transform: rotate(0deg); }
+	to   { transform: rotate(360deg); }
+}
 .preload-bar {
 	width: 70%;
 	max-width: 320px;

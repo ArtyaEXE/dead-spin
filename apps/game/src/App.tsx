@@ -80,6 +80,7 @@ export default function App() {
 					<Match when={!preloadDone()}>
 						<div class="preload-root">
 							<img class="preload-logo" src="/dead-spin-logo-shadow.png" alt="Dead Spin" />
+							<img class="preload-gear" src="/icons/icon-loading.png" alt="" />
 							<div class="preload-bar"><div class="preload-bar-fill" style={{width: `${preloadPct()}%`}} /></div>
 							<div class="preload-pct">{preloadPct()}%</div>
 						</div>

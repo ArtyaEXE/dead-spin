@@ -1,4 +1,4 @@
-import {Container, FillGradient, Sprite, Text, TextStyle, type Texture} from 'pixi.js';
+import {Assets, Container, Sprite, type Texture} from 'pixi.js';
 import type {Decoration} from '@dead-spin/shared';
 import {loadDecoTexture} from '../decorations-cache';
 
@@ -6,14 +6,11 @@ import {loadDecoTexture} from '../decorations-cache';
 /**
  * Декорации уровня — 3 типа:
  *  - static: спрайт /deco/static/{src}.png с поворотом r и scale s
- *  - stop:  мигающая "⬅ STOP" надпись с бело-зелёно-золотым градиентом
- *  - gravity: пульсирующие "↓ G ↓" стрелки (направление из type)
+ *  - stop:  иконка /icons/deco-stop.png (мигающая, вместо текстового "STOP" из оригинала)
+ *  - gravity: иконка /icons/deco-gravity-{type}.png (пульсирующая, вместо текстовых "↓ G ↓")
  *
  * Renderer возвращает Container с функцией tick(now) для обновления
- * мигания/пульсации. Логика 1:1 с исходными Svelte-компонентами:
- *  - [Static.svelte](space/imports/ui/deco/static/Static.svelte)
- *  - [Stop.svelte](space/imports/ui/deco/stop/Stop.svelte)
- *  - [Gravity.svelte](space/imports/ui/deco/gravity/Gravity.svelte)
+ * мигания/пульсации.
  */
 
 export interface DecorationsLayer {
@@ -25,12 +22,14 @@ export interface DecorationsLayer {
 
 const STOP_BLINK_MS = 600;
 const GRAVITY_BLINK_MS = 510;
+const STOP_BASE_SIZE = 140;
+const GRAVITY_BASE_SIZE = 140;
 
 
 type DecoItem =
 	| {kind: 'static'; sprite: Sprite; pending: Promise<void>}
-	| {kind: 'stop'; node: Container}
-	| {kind: 'gravity'; node: Container; type: 'up' | 'down' | 'left' | 'right'};
+	| {kind: 'stop'; sprite: Sprite}
+	| {kind: 'gravity'; sprite: Sprite; type: 'up' | 'down' | 'left' | 'right'};
 
 
 export function createDecorationsLayer(decorations: readonly Decoration[]): DecorationsLayer {
@@ -55,26 +54,27 @@ export function createDecorationsLayer(decorations: readonly Decoration[]): Deco
 
 			items.push({kind: 'static', sprite, pending});
 		} else if (d.name === 'stop') {
-			const node = makeGradientLabel(
-				'\u2190  STOP',
-				['#33C41F', '#C8961F'],
-				d.s,
-			);
-			node.position.set(d.x, d.y);
-			node.rotation = (d.r * Math.PI) / 180;
-			container.addChild(node);
-			items.push({kind: 'stop', node});
+			const sprite = new Sprite();
+			sprite.anchor.set(0.5);
+			sprite.position.set(d.x, d.y);
+			sprite.rotation = (d.r * Math.PI) / 180;
+			const size = STOP_BASE_SIZE * d.s;
+			sprite.width = size;
+			sprite.height = size;
+			container.addChild(sprite);
+			void Assets.load<Texture>('/icons/deco-stop.png').then(tex => { sprite.texture = tex; sprite.width = size; sprite.height = size; }).catch(() => {});
+			items.push({kind: 'stop', sprite});
 		} else {
-			const arrow =
-				d.type === 'up'   ? '\u2191  G  \u2191' :
-				d.type === 'down' ? '\u2193  G  \u2193' :
-				d.type === 'left' ? '\u2190  G'        :
-				                    'G  \u2192';
-			const node = makeGradientLabel(arrow, ['#D32000', '#D4AD00'], d.s);
-			node.position.set(d.x, d.y);
-			node.rotation = (d.r * Math.PI) / 180;
-			container.addChild(node);
-			items.push({kind: 'gravity', node, type: d.type});
+			const sprite = new Sprite();
+			sprite.anchor.set(0.5);
+			sprite.position.set(d.x, d.y);
+			sprite.rotation = (d.r * Math.PI) / 180;
+			const size = GRAVITY_BASE_SIZE * d.s;
+			sprite.width = size;
+			sprite.height = size;
+			container.addChild(sprite);
+			void Assets.load<Texture>(`/icons/deco-gravity-${d.type}.png`).then(tex => { sprite.texture = tex; sprite.width = size; sprite.height = size; }).catch(() => {});
+			items.push({kind: 'gravity', sprite, type: d.type});
 		}
 	}
 
@@ -83,26 +83,26 @@ export function createDecorationsLayer(decorations: readonly Decoration[]): Deco
 		tick(now) {
 			for (const it of items) {
 				if (it.kind === 'stop') {
-					// мигание каждые 600мс — толерантный on/off
-					const phase = Math.floor(now / STOP_BLINK_MS) % 2;
-					it.node.alpha = phase ? 1 : 0;
+					// мигание каждые 600мс — мягкий пульс opacity (не резкий on/off,
+					// иначе иконка выглядит как баг)
+					const phase = (now % STOP_BLINK_MS) / STOP_BLINK_MS;
+					it.sprite.alpha = 0.55 + 0.45 * Math.sin(phase * Math.PI * 2);
 				} else if (it.kind === 'gravity') {
-					const phase = Math.floor(now / GRAVITY_BLINK_MS) % 2;
-					// "пульсация" вдоль направления ±30px с мягким ease
-					const t = (now % GRAVITY_BLINK_MS) / GRAVITY_BLINK_MS;
-					const amt = phase ? t : (1 - t);
+					// пульсирующий сдвиг вдоль направления ±8px + лёгкий pulse alpha
+					const phase = (now % GRAVITY_BLINK_MS) / GRAVITY_BLINK_MS;
+					const amt = (1 - Math.cos(phase * Math.PI * 2)) * 0.5; // 0→1→0
 					const dir = it.type;
-					const dx = dir === 'left' ? amt * 30 : dir === 'right' ? -amt * 30 : 0;
-					const dy = dir === 'up' ? amt * 30 : dir === 'down' ? -amt * 30 : 0;
-					it.node.pivot.set(dx, dy);
-					it.node.alpha = 0.6 + amt * 0.4;
+					const dx = dir === 'right' ? amt * 8 : dir === 'left' ? -amt * 8 : 0;
+					const dy = dir === 'down' ? amt * 8 : dir === 'up' ? -amt * 8 : 0;
+					it.sprite.position.set(it.sprite.position.x, it.sprite.position.y); // noop, pivot вместо этого
+					it.sprite.pivot.set(-dx, -dy);
+					it.sprite.alpha = 0.7 + amt * 0.3;
 				}
 			}
 		},
 		destroy() {
 			for (const it of items) {
-				if (it.kind === 'static') it.sprite.destroy();
-				else it.node.destroy({children: true});
+				if (it.kind === 'static' || it.kind === 'stop' || it.kind === 'gravity') it.sprite.destroy();
 			}
 			container.destroy({children: true});
 		},
@@ -110,40 +110,3 @@ export function createDecorationsLayer(decorations: readonly Decoration[]): Deco
 }
 
 
-/**
- * "Дорожная" надпись: цветовой градиент + skew — как в оригинальном
- * CSS (`background-clip: text` + `skew(0.06turn, -8deg)`).
- * Рисуем Pixi.Text и применяем skew через контейнер.
- */
-function makeGradientLabel(text: string, colors: [string, string], scale: number): Container {
-	const gradient = new FillGradient({
-		type: 'linear',
-		colorStops: [
-			{offset: 0, color: colors[0]},
-			{offset: 1, color: colors[1]},
-		],
-		start: {x: 0, y: 0},
-		end: {x: 1, y: 1},
-		textureSpace: 'local',
-	});
-
-	const style = new TextStyle({
-		fontFamily: 'Road Rage, sans-serif',
-		fontSize: 50,
-		fontWeight: 'bold',
-		fill: gradient,
-		stroke: {color: '#000', width: 2, alpha: 0.5},
-		dropShadow: {color: '#000', blur: 8, alpha: 0.8, distance: 0},
-	});
-
-	const label = new Text({text, style});
-	label.anchor.set(0.5);
-
-	const wrap = new Container();
-	wrap.addChild(label);
-	// skew(0.06turn ≈ 21.6°, -8°): skew.x влияет на вертикальные края,
-	// skew.y — на горизонтальные. В Pixi skew измеряется в радианах.
-	wrap.skew.set(0.06 * Math.PI * 2, (-8 * Math.PI) / 180);
-	wrap.scale.set(scale);
-	return wrap;
-}

@@ -23,9 +23,13 @@ const UI_IMAGES = [
 	'/star.png', '/booster-single.png',
 	'/cave1.jpg', '/cave2.jpg', '/cave2-1.jpg', '/cave2-2.jpg',
 	'/comics/c1-1.jpg', '/comics/c1-2.jpg', '/comics/c1-3.jpg',
-	// Tutorial-иконки (DOM <img>, не Pixi) — Machinarium-стилистика
+	// Machinarium-иконки: tutorial + level decorations (stop/gravity) + misc UI
 	'/icons/icon-tap.png', '/icons/icon-boost.png',
 	'/icons/icon-mine-warning.png', '/icons/icon-stone-warning.png', '/icons/icon-worm-warning.png',
+	'/icons/icon-finish.png', '/icons/icon-star-collect.png', '/icons/icon-loading.png',
+	'/icons/deco-stop.png',
+	'/icons/deco-gravity-up.png', '/icons/deco-gravity-down.png',
+	'/icons/deco-gravity-left.png', '/icons/deco-gravity-right.png',
 ];
 
 
