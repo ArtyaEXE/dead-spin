@@ -11,6 +11,8 @@ import type {ChunkMap} from '@dead-spin/engine';
 export interface Enemy {
 	readonly name: 'stone' | 'mine' | 'worm';
 	readonly container: Container;
+	/** Позиция для визуальных эффектов (взрыва при столкновении с игроком). */
+	getHitPosition?: () => {x: number; y: number};
 	step: (player: Body, wallChunks: ChunkMap, dt: number) => boolean;
 	destroy: () => void;
 }

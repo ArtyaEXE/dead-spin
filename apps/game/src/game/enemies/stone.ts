@@ -38,6 +38,9 @@ export function createStone(
 	return {
 		name: 'stone',
 		container,
+		// Камень — твёрдая масса, никакого взрыва не даёт. getHitPosition
+		// намеренно не определён, GameWorld пропускает дополнительный explosion
+		// для этого врага; игрок всё равно взрывается об него (как об стену).
 		step(player, chunks, dt) {
 			state.r += state.vr * dt;
 			const collided = moveAndReflect(state, chunks, dt, smokes, runSmokes);

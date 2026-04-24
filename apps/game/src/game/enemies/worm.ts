@@ -43,12 +43,44 @@ export function createWorm(
 	textures: {worm1: Texture; worm2: Texture; worm3: Texture},
 	smokes: SmokeSystem,
 	speedMult: number = 1,
+	safeFromPlayer?: {x: number; y: number},
 ): Enemy {
 	const container = new Container();
 	const speed = 100 * speedMult;
 
 	const path = generatePath(setup.seed, levelW, levelH);
 	const splinePoints = createClosedBSpline(path, 50);
+
+	// Спавн-сдвиг: ищем offset по замкнутому сплайну такой, чтобы голова червяка
+	// на t=0 была максимально далеко от игрока. Иначе при "плохом" сиде червяк
+	// появляется прямо перед носом корабля.
+	let spawnShift = 0;
+	if (safeFromPlayer) {
+		// Оценим общую длину сплайна примерно
+		let splineLen = 0;
+		for (let i = 1; i < splinePoints.length; i++) {
+			splineLen += Math.hypot(splinePoints[i]!.x - splinePoints[i - 1]!.x, splinePoints[i]!.y - splinePoints[i - 1]!.y);
+		}
+		let best = 0, bestD = 0;
+		for (let k = 0; k < 20; k++) {
+			const off = (splineLen * k) / 20;
+			// Наивно: берём точку сплайна на дистанции off
+			let acc = 0;
+			for (let i = 1; i < splinePoints.length; i++) {
+				const seg = Math.hypot(splinePoints[i]!.x - splinePoints[i - 1]!.x, splinePoints[i]!.y - splinePoints[i - 1]!.y);
+				if (acc + seg >= off) {
+					const t = (off - acc) / seg;
+					const hx = splinePoints[i - 1]!.x + (splinePoints[i]!.x - splinePoints[i - 1]!.x) * t;
+					const hy = splinePoints[i - 1]!.y + (splinePoints[i]!.y - splinePoints[i - 1]!.y) * t;
+					const d = Math.hypot(hx - safeFromPlayer.x, hy - safeFromPlayer.y);
+					if (d > bestD) { bestD = d; best = off; }
+					break;
+				}
+				acc += seg;
+			}
+		}
+		spawnShift = best;
+	}
 
 	const segments: Segment[] = [];
 	for (let i = 4; i >= 0; i--) {
@@ -67,7 +99,7 @@ export function createWorm(
 
 		segments.push({
 			sprite,
-			state: initSplineMovement(splinePoints, speed, INTERVAL * (4 - i)),
+			state: initSplineMovement(splinePoints, speed, INTERVAL * (4 - i) + spawnShift),
 			pos: {x: 0, y: 0, r: 0, vx: 0, vy: 0, vr: 0, radius: RADIUS, speed: 0},
 			lr: i % 2 ? lrr : -lrr,
 			tlr: i % 2 ? -lrr : lrr,

@@ -234,6 +234,8 @@ export class GameWorld {
 					this.level.res.x, this.level.res.y,
 					{worm1: this.textures.worm1, worm2: this.textures.worm2, worm3: this.textures.worm3},
 					this.smokes,
+					1,
+					this.level.startPoint,
 				);
 			}
 			if (enemy) {
@@ -336,6 +338,14 @@ export class GameWorld {
 		// Враги (обновление + коллизии)
 		for (const enemy of this.enemies) {
 			if (enemy.step(this.player, this.chunks, dt)) {
+				// Если враг сообщает собственную позицию (мина/камень) — эмитим
+				// дополнительный взрыв там же, чтобы враг не оставался торчать.
+				const hp = enemy.getHitPosition?.();
+				if (hp) {
+					const ex = createExplosion(hp, this.textures.explosion);
+					this.world.addChild(ex.container);
+					this.explosions.push(ex);
+				}
 				this.triggerLoose();
 				return;
 			}

@@ -27,6 +27,7 @@ export function createMine(setup: MineSetup, tex: Texture): Enemy {
 	return {
 		name: 'mine',
 		container,
+		getHitPosition: () => ({x: setup.x, y: setup.y}),
 		step(player) {
 			const t = (performance.now() - startedAt) / 1000;
 			// Повторяет CSS-keyframes из оригинала:
@@ -35,7 +36,11 @@ export function createMine(setup: MineSetup, tex: Texture): Enemy {
 			// такую форму (0→1→0) с плавным ease-in-out.
 			const phase = (t % 3) / 3;
 			sprite.position.set(0, -Math.sin(Math.PI * phase) * 5);
-			return getDistanceBtwPoints(setup, player) <= setup.radius + player.radius;
+			const hit = getDistanceBtwPoints(setup, player) <= setup.radius + player.radius;
+			// При попадании — скрываем сам спрайт мины, её визуально заменяет
+			// взрыв (GameWorld рисует explosion в getHitPosition() этого врага).
+			if (hit) sprite.visible = false;
+			return hit;
 		},
 		destroy() { container.destroy({children: true}); },
 	};

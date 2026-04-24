@@ -23,8 +23,9 @@ const UI_IMAGES = [
 	'/star.png', '/booster-single.png',
 	'/cave1.jpg', '/cave2.jpg', '/cave2-1.jpg', '/cave2-2.jpg',
 	'/comics/c1-1.jpg', '/comics/c1-2.jpg', '/comics/c1-3.jpg',
-	// Иконки врагов для tutorial-карточек (DOM <img>, не Pixi)
-	'/enemies/mine/mine.png', '/enemies/stone/stone.png', '/enemies/worm/s1.png',
+	// Tutorial-иконки (DOM <img>, не Pixi) — Machinarium-стилистика
+	'/icons/icon-tap.png', '/icons/icon-boost.png',
+	'/icons/icon-mine-warning.png', '/icons/icon-stone-warning.png', '/icons/icon-worm-warning.png',
 ];
 
 

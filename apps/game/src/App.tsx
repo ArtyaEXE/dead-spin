@@ -38,16 +38,19 @@ export default function App() {
 			ready?: () => void;
 			requestFullscreen?: () => void;
 			disableVerticalSwipes?: () => void;
+			isVersionAtLeast?: (v: string) => boolean;
 		}}}).Telegram?.WebApp;
 		tg?.ready?.();
 		tg?.expand?.();
-		// Bot API 8.0+ — true fullscreen (прячет header Telegram, заходит под notch).
-		// На старых клиентах метод undefined и просто пропускается, expand() работает
-		// как фоллбэк.
-		tg?.requestFullscreen?.();
-		// Блокируем свайп-вниз-закрыть во время игры — иначе случайный жест
-		// на игровом экране закроет приложение.
-		tg?.disableVerticalSwipes?.();
+		// Bot API 8.0+ методы. На старых клиентах (Telegram 6.x, Web K) сами методы
+		// ОПРЕДЕЛЕНЫ, но при вызове SDK бросает WebAppMethodUnsupported и ломает
+		// onMount. Проверяем версию и/или глотаем ошибку.
+		try {
+			if (tg?.isVersionAtLeast?.('8.0')) tg.requestFullscreen?.();
+		} catch {/* старая версия — остаётся expand() как фоллбэк */}
+		try {
+			if (tg?.isVersionAtLeast?.('7.7')) tg.disableVerticalSwipes?.();
+		} catch {/* noop */}
 	});
 
 	// Прелоадим весь контент сразу после успешной авторизации —
