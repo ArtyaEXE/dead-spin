@@ -1,5 +1,6 @@
-import {createSignal, For, Show} from 'solid-js';
-import {useProgress} from '../stores/progress';
+import {createSignal, createEffect, For, Show} from 'solid-js';
+import {progressStore, useProgress} from '../stores/progress';
+import {useAuth} from '../stores/auth';
 import {SKINS, getSelectedSkinId, setSelectedSkinId, isSkinUnlocked, type SkinId, type SkinDef} from '../stores/skin';
 
 
@@ -9,8 +10,17 @@ import {SKINS, getSelectedSkinId, setSelectedSkinId, isSkinUnlocked, type SkinId
  * Состояние выбранного скина в localStorage (см. stores/skin.ts).
  */
 export function Shop(props: {onBack: () => void}) {
+	const auth = useAuth();
 	const progress = useProgress();
 	const [selected, setSelected] = createSignal<SkinId>(getSelectedSkinId());
+
+	// Гарантируем свежий счётчик звёзд при открытии магазина — на тот случай,
+	// если App-уровневый refresh не успел или упал.
+	createEffect(() => {
+		if (auth().status === 'authed') {
+			void progressStore.getState().refresh().catch(() => {});
+		}
+	});
 
 	const choose = (skin: SkinDef): void => {
 		if (!isSkinUnlocked(skin, progress().summaryStars)) return;
