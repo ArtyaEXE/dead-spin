@@ -27,59 +27,111 @@ const BodySchema = z.union([
 
 
 authRoutes.post('/telegram', async (c) => {
-	const raw = await c.req.json().catch(() => null);
-	const parsed = BodySchema.safeParse(raw);
-	if (!parsed.success) throw badRequest('invalidBody');
+	// Уникальный correlation-id для трассировки конкретной попытки логина
+	// сквозь все шаги. Позволяет связать логи в Render-консоли при разборе
+	// ERR_CONNECTION_RESET / неудачных попыток.
+	const reqId = Math.random().toString(36).slice(2, 10);
+	const t0 = Date.now();
+	const userAgent = c.req.header('user-agent') ?? '';
+	const ip = c.req.header('x-forwarded-for') ?? c.req.header('x-real-ip') ?? '?';
+	console.log(`[auth ${reqId}] START ip=${ip} ua=${userAgent.slice(0, 60)}`);
 
-	let tgId: string;
-	let username: string;
-	let locale: string;
-
-	if ('initData' in parsed.data) {
-		const result = validateInitData(parsed.data.initData, env.TELEGRAM_BOT_TOKEN);
-		if (!result.ok) throw badRequest(result.error);
-		tgId = result.tgId;
-		username = result.username;
-		locale = result.locale;
-	} else {
-		if (!(isDev || isTestMode)) throw forbidden('fakeUserDisabled');
-		if (!env.FAKE_USER_PASSWORD || parsed.data.password !== env.FAKE_USER_PASSWORD) {
-			throw forbidden('invalidFakeUser');
+	try {
+		const raw = await c.req.json().catch(() => null);
+		if (!raw) {
+			console.warn(`[auth ${reqId}] FAIL no/invalid JSON body  ${Date.now() - t0}ms`);
+			throw badRequest('invalidBody');
 		}
-		tgId = parsed.data.tgId;
-		username = `user_${tgId}`;
-		locale = 'en';
-	}
-
-	// Allowlist: если таблица пустая в dev — пускаем всех; в prod обязательна.
-	const [allowRow] = await db.select().from(allowlist).where(eq(allowlist.tgId, tgId)).limit(1);
-	if (!allowRow && !isDev) throw forbidden('notInAllowlist');
-
-	// Upsert юзера: первый вход создаёт запись + пустой прогресс одним батчем.
-	const existing = await db.select().from(users).where(eq(users.tgId, tgId)).limit(1);
-	let userId: string;
-
-	if (existing[0]) {
-		userId = existing[0].id;
-		if (existing[0].username !== username || existing[0].locale !== locale) {
-			await db.update(users)
-				.set({username, locale, updatedAt: sql`now()`})
-				.where(eq(users.id, userId));
+		const parsed = BodySchema.safeParse(raw);
+		if (!parsed.success) {
+			console.warn(`[auth ${reqId}] FAIL schema  issues=${parsed.error.issues.map(i => i.path.join('.') + ':' + i.message).join('|')}  ${Date.now() - t0}ms`);
+			throw badRequest('invalidBody');
 		}
-	} else {
-		const [inserted] = await db.insert(users)
-			.values({tgId, username, locale})
-			.returning({id: users.id});
-		userId = inserted!.id;
+
+		const flow = 'initData' in parsed.data ? 'initData' : 'fake';
+		console.log(`[auth ${reqId}] body parsed flow=${flow}`);
+
+		let tgId: string;
+		let username: string;
+		let locale: string;
+
+		if ('initData' in parsed.data) {
+			console.log(`[auth ${reqId}] validating initData (length=${parsed.data.initData.length})`);
+			const result = validateInitData(parsed.data.initData, env.TELEGRAM_BOT_TOKEN);
+			if (!result.ok) {
+				console.warn(`[auth ${reqId}] FAIL initData reason=${result.error}  ${Date.now() - t0}ms`);
+				throw badRequest(result.error);
+			}
+			tgId = result.tgId;
+			username = result.username;
+			locale = result.locale;
+			console.log(`[auth ${reqId}] initData OK tgId=${tgId} username=${username} locale=${locale}`);
+		} else {
+			if (!(isDev || isTestMode)) {
+				console.warn(`[auth ${reqId}] FAIL fake-flow blocked in prod  ${Date.now() - t0}ms`);
+				throw forbidden('fakeUserDisabled');
+			}
+			if (!env.FAKE_USER_PASSWORD || parsed.data.password !== env.FAKE_USER_PASSWORD) {
+				console.warn(`[auth ${reqId}] FAIL fake-password mismatch tgId=${parsed.data.tgId}  ${Date.now() - t0}ms`);
+				throw forbidden('invalidFakeUser');
+			}
+			tgId = parsed.data.tgId;
+			username = `user_${tgId}`;
+			locale = 'en';
+			console.log(`[auth ${reqId}] fake-flow OK tgId=${tgId}`);
+		}
+
+		// Allowlist
+		const [allowRow] = await db.select().from(allowlist).where(eq(allowlist.tgId, tgId)).limit(1);
+		console.log(`[auth ${reqId}] allowlist check tgId=${tgId} found=${!!allowRow}`);
+		if (!allowRow && !isDev) {
+			console.warn(`[auth ${reqId}] FAIL not in allowlist tgId=${tgId}  ${Date.now() - t0}ms`);
+			throw forbidden('notInAllowlist');
+		}
+
+		// User lookup / upsert
+		const existing = await db.select().from(users).where(eq(users.tgId, tgId)).limit(1);
+		let userId: string;
+		let userPath: 'reused' | 'updated' | 'created';
+
+		if (existing[0]) {
+			userId = existing[0].id;
+			if (existing[0].username !== username || existing[0].locale !== locale) {
+				await db.update(users)
+					.set({username, locale, updatedAt: sql`now()`})
+					.where(eq(users.id, userId));
+				userPath = 'updated';
+			} else {
+				userPath = 'reused';
+			}
+		} else {
+			const [inserted] = await db.insert(users)
+				.values({tgId, username, locale})
+				.returning({id: users.id});
+			userId = inserted!.id;
+			userPath = 'created';
+		}
+		console.log(`[auth ${reqId}] user ${userPath} userId=${userId}`);
+
+		// progresses upsert (idempotent)
+		await db.insert(progresses).values({userId}).onConflictDoNothing();
+
+		// Token
+		const token = await signUserToken(userId, tgId);
+		const [freshUser] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+
+		const ms = Date.now() - t0;
+		console.log(`[auth ${reqId}] OK userId=${userId} fuel=${freshUser?.fuel ?? '?'} ${ms}ms`);
+		return c.json({token, user: freshUser});
+	} catch (err) {
+		const ms = Date.now() - t0;
+		const isApiError = err && typeof err === 'object' && 'status' in err;
+		if (isApiError) {
+			// Уже залогировано выше как FAIL — пробрасываем для middleware
+			throw err;
+		}
+		// Неожиданная ошибка (DB упала, Telegram API не ответил, JWT signing crashed)
+		console.error(`[auth ${reqId}] CRASH ${ms}ms`, err instanceof Error ? `${err.message}\n${err.stack}` : err);
+		throw err;
 	}
-	// Гарантируем строку в progresses для ЛЮБОГО логина — старые юзеры могли
-	// её не получить (баг в предыдущей версии создавал строку только для
-	// новых users). Без этой строки UPDATE summary_stars в level-complete
-	// тихо ничего не делает и GET /progress всегда возвращает 0.
-	await db.insert(progresses).values({userId}).onConflictDoNothing();
-
-	const token = await signUserToken(userId, tgId);
-	const [freshUser] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
-
-	return c.json({token, user: freshUser});
 });
