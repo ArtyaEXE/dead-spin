@@ -1,4 +1,5 @@
 import {Assets, type Texture} from 'pixi.js';
+import {getSkinById, type SkinId} from '../stores/skin';
 
 
 /**
@@ -42,6 +43,21 @@ const EXPLOSION_FRAMES = Array.from({length: 13}, (_, i) => `/effects/explosion/
 
 
 let cached: Promise<GameTextures> | null = null;
+
+
+/**
+ * Грузит текстуру корабля для выбранного скина. Если ассета нет — возвращает
+ * дефолтный prospector (ship2.png). Используется в GameWorld.mount чтобы
+ * подменить ship после loadGameTextures.
+ */
+export async function loadShipTexture(skinId: SkinId): Promise<Texture> {
+	const skin = getSkinById(skinId);
+	try {
+		return await Assets.load<Texture>(skin.src);
+	} catch {
+		return Assets.load<Texture>('/ship2.png');
+	}
+}
 
 
 export function loadGameTextures(): Promise<GameTextures> {

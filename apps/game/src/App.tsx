@@ -8,6 +8,7 @@ import {Settings} from './ui/Settings';
 import {GameScreen} from './ui/GameScreen';
 import {MusicPlayer} from './ui/MusicPlayer';
 import {Intro} from './ui/Intro';
+import {Shop} from './ui/Shop';
 import {FpsCounter} from './ui/FpsCounter';
 import {audio} from './game/audio';
 import {preloadAll} from './game/preload';
@@ -16,6 +17,7 @@ import {preloadAll} from './game/preload';
 type Route =
 	| {name: 'main'}
 	| {name: 'settings'}
+	| {name: 'shop'}
 	| {name: 'levels'}
 	| {name: 'intro'; level: number}
 	| {name: 'game'; level: number};
@@ -116,11 +118,16 @@ export default function App() {
 						<MainMenu
 							onPlay={() => { setMusicPlay(true); setRoute({name: 'levels'}); }}
 							onSettings={() => setRoute({name: 'settings'})}
+							onShop={() => setRoute({name: 'shop'})}
 						/>
 					</Match>
 
 					<Match when={route().name === 'settings'}>
 						<Settings onBack={() => setRoute({name: 'main'})} />
+					</Match>
+
+					<Match when={route().name === 'shop'}>
+						<Shop onBack={() => setRoute({name: 'main'})} />
 					</Match>
 
 					<Match when={route().name === 'levels'}>

@@ -315,9 +315,16 @@ html, body, #root {
 .mm-top {
 	align-self: stretch;
 	display: flex;
-	justify-content: flex-end;
+	justify-content: space-between;
+	align-items: center;
 }
 .mm-cog { height: 60px; }
+.mm-shop {
+	height: 64px;
+	width: 64px;
+	object-fit: contain;
+	filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
+}
 .mm-logo { max-width: 80%; }
 .mm-play {
 	animation: smoothSpin 4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
@@ -329,6 +336,131 @@ html, body, #root {
 	100% { transform: rotate(1080deg); }
 }
 .mm-footer { min-height: 20px; }
+
+
+/* ---------- Shop (skin gallery) ---------- */
+
+.shop-root {
+	position: absolute; inset: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	padding: var(--sa-top) var(--sa-right) var(--sa-bottom) var(--sa-left);
+	background: url(/main-menu-bg.png) -50px 0 / cover no-repeat;
+}
+.shop-top {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 12px;
+}
+.shop-list {
+	flex: 1;
+	overflow-y: auto;
+	overflow-x: hidden;
+	padding: 0 12px 16px;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	scrollbar-width: none;
+}
+.shop-list::-webkit-scrollbar { display: none; }
+
+.shop-card {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 12px 18px;
+	background: url(/screen-bold.png) 100% 100% no-repeat;
+	background-size: 100% 100%;
+	border-radius: 14px;
+	box-shadow: 0 0 16px rgba(0, 0, 0, 0.5);
+	min-height: 90px;
+	transition: transform 80ms ease, filter 120ms ease;
+}
+.shop-card.locked {
+	filter: grayscale(0.85) brightness(0.55);
+	cursor: default;
+}
+.shop-card.selected {
+	box-shadow: 0 0 18px 2px var(--accent), inset 0 0 0 2px var(--accent);
+}
+.shop-card-imgwrap {
+	position: relative;
+	width: clamp(72px, 18vmin, 110px);
+	height: clamp(72px, 18vmin, 110px);
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+.shop-card-img {
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+	filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.6));
+}
+.shop-card.selected .shop-card-img {
+	animation: shop-spin 4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+@keyframes shop-spin {
+	0%   { transform: rotate(0deg); }
+	100% { transform: rotate(360deg); }
+}
+.shop-card-lock {
+	position: absolute; inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--gold);
+	font-size: 40px;
+	text-shadow: 0 0 8px #000;
+}
+.shop-card-info {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	gap: 6px;
+}
+.shop-card-name {
+	font-family: 'Road Rage', sans-serif;
+	font-size: clamp(28px, 6vmin, 42px);
+	color: var(--gold);
+	text-shadow: 0 0 8px #000;
+	line-height: 1;
+	letter-spacing: 1px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.shop-card.selected .shop-card-name {
+	color: var(--accent);
+}
+.shop-card-state {
+	font-family: 'Road Rage', sans-serif;
+	font-size: clamp(20px, 4vmin, 28px);
+	color: var(--gold-soft);
+	text-shadow: 0 0 6px #000;
+	line-height: 1;
+	letter-spacing: 0.5px;
+}
+.shop-card.selected .shop-card-state {
+	color: var(--accent);
+}
+.shop-card-cost {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-family: 'Road Rage', sans-serif;
+	font-size: clamp(22px, 4.6vmin, 32px);
+	color: var(--gold-soft);
+	text-shadow: 0 0 6px #000;
+	line-height: 1;
+}
+.shop-card-cost img { height: clamp(20px, 4.4vmin, 28px); }
 
 
 /* ---------- Levels (WorldList) ---------- */

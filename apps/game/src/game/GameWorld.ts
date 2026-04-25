@@ -10,7 +10,8 @@ import {
 import type {Level} from '@dead-spin/shared';
 
 import {Camera} from './camera';
-import {loadGameTextures, type GameTextures} from './assets';
+import {loadGameTextures, loadShipTexture, type GameTextures} from './assets';
+import {getSelectedSkinId} from '../stores/skin';
 import {createWallsLayer, type WallsLayer} from './renderers/walls';
 import {createPlayer} from './renderers/player';
 import {createStar, animateStarSpawn, type StarSprite} from './renderers/stars';
@@ -94,6 +95,8 @@ export class GameWorld {
 		this.zoom = Number.isFinite(storedZoom) && storedZoom >= 0.6 && storedZoom <= 1.4 ? storedZoom : 1;
 
 		this.textures = await loadGameTextures();
+		// Подменяем ship-текстуру на выбранный скин (по умолчанию — prospector / ship2.png).
+		this.textures = {...this.textures, ship: await loadShipTexture(getSelectedSkinId())};
 
 		await this.app.init({
 			resizeTo: host,
