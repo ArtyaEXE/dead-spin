@@ -13,6 +13,8 @@ export interface Enemy {
 	readonly container: Container;
 	/** Позиция для визуальных эффектов (взрыва при столкновении с игроком). */
 	getHitPosition?: () => {x: number; y: number};
+	/** Физическое тело врага (только для камней — нужно для stone-stone collision). */
+	readonly body?: Body;
 	step: (player: Body, wallChunks: ChunkMap, dt: number) => boolean;
 	destroy: () => void;
 }

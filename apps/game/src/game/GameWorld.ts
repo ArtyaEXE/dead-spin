@@ -350,6 +350,34 @@ export class GameWorld {
 				return;
 			}
 		}
+		// Stone-stone collisions: попарный elastic ответ. Камни одной массы,
+		// поэтому при столкновении меняем нормальные компоненты скорости.
+		const stoneBodies: Body[] = [];
+		for (const e of this.enemies) if (e.name === 'stone' && e.body) stoneBodies.push(e.body);
+		for (let i = 0; i < stoneBodies.length; i++) {
+			for (let j = i + 1; j < stoneBodies.length; j++) {
+				const a = stoneBodies[i]!, b = stoneBodies[j]!;
+				const dx = b.x - a.x, dy = b.y - a.y;
+				const dist = Math.hypot(dx, dy);
+				const sumR = a.radius + b.radius;
+				if (dist >= sumR || dist === 0) continue;
+				const nx = dx / dist, ny = dy / dist;
+				// Раздвигаем тела чтобы избавиться от перекрытия (по половине каждому)
+				const overlap = sumR - dist;
+				a.x -= nx * overlap * 0.5;
+				a.y -= ny * overlap * 0.5;
+				b.x += nx * overlap * 0.5;
+				b.y += ny * overlap * 0.5;
+				// Скорость сближения по нормали; если уже расходятся — пропускаем
+				const vRelN = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
+				if (vRelN >= 0) continue;
+				// Equal-mass elastic: каждый получает ±vRelN·n
+				a.vx += vRelN * nx;
+				a.vy += vRelN * ny;
+				b.vx -= vRelN * nx;
+				b.vy -= vRelN * ny;
+			}
+		}
 
 		const finishCircle = {x: this.level.finishPoint.x, y: this.level.finishPoint.y, radius: FINISH_RADIUS};
 		if (Physics.resolveCollision(this.player, finishCircle) && this.player.speed < 40) {

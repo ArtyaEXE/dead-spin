@@ -38,6 +38,7 @@ export function createStone(
 	return {
 		name: 'stone',
 		container,
+		body: state, // экспонируем для stone-stone collision в GameWorld
 		// Камень — твёрдая масса, никакого взрыва не даёт. getHitPosition
 		// намеренно не определён, GameWorld пропускает дополнительный explosion
 		// для этого врага; игрок всё равно взрывается об него (как об стену).
