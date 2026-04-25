@@ -1,6 +1,6 @@
 import {createEffect, createSignal, Match, Show, Switch, onMount} from 'solid-js';
 import {authStore, useAuth} from './stores/auth';
-import {useProgress} from './stores/progress';
+import {progressStore, useProgress} from './stores/progress';
 import {LoginScreen} from './ui/LoginScreen';
 import {MainMenu} from './ui/MainMenu';
 import {Levels} from './ui/Levels';
@@ -83,9 +83,11 @@ export default function App() {
 
 	// Прелоадим весь контент сразу после успешной авторизации —
 	// до показа MainMenu, чтобы все последующие переходы были мгновенными.
+	// Заодно тянем прогресс с сервера (нужен в MainMenu/Shop для счётчика звёзд).
 	createEffect(() => {
 		if (auth().status !== 'authed') return;
 		audio.init();
+		void progressStore.getState().refresh().catch(() => {});
 		void preloadAll((done, total) => {
 			setPreloadPct(Math.floor((done / total) * 100));
 		}).then(() => setPreloadDone(true));
