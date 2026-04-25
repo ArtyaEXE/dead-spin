@@ -9,7 +9,22 @@ async function main(): Promise<void> {
 	await bot.init();
 	console.log(`Bot @${bot.botInfo.username} is ready (${isDev ? 'dev' : 'prod'})`);
 
+	// Глобальный catch для всех ошибок в хендлерах — иначе падающий update
+	// убивает поллинг и сервис уходит в Exit 1.
+	bot.catch((err) => {
+		console.error('Bot handler error:', err.error);
+		console.error('Update:', err.ctx.update);
+	});
+
 	if (env.BOT_MODE === 'polling') {
+		// КРИТИЧНО: если до этого деплой был в webhook-режиме, у Telegram
+		// зарегистрирован URL, и getUpdates вернёт 409 Conflict. Сбрасываем
+		// webhook перед стартом long-polling.
+		try {
+			await bot.api.deleteWebhook({drop_pending_updates: false});
+		} catch (e) {
+			console.warn('deleteWebhook failed (likely no webhook was set):', e instanceof Error ? e.message : e);
+		}
 		// В polling-режиме бот не слушает входящие HTTP запросы. На бесплатных
 		// хостингах (Render free web service) обязательно listen на PORT —
 		// иначе сервис помечается как нездоровый. Поднимаем минимальный
