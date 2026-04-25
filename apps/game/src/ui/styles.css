@@ -432,13 +432,18 @@ html, body, #root {
 .topbar {
 	position: relative;
 	z-index: 10;
+	/* Сдвигаем весь bar вниз через margin — фон-картинка остаётся
+	   нерастянутой, а под него проступает чёрный фон .screen, прикрытый
+	   нотчем/UI Telegram. */
+	margin-top: var(--sa-top);
 	margin-bottom: -30px;
+	margin-left: var(--sa-left);
+	margin-right: var(--sa-right);
 	background: url(/dashboard-small.png) 100% 100% no-repeat;
 	background-size: 100% 100%;
 	box-shadow: 0 0 27px 12px rgba(0, 0, 0, 0.71);
 	border-radius: 20px;
-	/* +sa-top чтобы fuel/stars/cog не залезали под notch / status bar */
-	padding: calc(8px + var(--sa-top)) calc(32px + var(--sa-right)) 8px calc(32px + var(--sa-left));
+	padding: 8px 32px;
 	display: flex;
 	align-items: center;
 	gap: 10px;
@@ -515,12 +520,14 @@ html, body, #root {
 	position: relative;
 	z-index: 10;
 	margin-top: -30px;
+	margin-bottom: var(--sa-bottom);
+	margin-left: var(--sa-left);
+	margin-right: var(--sa-right);
 	background: url(/dashboard-big.png) 100% 100% no-repeat;
 	background-size: 100% 100%;
 	box-shadow: 0 0 27px 12px rgba(0, 0, 0, 0.71);
 	border-radius: 20px;
-	/* +sa-bottom отодвигает буст-кнопку и зум-контролы от home indicator / nav bar */
-	padding: 16px calc(12px + var(--sa-right)) calc(16px + var(--sa-bottom)) calc(12px + var(--sa-left));
+	padding: 16px 12px;
 	display: flex;
 	align-items: stretch;
 	gap: 10px;
