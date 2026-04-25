@@ -1,6 +1,7 @@
 import {createSignal, createEffect, For, Show} from 'solid-js';
 import {progressStore, useProgress} from '../stores/progress';
 import {useAuth} from '../stores/auth';
+import {useLiveFuel} from '../stores/fuel';
 import {SKINS, getSelectedSkinId, setSelectedSkinId, isSkinUnlocked, type SkinId, type SkinDef} from '../stores/skin';
 
 
@@ -12,6 +13,8 @@ import {SKINS, getSelectedSkinId, setSelectedSkinId, isSkinUnlocked, type SkinId
 export function Shop(props: {onBack: () => void}) {
 	const auth = useAuth();
 	const progress = useProgress();
+	const liveFuel = useLiveFuel();
+	const fuelK = () => (liveFuel() / 1000).toFixed(2);
 	const [selected, setSelected] = createSignal<SkinId>(getSelectedSkinId());
 
 	// Гарантируем свежий счётчик звёзд при открытии магазина — на тот случай,
@@ -32,10 +35,15 @@ export function Shop(props: {onBack: () => void}) {
 		<div class="shop-root">
 			<div class="shop-top">
 				<img class="pressable" src="/btn-close.png" style={{height: '60px'}} alt="" onClick={props.onBack} />
-				<div class="world-title">SKINS</div>
-				<div class="panel">
-					<img src="/star.png" style={{height: '28px', 'margin-right': '6px'}} alt="" />
-					{progress().summaryStars}
+				<div class="shop-top-meters">
+					<div class="panel">
+						<img src="/star.png" style={{height: '28px', 'margin-right': '6px'}} alt="" />
+						{progress().summaryStars}
+					</div>
+					<div class="panel">
+						<i class="fa fa-tint" style={{'margin-right': '6px'}}></i>
+						{fuelK()}
+					</div>
 				</div>
 			</div>
 

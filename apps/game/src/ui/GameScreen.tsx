@@ -1,14 +1,18 @@
-import {createSignal, onCleanup, onMount, Show} from 'solid-js';
+import {createEffect, createSignal, onCleanup, onMount, Show} from 'solid-js';
 import {getLevelByNumber} from '@dead-spin/levels';
 import {LEVEL_COUNT} from '@dead-spin/shared';
 import {api} from '../net/client';
 import {authStore} from '../stores/auth';
 import {progressStore} from '../stores/progress';
 import {GameWorld, type GameResult} from '../game/GameWorld';
+import {audio, type LoopHandle} from '../game/audio';
 import {TopBar} from './TopBar';
 import {BottomBar} from './BottomBar';
 import {ResultScreen, type ResultKind} from './ResultScreen';
 import {TutorialOverlay, computeTutorialQueue, markSeen} from './Tutorial';
+
+
+const LOW_FUEL_THRESHOLD = 2000;
 
 
 const ZOOM_STEP = 0.2;
@@ -35,6 +39,25 @@ export function GameScreen(props: {
 	const [showOverlay, setShowOverlay] = createSignal(false);
 	const [pause, setPause] = createSignal(false);
 	const [shake, setShake] = createSignal(false);
+	// Low-fuel alarm: красная пульсация вокруг экрана + sirens, когда топлива мало
+	// и нет финального оверлея/паузы.
+	const isLowFuel = (): boolean =>
+		fuel() < LOW_FUEL_THRESHOLD &&
+		!result() &&
+		!pause() &&
+		fuel() > 0;
+	let alarmHandle: LoopHandle | null = null;
+	createEffect(() => {
+		if (isLowFuel()) {
+			if (!alarmHandle) {
+				alarmHandle = audio.loop('low-fuel');
+				alarmHandle?.setVolume(0.4);
+			}
+		} else {
+			alarmHandle?.stop();
+			alarmHandle = null;
+		}
+	});
 	// Очередь туториалов: управление на L1 + первое знакомство с mine/stone/worm.
 	// Мир монтируется только после того, как очередь опустеет, чтобы spawn-анимация
 	// игралась уже "на глазах" у игрока.
@@ -109,6 +132,8 @@ export function GameScreen(props: {
 
 	onCleanup(() => {
 		if (overlayTimer !== null) clearTimeout(overlayTimer);
+		alarmHandle?.stop();
+		alarmHandle = null;
 		world?.destroy();
 	});
 
@@ -146,6 +171,10 @@ export function GameScreen(props: {
 				{/* Виньетка — статичная маска по краям экрана; light.png
 				    теперь внутри Pixi world и двигается со сценой. */}
 				<div class="vignette" />
+				{/* Красная пульсация по краям при критически низком топливе. */}
+				<Show when={isLowFuel()}>
+					<div class="low-fuel-alarm" />
+				</Show>
 			</div>
 
 			<BottomBar

@@ -1,7 +1,8 @@
 import {For, Show, createEffect, createMemo, createSignal} from 'solid-js';
-import {LEVEL_COUNT} from '@dead-spin/shared';
+import {FUEL_CONSUMPTION_PER_BOOST, LEVEL_COUNT} from '@dead-spin/shared';
 import {useAuth} from '../stores/auth';
 import {useProgress, progressStore} from '../stores/progress';
+import {useLiveFuel} from '../stores/fuel';
 
 
 const WORLD_NAMES = ['CERES', 'PALLAS', 'JUNO', 'VESTA', 'EUNOMIA'] as const;
@@ -58,7 +59,21 @@ export function Levels(props: {onBack: () => void; onPlay: (levelNumber: number)
 		return rows;
 	});
 
-	const fuelK = () => ((auth().user?.fuel ?? 0) / 1000).toFixed(2);
+	const liveFuel = useLiveFuel();
+	const fuelK = () => (liveFuel() / 1000).toFixed(2);
+	// Минимум для запуска: ~1 буст × 5 (нужно дать корабли хотя бы стартовать).
+	const MIN_FUEL_TO_START = FUEL_CONSUMPTION_PER_BOOST * 5;
+	const [showLowFuel, setShowLowFuel] = createSignal(false);
+	const [pendingLevel, setPendingLevel] = createSignal<number | null>(null);
+
+	const tryPlay = (n: number): void => {
+		if (liveFuel() < MIN_FUEL_TO_START) {
+			setPendingLevel(n);
+			setShowLowFuel(true);
+			return;
+		}
+		props.onPlay(n);
+	};
 	const summary = () => progress().summaryStars;
 
 	const prevWorld = () => setWorldIndex(w => Math.max(0, w - 1));
@@ -93,7 +108,7 @@ export function Levels(props: {onBack: () => void; onPlay: (levelNumber: number)
 												<div
 													class="lvl-btn"
 													classList={{locked: !c().available, pressable: c().available}}
-													onClick={() => c().available && props.onPlay(c().number)}
+													onClick={() => c().available && tryPlay(c().number)}
 												>
 													<div>{c().number}</div>
 													<div class="lvl-stars">
@@ -134,6 +149,17 @@ export function Levels(props: {onBack: () => void; onPlay: (levelNumber: number)
 					onClick={nextWorld}
 				/>
 			</div>
+
+			<Show when={showLowFuel()}>
+				<div class="lowfuel-overlay" onClick={() => { setShowLowFuel(false); setPendingLevel(null); }}>
+					<div class="lowfuel-card" onClick={(e) => e.stopPropagation()}>
+						<i class="fa fa-tint lowfuel-icon" />
+						<div class="lowfuel-text">{liveFuel()} / {MIN_FUEL_TO_START}</div>
+						<div class="lowfuel-hint">WAIT</div>
+						<img class="pressable lowfuel-close" src="/btn-close.png" alt="" onClick={() => { setShowLowFuel(false); setPendingLevel(null); }} />
+					</div>
+				</div>
+			</Show>
 		</div>
 	);
 }

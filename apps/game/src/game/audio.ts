@@ -23,6 +23,7 @@ const SOUNDS: Record<string, string> = {
 	'stone-impact': '/enemies/stone/stone-impact.mp3',
 	'worm':         '/enemies/worm/worm.mp3',
 	'ship-alarm':   '/comics/ship-alarm.mp3',
+	'low-fuel':     '/effects/gameplay/low-fuel-alarm.mp3',
 };
 
 
