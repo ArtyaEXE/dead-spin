@@ -16,6 +16,12 @@
 	--gold-soft: #D48B5E;
 	--accent: #FFB347;
 	--accent-2: #FF6600;
+	/* Safe-area insets — нужны под notch/dynamic-island и системные бары
+	   при requestFullscreen в Telegram, и для будущей сборки APK. */
+	--sa-top: env(safe-area-inset-top, 0px);
+	--sa-bottom: env(safe-area-inset-bottom, 0px);
+	--sa-left: env(safe-area-inset-left, 0px);
+	--sa-right: env(safe-area-inset-right, 0px);
 }
 
 
@@ -117,6 +123,7 @@ html, body, #root {
 	display: flex;
 	align-items: center;
 	justify-content: center;
+	padding: calc(24px + var(--sa-top)) calc(16px + var(--sa-right)) calc(24px + var(--sa-bottom)) calc(16px + var(--sa-left));
 	padding: 24px;
 }
 .login-card {
@@ -162,7 +169,7 @@ html, body, #root {
 	align-items: center;
 	justify-content: center;
 	z-index: 50;
-	padding: 24px;
+	padding: calc(24px + var(--sa-top)) calc(24px + var(--sa-right)) calc(24px + var(--sa-bottom)) calc(24px + var(--sa-left));
 	cursor: pointer;
 	animation: tutorial-fade-in 200ms ease-out;
 }
@@ -228,8 +235,8 @@ html, body, #root {
 
 .fps-counter {
 	position: absolute;
-	top: 6px;
-	left: 6px;
+	top: calc(6px + var(--sa-top));
+	left: calc(6px + var(--sa-left));
 	z-index: 9999;
 	padding: 2px 8px;
 	font-family: monospace;
@@ -253,7 +260,7 @@ html, body, #root {
 	align-items: center;
 	justify-content: center;
 	gap: 24px;
-	padding: 24px;
+	padding: calc(24px + var(--sa-top)) calc(24px + var(--sa-right)) calc(24px + var(--sa-bottom)) calc(24px + var(--sa-left));
 }
 .preload-logo {
 	max-width: 80%;
@@ -302,7 +309,7 @@ html, body, #root {
 	flex-direction: column;
 	justify-content: space-between;
 	align-items: center;
-	padding: 24px 16px;
+	padding: calc(24px + var(--sa-top)) calc(16px + var(--sa-right)) calc(24px + var(--sa-bottom)) calc(16px + var(--sa-left));
 	gap: 10px;
 }
 .mm-top {
@@ -331,7 +338,7 @@ html, body, #root {
 	display: flex;
 	flex-direction: column;
 	gap: 10px;
-	padding: 0;
+	padding: var(--sa-top) var(--sa-right) var(--sa-bottom) var(--sa-left);
 	background: url(/main-menu-bg.png) -50px 0 / cover no-repeat;
 }
 .levels-top {
@@ -430,7 +437,8 @@ html, body, #root {
 	background-size: 100% 100%;
 	box-shadow: 0 0 27px 12px rgba(0, 0, 0, 0.71);
 	border-radius: 20px;
-	padding: 8px 32px;
+	/* +sa-top чтобы fuel/stars/cog не залезали под notch / status bar */
+	padding: calc(8px + var(--sa-top)) calc(32px + var(--sa-right)) 8px calc(32px + var(--sa-left));
 	display: flex;
 	align-items: center;
 	gap: 10px;
@@ -511,7 +519,8 @@ html, body, #root {
 	background-size: 100% 100%;
 	box-shadow: 0 0 27px 12px rgba(0, 0, 0, 0.71);
 	border-radius: 20px;
-	padding: 16px 12px;
+	/* +sa-bottom отодвигает буст-кнопку и зум-контролы от home indicator / nav bar */
+	padding: 16px calc(12px + var(--sa-right)) calc(16px + var(--sa-bottom)) calc(12px + var(--sa-left));
 	display: flex;
 	align-items: stretch;
 	gap: 10px;
@@ -559,6 +568,7 @@ html, body, #root {
 	align-items: center;
 	justify-content: center;
 	z-index: 20;
+	padding: calc(16px + var(--sa-top)) calc(16px + var(--sa-right)) calc(16px + var(--sa-bottom)) calc(16px + var(--sa-left));
 }
 .result-body {
 	background: url(/result-screen-bg.png) 100% 100% no-repeat;
@@ -654,8 +664,8 @@ html, body, #root {
 
 .intro-skip {
 	position: absolute;
-	right: 16px;
-	bottom: 16px;
+	right: calc(16px + var(--sa-right));
+	bottom: calc(16px + var(--sa-bottom));
 	background: none;
 	border: 0;
 	cursor: pointer;
@@ -671,7 +681,7 @@ html, body, #root {
 	display: flex;
 	flex-direction: column;
 	gap: 10px;
-	padding: 0;
+	padding: var(--sa-top) var(--sa-right) var(--sa-bottom) var(--sa-left);
 	background: url(/main-menu-bg.png) -50px 0 / cover no-repeat;
 }
 .settings-center {
