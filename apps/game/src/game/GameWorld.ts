@@ -68,7 +68,10 @@ export class GameWorld {
 	private collected = 0;
 	private result: GameResult | null = null;
 
-	private boostVisibleUntil = 0;
+	// Каждый тап буста запускает envelope-анимацию пламени:
+	// expand → flicker hold → decay. Re-tap до окончания просто перезапускает с 0.
+	private boostStartedAt = -1;
+	private static readonly BOOST_FLAME_MS = 280;
 	private resizeObserver: ResizeObserver | null = null;
 	private zoom = 1;
 	private paused = false;
@@ -284,7 +287,7 @@ export class GameWorld {
 		Physics.applyForce(this.player, BOOST_FORCE);
 		this.fuel -= FUEL_CONSUMPTION_PER_BOOST;
 		this.callbacks.onFuelChange(this.fuel);
-		this.boostVisibleUntil = performance.now() + 100;
+		this.boostStartedAt = performance.now();
 
 		audio.play('booster', 0.7);
 
@@ -440,6 +443,54 @@ export class GameWorld {
 	}
 
 
+	/**
+	 * Envelope-анимация пламени бустера для одного тапа:
+	 *   t  0 ──── 0.18 ─── 0.55 ──── 1.0
+	 *   sx 0.5 ───→ 1.25 → 1.0 ──→ 0    (стадии: expand → hold → decay)
+	 *   sy 0.7 ───→ 1.35 → 1.1 ──→ 0    (Y чуть длиннее — пламя шлейфом)
+	 * + высокочастотный flicker через сумму двух sin'ов разной фазы.
+	 * Каждый scale.set(...) умножается на baseScale, чтобы native-размер
+	 * текстуры не сбрасывал desired 27×57 px.
+	 */
+	private tickBoosterFlame(now: number): void {
+		const elapsed = now - this.boostStartedAt;
+		const dur = GameWorld.BOOST_FLAME_MS;
+		if (this.boostStartedAt < 0 || elapsed >= dur) {
+			this.playerSprite.booster.visible = false;
+			return;
+		}
+		const t = elapsed / dur;
+		let sx: number, sy: number;
+		if (t < 0.18) {
+			const u = t / 0.18;
+			sx = 0.5 + 0.75 * u;
+			sy = 0.7 + 0.65 * u;
+		} else if (t < 0.55) {
+			const u = (t - 0.18) / (0.55 - 0.18);
+			sx = 1.25 - 0.25 * u;
+			sy = 1.35 - 0.25 * u;
+		} else {
+			const u = (t - 0.55) / 0.45;
+			sx = 1.0 * (1 - u);
+			sy = 1.1 * (1 - u * u);
+		}
+		// Flicker: высокочастотные мелкие колебания, как реальное пламя
+		const flick = Math.sin(elapsed * 0.09) * 0.06 + Math.sin(elapsed * 0.14) * 0.04;
+		sx += flick;
+		sy += flick * 0.4;
+
+		const alpha =
+			t < 0.15 ? t / 0.15 :
+			t < 0.7 ? 1 :
+			Math.max(0, 1 - (t - 0.7) / 0.3);
+
+		const bs = this.playerSprite;
+		bs.booster.scale.set(bs.boosterBaseScaleX * sx, bs.boosterBaseScaleY * sy);
+		bs.booster.alpha = alpha;
+		bs.booster.visible = true;
+	}
+
+
 	private draw(): void {
 		const now = performance.now();
 
@@ -481,7 +532,7 @@ export class GameWorld {
 		} else if (this.playerSprite.container.visible) {
 			this.playerSprite.container.position.set(this.player.x, this.player.y);
 			this.playerSprite.container.rotation = (this.player.r * Math.PI) / 180;
-			this.playerSprite.booster.visible = now < this.boostVisibleUntil;
+			this.tickBoosterFlame(now);
 		}
 
 		for (const s of this.stars) if (s.container.visible) animateStarSpawn(s, now);

@@ -12,16 +12,22 @@ export function createPlayer(shipTex: Texture, boosterTex: Texture): {
 	container: Container;
 	booster: Sprite;
 	body: Sprite;
+	boosterBaseScaleX: number;
+	boosterBaseScaleY: number;
 } {
 	const container = new Container();
 
 	// Бустер: якорь сверху-центр, начинается ровно под корпусом (y = radius 40).
 	const booster = new Sprite(boosterTex);
 	booster.anchor.set(0.5, 0);
-	booster.x = 0;
+	booster.x = -2;
 	booster.y = 40;
-	booster.width = 30;
-	booster.height = 40;
+	// baseScale считается из native-размера текстуры — 27×57 это desired в game-px.
+	// Анимация в GameWorld умножает на этот baseScale, чтобы scale.set(...)
+	// в каждом кадре не сбрасывал размер.
+	const boosterBaseScaleX = 27 / (boosterTex.width || 27);
+	const boosterBaseScaleY = 57 / (boosterTex.height || 57);
+	booster.scale.set(boosterBaseScaleX, boosterBaseScaleY);
 	booster.visible = false;
 	container.addChild(booster);
 
@@ -31,5 +37,5 @@ export function createPlayer(shipTex: Texture, boosterTex: Texture): {
 	body.height = 80;
 	container.addChild(body);
 
-	return {container, booster, body};
+	return {container, booster, body, boosterBaseScaleX, boosterBaseScaleY};
 }
