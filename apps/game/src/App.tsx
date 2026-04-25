@@ -9,7 +9,6 @@ import {GameScreen} from './ui/GameScreen';
 import {MusicPlayer} from './ui/MusicPlayer';
 import {Intro} from './ui/Intro';
 import {Shop} from './ui/Shop';
-import {FpsCounter} from './ui/FpsCounter';
 import {audio} from './game/audio';
 import {preloadAll} from './game/preload';
 
@@ -165,8 +164,6 @@ export default function App() {
 				<Show when={auth().status === 'authed'}>
 					<MusicPlayer play={musicPlay()} />
 				</Show>
-
-				<FpsCounter />
 			</div>
 		</div>
 	);
