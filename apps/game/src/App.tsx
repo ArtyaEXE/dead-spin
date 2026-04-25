@@ -139,25 +139,29 @@ export default function App() {
 					</Match>
 
 					<Match when={route().name === 'intro'}>
-						{(() => {
-							const r = route();
-							if (r.name !== 'intro') return null;
-							return <Intro onFinish={() => setRoute({name: 'game', level: r.level})} />;
-						})()}
+						<Show when={route().name === 'intro' ? (route() as {name: 'intro'; level: number}).level : null} keyed>
+							{(level) => (
+								<Intro onFinish={() => setRoute({name: 'game', level})} />
+							)}
+						</Show>
 					</Match>
 
 					<Match when={route().name === 'game'}>
-						{(() => {
-							const r = route();
-							if (r.name !== 'game') return null;
-							return (
+						{/*
+							Show keyed по уровню — GameScreen пересоздаётся ТОЛЬКО когда
+							реально меняется номер уровня (через next-button). Прежний
+							IIFE-паттерн вызывал re-mount на любое изменение route(),
+							из-за чего уровень случайно "перезапускался".
+						*/}
+						<Show when={route().name === 'game' ? (route() as {name: 'game'; level: number}).level : null} keyed>
+							{(level) => (
 								<GameScreen
-									levelNumber={r.level}
+									levelNumber={level}
 									onExit={() => setRoute({name: 'levels'})}
 									onSwitchLevel={(n) => setRoute({name: 'game', level: n})}
 								/>
-							);
-						})()}
+							)}
+						</Show>
 					</Match>
 				</Switch>
 
