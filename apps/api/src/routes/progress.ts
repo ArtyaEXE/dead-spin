@@ -101,12 +101,17 @@ progressRoutes.post('/level-complete', requireAuth, async (c) => {
 	});
 
 	if (newStars > 0) {
-		await db.update(progresses)
-			.set({
-				summaryStars: sql`${progresses.summaryStars} + ${newStars}`,
-				updatedAt: sql`now()`,
-			})
-			.where(eq(progresses.userId, userId));
+		// Upsert — если строка ещё не создана (баг старой версии auth), вставляем
+		// сразу с этим инкрементом; иначе атомарно обновляем существующую.
+		await db.insert(progresses)
+			.values({userId, summaryStars: newStars})
+			.onConflictDoUpdate({
+				target: progresses.userId,
+				set: {
+					summaryStars: sql`${progresses.summaryStars} + ${newStars}`,
+					updatedAt: sql`now()`,
+				},
+			});
 	}
 
 	return c.json({ok: true, newStars});

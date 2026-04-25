@@ -71,8 +71,12 @@ authRoutes.post('/telegram', async (c) => {
 			.values({tgId, username, locale})
 			.returning({id: users.id});
 		userId = inserted!.id;
-		await db.insert(progresses).values({userId}).onConflictDoNothing();
 	}
+	// Гарантируем строку в progresses для ЛЮБОГО логина — старые юзеры могли
+	// её не получить (баг в предыдущей версии создавал строку только для
+	// новых users). Без этой строки UPDATE summary_stars в level-complete
+	// тихо ничего не делает и GET /progress всегда возвращает 0.
+	await db.insert(progresses).values({userId}).onConflictDoNothing();
 
 	const token = await signUserToken(userId, tgId);
 	const [freshUser] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
