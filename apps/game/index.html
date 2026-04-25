@@ -10,6 +10,28 @@
 <body>
 	<div id="root"></div>
 	<script src="https://telegram.org/js/telegram-web-app.js"></script>
+	<!--
+		vConsole — мобильный DevTools для Android-WebView в Telegram. Включается
+		через ?debug=1 в URL (или через localStorage 'dead-spin.debug' = '1').
+		Используется чтобы видеть консольные логи и Network-вкладку прямо в игре
+		на телефоне без USB-debugging — полезно для диагностики ERR_CONNECTION_RESET
+		и подобных мобильно-специфичных проблем.
+	-->
+	<script>
+		(function() {
+			var url = new URL(window.location.href);
+			var qsDebug = url.searchParams.get('debug') === '1';
+			var lsDebug = false;
+			try { lsDebug = localStorage.getItem('dead-spin.debug') === '1'; } catch (e) {}
+			if (qsDebug || lsDebug) {
+				try { localStorage.setItem('dead-spin.debug', '1'); } catch (e) {}
+				var s = document.createElement('script');
+				s.src = 'https://unpkg.com/vconsole@3/dist/vconsole.min.js';
+				s.onload = function() { new window.VConsole(); };
+				document.head.appendChild(s);
+			}
+		})();
+	</script>
 	<script type="module" src="/src/main.tsx"></script>
 </body>
 </html>

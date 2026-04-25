@@ -35,17 +35,37 @@ async function request<S extends ZodTypeAny>(
 	const token = getToken();
 	if (token) headers['authorization'] = `Bearer ${token}`;
 
-	const res = await fetch(`${API_BASE}${path}`, {
-		method,
-		headers,
-		body: body !== undefined ? JSON.stringify(body) : undefined,
-	});
+	const url = `${API_BASE}${path}`;
+	const t0 = Date.now();
+	console.log(`[fetch ←] ${method} ${url}`);
+
+	let res: Response;
+	try {
+		res = await fetch(url, {
+			method,
+			headers,
+			body: body !== undefined ? JSON.stringify(body) : undefined,
+		});
+	} catch (netErr) {
+		// Network-level failure: ERR_CONNECTION_RESET, ENOTFOUND, TLS errors,
+		// CORS preflight failure. Логируем максимум деталей для диагностики
+		// мобильных WebView-проблем (особенно Android).
+		const ms = Date.now() - t0;
+		const msg = netErr instanceof Error ? `${netErr.name}: ${netErr.message}` : String(netErr);
+		console.error(`[fetch ✗ NETWORK] ${method} ${url} after ${ms}ms — ${msg}`);
+		console.error(`[fetch ✗ NETWORK] navigator.onLine=${navigator.onLine} ua=${navigator.userAgent.slice(0, 80)}`);
+		throw new ApiError(0, 'networkFailure', msg);
+	}
+
+	const ms = Date.now() - t0;
+	console.log(`[fetch →] ${method} ${url} ${res.status} ${ms}ms`);
 
 	let data: unknown = null;
 	try { data = await res.json(); } catch { /* empty */ }
 
 	if (!res.ok) {
 		const err = (data && typeof data === 'object' && 'error' in data) ? String((data as {error: unknown}).error) : 'httpError';
+		console.warn(`[fetch ✗ HTTP] ${method} ${url} status=${res.status} body=${err}`);
 		throw new ApiError(res.status, err);
 	}
 
