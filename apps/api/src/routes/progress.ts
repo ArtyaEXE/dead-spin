@@ -192,9 +192,15 @@ progressRoutes.post('/level-complete', requireAuth, async (c) => {
 			});
 	}
 
-	// Групповой write + нотификация — отдельным шагом, не блокирует ответ.
+	// Групповой контекст — ждём DB-write до ответа, чтобы клиентский
+	// refresh после level-complete увидел свежую запись (без этого ловим
+	// race: 200 уходит, group_progress_levels ещё не записан, refresh
+	// возвращает старые данные → в Levels уровень "пропадает").
+	// Внутри processGroupResult всё, что НЕ влияет на видимое клиентом
+	// состояние (нотификации, pin, streaks, challenges), уже стартует
+	// fire-and-forget.
 	if (groupChatId !== undefined && groupHmac !== undefined) {
-		void processGroupResult({
+		await processGroupResult({
 			chatId: groupChatId, hmac: groupHmac,
 			userId, tgId, username, locale,
 			level, stars, timeMs, fuelSpent,
@@ -351,10 +357,41 @@ async function processGroupResult(args: {
 
 	if (!diff) return;
 
+	// === Side-effects ===
+	// До этой точки — главная DB-запись (group_progress_levels) уже
+	// commitнута. Дальше идут "украшения" (нотификации, ghost storage,
+	// streaks, challenges, pinned leaderboard) — они НЕ должны блокировать
+	// ответ клиенту, потому что:
+	//  - клиент сразу после 200 делает progressStore.refresh() и хочет
+	//    увидеть свою новую запись;
+	//  - Telegram API вызовы (sendMessage/setMessageReaction/editMessage)
+	//    суммарно могут стоить 1-2 секунды; гнать клиента ждать — лишняя
+	//    латентность.
+	// Поэтому всё ниже — fire-and-forget внутри процесса. Логируем,
+	// если что-то рухнуло.
+	void runGroupSideEffects({
+		chatId, userId, username, locale,
+		level, stars, timeMs, recording, diff,
+	}).catch((e) => console.warn('group side-effects failed:', e instanceof Error ? e.message : e));
+}
+
+
+async function runGroupSideEffects(args: {
+	chatId: number;
+	userId: string;
+	username: string;
+	locale: string;
+	level: number;
+	stars: number;
+	timeMs: number;
+	recording?: GhostRecording;
+	diff: GroupDiff;
+}): Promise<void> {
+	const {chatId, userId, username, locale, level, stars, timeMs, recording, diff} = args;
+
 	// Ghost: если этот результат сделал юзера лидером per (chat, level) —
 	// перезаписываем сохранённую запись на новую (лучшую). Sanity-проверки
-	// отсекают мусор от чита-клиента; падение проверок просто скипает ghost,
-	// нотификацию про рекорд это не блокирует.
+	// отсекают мусор от чита-клиента; падение проверок просто скипает ghost.
 	if (recording && diff.newLeader.userId === userId) {
 		const lvl = getLevelByNumber(level);
 		const ok = lvl && isPlausibleRecording({
