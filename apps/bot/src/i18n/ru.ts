@@ -98,5 +98,28 @@ export const ru = {
 			bestEmpty: '<i>В этой беседе ещё никто не прошёл ни одного уровня.</i>',
 			bestTitle: '🏆 <b>Топ беседы</b>',
 		},
+		identity: {
+			adminOnly: '<i>Только админы беседы могут менять название/эмодзи команды.</i>',
+			usageName: 'Использование: <code>/setname Команда Олега</code>',
+			usageEmoji: 'Использование: <code>/setemoji 🚀</code>',
+			tooLongName: '<i>Слишком длинно — до 32 символов.</i>',
+			oneEmoji: '<i>Нужен ровно один эмодзи.</i>',
+			nameSaved: (name: string) => `✅ Команда теперь называется <b>${name}</b>.`,
+			emojiSaved: (e: string) => `✅ Эмодзи команды: ${e}`,
+		},
+		challenge: {
+			usage: 'Использование: <code>/challenge @username 5</code>',
+			userNotFound: (u: string) => `<i>Не нашёл @${u} среди игроков. Возможно, он ещё ни разу не открывал бот через /start.</i>`,
+			selfChallenge: '<i>Себя вызвать нельзя.</i>',
+			alreadyPending: '<i>У вас уже есть активная дуэль на этом уровне с этим игроком.</i>',
+			posted: (a: string, b: string, level: number) =>
+				`👊 <b>${a}</b> вызывает <b>${b}</b> на уровень ${level}!\n\nДуэль 24 часа. Кто соберёт больше звёзд за меньшее время — победит. Просто играйте /play как обычно — результаты засчитаются автоматом.`,
+			result: (winner: string, loser: string, level: number, ws: number, wt: string, ls: number, lt: string) =>
+				`✅ <b>Дуэль на уровне ${level} завершена!</b>\n\n🏆 Победил <b>${winner}</b>: ${ws}⭐ ${wt}\n   <b>${loser}</b>: ${ls}⭐ ${lt}`,
+			oneSided: (winner: string, level: number, ws: number, wt: string, loser: string) =>
+				`⏰ <b>Время вышло.</b>\n\n🏆 На уровне ${level} победил <b>${winner}</b> ${ws}⭐ ${wt} — <b>${loser}</b> так и не сыграл.`,
+			tie: (a: string, b: string, level: number) =>
+				`🤝 Ничья на уровне ${level}: <b>${a}</b> и <b>${b}</b> — одинаковый счёт.`,
+		},
 	},
 };

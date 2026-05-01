@@ -71,6 +71,15 @@ export const LeaderboardResponseSchema = z.object({
 export const MeResponseSchema = z.object({user: UserSchema});
 
 
+export const GroupInfoResponseSchema = z.object({
+	chatId: z.number(),
+	title: z.string(),
+	nickname: z.string().nullable(),
+	emoji: z.string().nullable(),
+});
+export type GroupInfoResponse = z.infer<typeof GroupInfoResponseSchema>;
+
+
 export const GhostResponseSchema = z.object({
 	level: z.number().int(),
 	userId: z.string(),

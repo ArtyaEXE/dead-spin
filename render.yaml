@@ -35,6 +35,8 @@ services:
         value: ""
       - key: CORS_ORIGINS          # e.g. "https://dead-spin.pages.dev"
         sync: false
+      - key: CRON_SECRET           # для POST /cron/* (weekly digest и т.п.)
+        generateValue: true
 
   # ---------- Bot (polling) ----------
   - type: web

@@ -9,6 +9,8 @@ import {meRoutes} from './routes/me';
 import {progressRoutes} from './routes/progress';
 import {fuelRoutes} from './routes/fuel';
 import {leaderboardRoutes} from './routes/leaderboard';
+import {groupsRoutes} from './routes/groups';
+import {cronRoutes} from './routes/cron';
 import type {AuthedEnv} from './middleware/auth';
 
 
@@ -29,6 +31,8 @@ export function createApp() {
 	app.route('/progress', progressRoutes);
 	app.route('/fuel', fuelRoutes);
 	app.route('/leaderboard', leaderboardRoutes);
+	app.route('/groups', groupsRoutes);
+	app.route('/cron', cronRoutes);
 
 	app.onError((err, c) => {
 		if (err instanceof ApiError) return formatError(c, err);

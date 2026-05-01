@@ -98,5 +98,28 @@ export const en = {
 			bestEmpty: '<i>No one has cleared a level in this chat yet.</i>',
 			bestTitle: '🏆 <b>Chat top</b>',
 		},
+		identity: {
+			adminOnly: '<i>Only chat admins can change team name / emoji.</i>',
+			usageName: 'Usage: <code>/setname Oleg\'s Crew</code>',
+			usageEmoji: 'Usage: <code>/setemoji 🚀</code>',
+			tooLongName: '<i>Too long — max 32 chars.</i>',
+			oneEmoji: '<i>Need exactly one emoji.</i>',
+			nameSaved: (name: string) => `✅ Team is now <b>${name}</b>.`,
+			emojiSaved: (e: string) => `✅ Team emoji: ${e}`,
+		},
+		challenge: {
+			usage: 'Usage: <code>/challenge @username 5</code>',
+			userNotFound: (u: string) => `<i>Couldn't find @${u} among players. They might not have opened the bot via /start yet.</i>`,
+			selfChallenge: '<i>Can\'t challenge yourself.</i>',
+			alreadyPending: '<i>You already have an active duel on this level with this player.</i>',
+			posted: (a: string, b: string, level: number) =>
+				`👊 <b>${a}</b> challenges <b>${b}</b> on level ${level}!\n\nDuel runs for 24h. Best stars / fastest time wins. Just /play as usual — results will be counted.`,
+			result: (winner: string, loser: string, level: number, ws: number, wt: string, ls: number, lt: string) =>
+				`✅ <b>Duel on level ${level} finished!</b>\n\n🏆 <b>${winner}</b> wins: ${ws}⭐ ${wt}\n   <b>${loser}</b>: ${ls}⭐ ${lt}`,
+			oneSided: (winner: string, level: number, ws: number, wt: string, loser: string) =>
+				`⏰ <b>Time\'s up.</b>\n\n🏆 On level ${level} <b>${winner}</b> wins ${ws}⭐ ${wt} — <b>${loser}</b> didn\'t play.`,
+			tie: (a: string, b: string, level: number) =>
+				`🤝 Tie on level ${level}: <b>${a}</b> and <b>${b}</b> — same score.`,
+		},
 	},
 };

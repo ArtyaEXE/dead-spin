@@ -5,7 +5,7 @@ import {groupStore} from '../stores/group';
 import {
 	LoginResponseSchema, MeResponseSchema, ProgressResponseSchema,
 	LevelCompleteResponseSchema, FuelSpendResponseSchema, LeaderboardResponseSchema,
-	GhostResponseSchema,
+	GhostResponseSchema, GroupInfoResponseSchema,
 } from './schemas';
 
 
@@ -125,4 +125,6 @@ export const api = {
 	},
 	groupGhost: (chatId: number, hmac: string, level: number) =>
 		request('GET', `/leaderboard/group/${chatId}/${level}/ghost?hmac=${hmac}`, GhostResponseSchema),
+	groupInfo: (chatId: number, hmac: string) =>
+		request('GET', `/groups/${chatId}/info?hmac=${hmac}`, GroupInfoResponseSchema),
 };

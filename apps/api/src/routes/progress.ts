@@ -21,6 +21,9 @@ import {badRequest, forbidden} from '../lib/errors';
 import {env} from '../config';
 import {isGroupMember} from '../lib/group-membership';
 import {sendGroupNotification, type GroupDiff} from '../lib/group-notifications';
+import {ensurePinnedLeaderboard} from '../lib/group-pinned';
+import {updateStreak, sendStreakNotification} from '../lib/group-streaks';
+import {trackChallengeResultAndCollect} from '../lib/group-challenges';
 
 
 export const progressRoutes = new Hono<AuthedEnv>();
@@ -375,4 +378,33 @@ async function processGroupResult(args: {
 	}
 
 	await sendGroupNotification({chatId, level, username, locale, diff});
+
+	// Streak: считаем по календарным дням UTC. На новом milestone (3/7/14/30
+	// и т.п.) шлём отдельное «🔥 N дней подряд». Best-effort.
+	try {
+		const {milestone} = await updateStreak({chatId, userId});
+		if (milestone !== null) {
+			await sendStreakNotification({chatId, username, days: milestone});
+		}
+	} catch (e) {
+		console.warn('streak update failed:', e instanceof Error ? e.message : e);
+	}
+
+	// Дуэли: апдейтим счёт текущего юзера в активных challenges на этом
+	// уровне в этом чате; если оба сыграли — финализируем + edit-сообщение.
+	// Заодно подбираем истекшие pending-дуэли. Best-effort.
+	try {
+		await trackChallengeResultAndCollect({
+			chatId, userId, level, stars, timeMs,
+			locale: locale === 'ru' ? 'ru' : 'en',
+		});
+	} catch (e) {
+		console.warn('trackChallengeResult failed:', e instanceof Error ? e.message : e);
+	}
+
+	// Обновляем закреплённый лидерборд беседы (отдельный pin'нутый сообщ
+	// сам себя обновляет — все участники в шапке чата видят live-таблицу).
+	// Best-effort: failure не валит запись прогресса.
+	void ensurePinnedLeaderboard(chatId)
+		.catch((e) => console.warn('ensurePinnedLeaderboard failed:', e instanceof Error ? e.message : e));
 }

@@ -17,6 +17,13 @@ const EnvSchema = z.object({
 	MONGO_URL: z.string().default(''),
 
 	CORS_ORIGINS: z.string().default('*'),
+
+	/**
+	 * Секрет для cron-эндпоинтов (POST /cron/*). Внешний планировщик
+	 * (cron-job.org / GitHub Actions / etc.) шлёт его в заголовке
+	 * `X-Cron-Secret`. Если пусто — cron-эндпоинты возвращают 503.
+	 */
+	CRON_SECRET: z.string().default(''),
 });
 
 

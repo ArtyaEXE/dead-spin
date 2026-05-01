@@ -117,6 +117,14 @@ export const groupChats = pgTable('group_chats', {
 	chatId: bigint('chat_id', {mode: 'number'}).primaryKey(),
 	title: text('title').notNull(),
 	type: text('type').notNull(),
+	/** ID закреплённого сообщения с live-таблицей лидеров. NULL — ещё не создавали. */
+	pinnedMessageId: integer('pinned_message_id'),
+	/** Кастомное имя «команды» беседы — задаётся /setname админом. */
+	nickname: text('nickname'),
+	/** Эмодзи-аватар команды (1 графема) — задаётся /setemoji. */
+	emoji: text('emoji'),
+	/** Когда последний раз отправляли weekly digest в этот чат. NULL = никогда. */
+	lastDigestAt: timestamp('last_digest_at', {withTimezone: true}),
 	joinedAt: timestamp('joined_at', {withTimezone: true}).notNull().defaultNow(),
 	leftAt: timestamp('left_at', {withTimezone: true}),
 	updatedAt: timestamp('updated_at', {withTimezone: true}).notNull().defaultNow(),
@@ -172,6 +180,30 @@ export type Payment = typeof payments.$inferSelect;
 export type NewPayment = typeof payments.$inferInsert;
 
 /**
+ * group_streaks — счётчик дней подряд, что игрок играл в этой беседе.
+ * Обновляется на каждый level-complete в группе:
+ *   today === last_play_date    → no-op
+ *   today === last_play_date+1  → streak += 1
+ *   else                         → streak = 1
+ * `longest_streak` хранится для возможной будущей плашки «личный рекорд».
+ * `last_notified_milestone` — последний уже-озвученный порог (3/7/14/30),
+ * чтобы не дублировать «🔥 7 дней подряд» при последующих апдейтах в тот
+ * же день.
+ */
+export const groupStreaks = pgTable('group_streaks', {
+	chatId: bigint('chat_id', {mode: 'number'}).notNull().references(() => groupChats.chatId, {onDelete: 'cascade'}),
+	userId: text('user_id').notNull().references(() => users.id, {onDelete: 'cascade'}),
+	streakDays: integer('streak_days').notNull().default(1),
+	longestStreak: integer('longest_streak').notNull().default(1),
+	lastPlayDate: text('last_play_date').notNull(),
+	lastNotifiedMilestone: integer('last_notified_milestone').notNull().default(0),
+	updatedAt: timestamp('updated_at', {withTimezone: true}).notNull().defaultNow(),
+}, (table) => ({
+	pk: primaryKey({columns: [table.chatId, table.userId]}),
+}));
+
+
+/**
  * group_ghosts — запись прохождения текущего лидера (chat, level). При
  * улучшении лидером (или сменой лидера) запись перезаписывается. Mini App
  * фетчит её на старте уровня и проигрывает translucent-кораблём.
@@ -199,3 +231,43 @@ export type NewGroupProgressLevel = typeof groupProgressLevels.$inferInsert;
 
 export type GroupGhost = typeof groupGhosts.$inferSelect;
 export type NewGroupGhost = typeof groupGhosts.$inferInsert;
+
+export type GroupStreak = typeof groupStreaks.$inferSelect;
+export type NewGroupStreak = typeof groupStreaks.$inferInsert;
+
+
+/**
+ * group_challenges — дуэль 1×1 на конкретном уровне в беседе.
+ * Создаётся командой `/challenge @user N`. Обе стороны играют тот же
+ * уровень в течение 24 часов; кто соберёт больше звёзд (тай-брейк —
+ * меньшее время) — победил. Бот апдейтит то же сообщение
+ * `message_id` с итогом, чтобы не плодить флуд в чате.
+ *
+ * Статусы:
+ *  - pending: ждём результаты
+ *  - completed: оба сыграли, объявлен победитель
+ *  - expired: 24ч прошли, объявлен победитель по доступным результатам
+ *  - cancelled: отменено
+ */
+export const groupChallenges = pgTable('group_challenges', {
+	id: text('id').primaryKey().default(sql`gen_random_uuid()::text`),
+	chatId: bigint('chat_id', {mode: 'number'}).notNull().references(() => groupChats.chatId, {onDelete: 'cascade'}),
+	level: integer('level').notNull(),
+	challengerUserId: text('challenger_user_id').notNull().references(() => users.id, {onDelete: 'cascade'}),
+	challengeeUserId: text('challengee_user_id').notNull().references(() => users.id, {onDelete: 'cascade'}),
+	challengerStars: integer('challenger_stars'),
+	challengerTimeMs: integer('challenger_time_ms'),
+	challengeeStars: integer('challengee_stars'),
+	challengeeTimeMs: integer('challengee_time_ms'),
+	messageId: integer('message_id'),
+	status: text('status').notNull().default('pending'),
+	createdAt: timestamp('created_at', {withTimezone: true}).notNull().defaultNow(),
+	expiresAt: timestamp('expires_at', {withTimezone: true}).notNull(),
+	resolvedAt: timestamp('resolved_at', {withTimezone: true}),
+}, (table) => ({
+	pendingIdx: index('group_challenges_pending_idx').on(table.chatId, table.level, table.status),
+}));
+
+
+export type GroupChallenge = typeof groupChallenges.$inferSelect;
+export type NewGroupChallenge = typeof groupChallenges.$inferInsert;

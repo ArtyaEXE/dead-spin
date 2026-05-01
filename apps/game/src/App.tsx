@@ -101,6 +101,9 @@ export default function App() {
 		if (auth().status !== 'authed') return;
 		audio.init();
 		void progressStore.getState().refresh().catch(() => {});
+		// Если открыты в групповом контексте — подгружаем метаданные беседы
+		// (title/nickname/emoji) для плашки в GameScreen.
+		void groupStore.getState().loadInfo().catch(() => {});
 		void preloadAll((done, total) => {
 			setPreloadPct(Math.floor((done / total) * 100));
 		}).then(() => setPreloadDone(true));

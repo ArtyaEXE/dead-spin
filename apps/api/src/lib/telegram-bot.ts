@@ -73,6 +73,71 @@ export async function tgSendMessage(chatId: number, html: string): Promise<numbe
 }
 
 
+/** Edit ранее отправленного сообщения. Возвращает true при успехе. */
+export async function tgEditMessageText(
+	chatId: number, messageId: number, html: string,
+): Promise<boolean> {
+	if (!env.TELEGRAM_BOT_TOKEN) return false;
+	const url = `${BOT_API}/bot${env.TELEGRAM_BOT_TOKEN}/editMessageText`;
+	try {
+		const r = await fetch(url, {
+			method: 'POST',
+			headers: {'content-type': 'application/json'},
+			body: JSON.stringify({
+				chat_id: chatId,
+				message_id: messageId,
+				text: html,
+				parse_mode: 'HTML',
+				link_preview_options: {is_disabled: true},
+			}),
+		});
+		if (!r.ok) {
+			const body = await r.text().catch(() => '');
+			// "message is not modified" — не ошибка, просто текст совпал.
+			if (body.includes('message is not modified')) return true;
+			console.warn(`tgEditMessageText non-2xx: ${r.status} ${body.slice(0, 200)}`);
+			return false;
+		}
+		return true;
+	} catch (e) {
+		console.warn('tgEditMessageText failed:', e instanceof Error ? e.message : e);
+		return false;
+	}
+}
+
+
+/**
+ * `pinChatMessage` — закрепляет сообщение в чате. Требует прав
+ * `can_pin_messages` у бота (или `can_edit_messages` для каналов). Без
+ * прав получим `400 Bad Request: not enough rights`. Возвращаем boolean
+ * чтобы caller мог поведать пользователю.
+ */
+export async function tgPinChatMessage(chatId: number, messageId: number): Promise<boolean> {
+	if (!env.TELEGRAM_BOT_TOKEN) return false;
+	const url = `${BOT_API}/bot${env.TELEGRAM_BOT_TOKEN}/pinChatMessage`;
+	try {
+		const r = await fetch(url, {
+			method: 'POST',
+			headers: {'content-type': 'application/json'},
+			body: JSON.stringify({
+				chat_id: chatId,
+				message_id: messageId,
+				disable_notification: true,
+			}),
+		});
+		if (!r.ok) {
+			const body = await r.text().catch(() => '');
+			console.warn(`tgPinChatMessage non-2xx: ${r.status} ${body.slice(0, 200)}`);
+			return false;
+		}
+		return true;
+	} catch (e) {
+		console.warn('tgPinChatMessage failed:', e instanceof Error ? e.message : e);
+		return false;
+	}
+}
+
+
 /**
  * `setMessageReaction` — добавить эмодзи-реакцию к сообщению (нашему же,
  * только что отправленному). Telegram-клиент рендерит её на сообщении

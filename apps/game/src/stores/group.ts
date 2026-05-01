@@ -1,14 +1,18 @@
 import {createStore} from 'zustand/vanilla';
 import {parseGroupStartParam} from '@dead-spin/shared';
+import {api} from '../net/client';
 import {createSolidStoreAdapter} from './solid';
 
 
 type GroupState = {
 	chatId: number | null;
 	hmac: string | null;
-	/** Заголовок беседы — приходит позже от API (опционально), для UI. */
+	/** Метаданные беседы из API — title, кастомные nickname/emoji. */
 	title: string | null;
+	nickname: string | null;
+	emoji: string | null;
 	hydrate: () => void;
+	loadInfo: () => Promise<void>;
 	setTitle: (title: string | null) => void;
 	clear: () => void;
 };
@@ -28,10 +32,12 @@ type GroupState = {
  * шлют `groupChatId + groupHmac`, и результат пишется в групповой
  * лидерборд (см. `apps/api/src/routes/progress.ts`).
  */
-export const groupStore = createStore<GroupState>((set) => ({
+export const groupStore = createStore<GroupState>((set, get) => ({
 	chatId: null,
 	hmac: null,
 	title: null,
+	nickname: null,
+	emoji: null,
 
 	hydrate() {
 		if (typeof window === 'undefined') return;
@@ -49,9 +55,20 @@ export const groupStore = createStore<GroupState>((set) => ({
 		set({chatId: parsed.chatId, hmac: parsed.hmac});
 	},
 
+	async loadInfo() {
+		const {chatId, hmac} = get();
+		if (chatId === null || hmac === null) return;
+		try {
+			const info = await api.groupInfo(chatId, hmac);
+			set({title: info.title, nickname: info.nickname, emoji: info.emoji});
+		} catch (e) {
+			console.warn('groupInfo load failed:', e instanceof Error ? e.message : e);
+		}
+	},
+
 	setTitle(title) { set({title}); },
 
-	clear() { set({chatId: null, hmac: null, title: null}); },
+	clear() { set({chatId: null, hmac: null, title: null, nickname: null, emoji: null}); },
 }));
 
 

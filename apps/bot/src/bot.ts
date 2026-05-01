@@ -10,6 +10,8 @@ import {showSettings, setLocale} from './handlers/settings';
 import {handlePreCheckout, handleSuccessfulPayment} from './handlers/payments';
 import {handleMyChatMember, handlePlayInGroup, handleNewChatMembers} from './handlers/groups';
 import {handleGroupLeaderboard, handleGroupMe, handleGroupBest} from './handlers/group-stats';
+import {handleSetName, handleSetEmoji} from './handlers/group-identity';
+import {handleChallenge} from './handlers/challenge';
 import {toast} from './lib/nav';
 
 
@@ -26,6 +28,9 @@ export function createBot(): Bot {
 	bot.command(['lb', 'leaderboard'], handleGroupLeaderboard);
 	bot.command('me', handleGroupMe);
 	bot.command('best', handleGroupBest);
+	bot.command('setname', handleSetName);
+	bot.command('setemoji', handleSetEmoji);
+	bot.command('challenge', handleChallenge);
 
 	// Бот добавлен/удалён из беседы — регистрируем/деактивируем чат для
 	// группового лидерборда.

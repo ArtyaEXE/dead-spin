@@ -1,0 +1,1 @@
+ALTER TABLE "group_chats" ADD COLUMN "pinned_message_id" integer;

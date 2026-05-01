@@ -5,6 +5,7 @@ import {api} from '../net/client';
 import {authStore} from '../stores/auth';
 import {progressStore} from '../stores/progress';
 import {ghostStore, useGhost} from '../stores/ghost';
+import {useGroup} from '../stores/group';
 import {GameWorld, type GameResult} from '../game/GameWorld';
 import {audio, type LoopHandle} from '../game/audio';
 import {TopBar} from './TopBar';
@@ -191,9 +192,22 @@ export function GameScreen(props: {
 		return result()?.type ?? 'pause';
 	};
 
+	const group = useGroup();
+	const groupLabel = (): string | null => {
+		const g = group();
+		if (g.chatId === null) return null;
+		const emoji = g.emoji ?? '🚀';
+		const name = g.nickname ?? g.title;
+		return name ? `${emoji} ${name}` : null;
+	};
+
 	return (
 		<div class="game-screen" classList={{shake: shake()}}>
 			<TopBar fuel={fuel()} time={time()} stars={stars()} />
+
+			<Show when={groupLabel()}>
+				{(label) => <div class="group-badge">{label()}</div>}
+			</Show>
 
 			<Show when={ghost().current}>
 				{(g) => (
