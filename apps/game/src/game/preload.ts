@@ -1,6 +1,7 @@
 import {loadGameTextures} from './assets';
 import {loadDecoTexture} from './decorations-cache';
 import {audio} from './audio';
+import {getAllComicImages} from '../ui/comics';
 
 
 /**
@@ -25,7 +26,6 @@ const UI_IMAGES = [
 	'/ship-skins/ship-wanderer.png', '/ship-skins/ship-engineer.png',
 	'/ship-skins/ship-veteran.png', '/ship-skins/ship-asteroid-king.png',
 	'/cave1.jpg', '/cave2.jpg', '/cave2-1.jpg', '/cave2-2.jpg',
-	'/comics/c1-1.jpg', '/comics/c1-2.jpg', '/comics/c1-3.jpg',
 	// Machinarium-иконки: tutorial + level decorations (stop/gravity) + misc UI
 	'/icons/icon-tap.png', '/icons/icon-boost.png',
 	'/icons/icon-mine-warning.png', '/icons/icon-stone-warning.png', '/icons/icon-worm-warning.png',
@@ -67,6 +67,7 @@ export function preloadAll(onProgress?: (done: number, total: number) => void): 
 	const tasks: Promise<unknown>[] = [];
 
 	for (const url of UI_IMAGES) tasks.push(preloadImage(url));
+	for (const url of getAllComicImages()) tasks.push(preloadImage(url));
 	tasks.push(loadGameTextures());
 	for (const name of DECO_NAMES) tasks.push(loadDecoTexture(name));
 	tasks.push(audio.prewarm());

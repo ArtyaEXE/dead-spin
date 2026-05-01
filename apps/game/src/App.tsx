@@ -1,16 +1,19 @@
 import {createEffect, createSignal, Match, Show, Switch, onMount} from 'solid-js';
 import {authStore, useAuth} from './stores/auth';
 import {progressStore, useProgress} from './stores/progress';
+import {groupStore} from './stores/group';
 import {LoginScreen} from './ui/LoginScreen';
 import {MainMenu} from './ui/MainMenu';
 import {Levels} from './ui/Levels';
 import {Settings} from './ui/Settings';
 import {GameScreen} from './ui/GameScreen';
 import {MusicPlayer} from './ui/MusicPlayer';
-import {Intro} from './ui/Intro';
+import {ComicPlayer} from './ui/ComicPlayer';
+import {getComic} from './ui/comics';
 import {Shop} from './ui/Shop';
 import {audio} from './game/audio';
 import {preloadAll} from './game/preload';
+import {getLevelByNumber} from '@dead-spin/levels';
 
 
 type Route =
@@ -18,8 +21,18 @@ type Route =
 	| {name: 'settings'}
 	| {name: 'shop'}
 	| {name: 'levels'}
-	| {name: 'intro'; level: number}
+	| {name: 'intro'; level: number; comicId: string}
+	| {name: 'outro'; nextLevel: number; comicId: string}
 	| {name: 'game'; level: number};
+
+
+const OUTRO_SEEN_KEY = (id: string): string => `comic-outro-seen-${id}`;
+function isOutroSeen(id: string): boolean {
+	try { return localStorage.getItem(OUTRO_SEEN_KEY(id)) === '1'; } catch { return false; }
+}
+function markOutroSeen(id: string): void {
+	try { localStorage.setItem(OUTRO_SEEN_KEY(id), '1'); } catch {/* noop */}
+}
 
 
 export default function App() {
@@ -33,6 +46,7 @@ export default function App() {
 	const [preloadPct, setPreloadPct] = createSignal(0);
 
 	onMount(() => {
+		groupStore.getState().hydrate();
 		void authStore.getState().refresh();
 		type Inset = {top?: number; bottom?: number; left?: number; right?: number};
 		type TgWebApp = {
@@ -94,8 +108,26 @@ export default function App() {
 
 	const startLevel = (level: number): void => {
 		const alreadyCleared = Boolean(progress().levels[level]);
-		if (level === 1 && !alreadyCleared) setRoute({name: 'intro', level});
-		else setRoute({name: 'game', level});
+		const intro = getLevelByNumber(level)?.intro;
+		if (intro && !alreadyCleared && getComic(intro)) {
+			setRoute({name: 'intro', level, comicId: intro});
+		} else {
+			setRoute({name: 'game', level});
+		}
+	};
+
+	// onNext из ResultScreen → может прервать переход на следующий уровень
+	// outro-катсценой только что завершённого. Гейт через localStorage —
+	// outro показывается ровно один раз за всё время на устройстве.
+	const switchLevel = (nextLevel: number): void => {
+		const justFinished = nextLevel - 1;
+		const outro = getLevelByNumber(justFinished)?.outro;
+		if (outro && getComic(outro) && !isOutroSeen(outro)) {
+			markOutroSeen(outro);
+			setRoute({name: 'outro', nextLevel, comicId: outro});
+		} else {
+			setRoute({name: 'game', level: nextLevel});
+		}
 	};
 
 	return (
@@ -139,10 +171,44 @@ export default function App() {
 					</Match>
 
 					<Match when={route().name === 'intro'}>
-						<Show when={route().name === 'intro' ? (route() as {name: 'intro'; level: number}).level : null} keyed>
-							{(level) => (
-								<Intro onFinish={() => setRoute({name: 'game', level})} />
-							)}
+						<Show
+							when={route().name === 'intro' ? (route() as {name: 'intro'; level: number; comicId: string}) : null}
+							keyed
+						>
+							{(r) => {
+								const comic = getComic(r.comicId);
+								if (!comic) {
+									setRoute({name: 'game', level: r.level});
+									return null;
+								}
+								return (
+									<ComicPlayer
+										comic={comic}
+										onFinish={() => setRoute({name: 'game', level: r.level})}
+									/>
+								);
+							}}
+						</Show>
+					</Match>
+
+					<Match when={route().name === 'outro'}>
+						<Show
+							when={route().name === 'outro' ? (route() as {name: 'outro'; nextLevel: number; comicId: string}) : null}
+							keyed
+						>
+							{(r) => {
+								const comic = getComic(r.comicId);
+								if (!comic) {
+									setRoute({name: 'game', level: r.nextLevel});
+									return null;
+								}
+								return (
+									<ComicPlayer
+										comic={comic}
+										onFinish={() => setRoute({name: 'game', level: r.nextLevel})}
+									/>
+								);
+							}}
 						</Show>
 					</Match>
 
@@ -158,7 +224,7 @@ export default function App() {
 								<GameScreen
 									levelNumber={level}
 									onExit={() => setRoute({name: 'levels'})}
-									onSwitchLevel={(n) => setRoute({name: 'game', level: n})}
+									onSwitchLevel={switchLevel}
 								/>
 							)}
 						</Show>

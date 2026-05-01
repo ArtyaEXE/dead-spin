@@ -91,6 +91,8 @@ export const LevelSchema = z.object({
 		y: z.number().finite(),
 	}),
 	referenceUrl: z.string().default(''),
+	intro: z.string().min(1).optional(),
+	outro: z.string().min(1).optional(),
 	decorations: z.array(DecorationSchema).default([]),
 	enemies: z.array(EnemySchema).default([]),
 	walls: WallsSchema,

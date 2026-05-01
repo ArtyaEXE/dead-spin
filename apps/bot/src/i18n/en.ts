@@ -76,4 +76,17 @@ export const en = {
 		error: '❌ Something went wrong, try again.',
 		notFound: 'Not found.',
 	},
+	group: {
+		playInvite: '🚀 <b>Dead Spin</b> is here.\nWho clears levels faster? Tap below — the leaderboard is scoped to this chat only.',
+		addedToGroup: '➕ Add to a group',
+		notify: {
+			levelClear: (name: string, level: number) => `🚀 <b>${name}</b> cleared level ${level}`,
+			withStars: (stars: number) => ` with ${stars}⭐`,
+			personalBest: (time: string) => ` (PB — ${time})`,
+			leaderTaken: (newLeader: string, prev: string, level: number) =>
+				`👑 <b>${newLeader}</b> kicked <b>${prev}</b> off the level ${level} throne!`,
+			firstLeader: (name: string, level: number) =>
+				`👑 <b>${name}</b> — first leader on level ${level}!`,
+		},
+	},
 };

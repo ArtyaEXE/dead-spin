@@ -843,9 +843,9 @@ html, body, #root {
 .result-buttons img.dim { filter: grayscale(60%); pointer-events: none; }
 
 
-/* ---------- Intro (комикс перед уровнем 1) ---------- */
+/* ---------- Comic player (Intro и будущие сюжетные вставки) ---------- */
 
-.intro-root {
+.comic-root {
 	position: absolute; inset: 0;
 	background: #000;
 	overflow: hidden;
@@ -853,38 +853,125 @@ html, body, #root {
 	align-items: center;
 	justify-content: center;
 }
-.intro-slide {
+.comic-panel {
 	position: absolute;
 	inset: 0;
 	width: 100%;
 	height: 100%;
 	object-fit: cover;
 	opacity: 0;
-	transition: opacity 500ms ease;
+	transition: opacity 600ms ease;
 	transform-origin: center center;
+	will-change: opacity, transform, object-position;
 }
-.intro-slide.active { opacity: 1; }
+.comic-panel.active { opacity: 1; }
 
-.intro-slide.shake-slow  { animation: intro-shake 1.6s ease-in-out infinite; }
-.intro-slide.shake-medium { animation: intro-shake 1.0s ease-in-out infinite; }
-.intro-slide.shake-fast  { animation: intro-shake 0.5s ease-in-out infinite; }
-@keyframes intro-shake {
+/* Fade-through-black: при .fading на root активная панель насильно гаснет
+   до 0, открывая чёрный фон .comic-root. После swap'a классов .fading
+   снимается и новая активная панель плавно появляется 0→1 за то же время.
+   Длительность тут (600ms) обязана совпадать с FADE_MS в ComicPlayer.tsx. */
+.comic-root.fading .comic-panel.active { opacity: 0; }
+
+/* Виньетка — мягкое затемнение по контуру кадра. ::after поверх панелей,
+   но под letterbox/caption/buttons (z-index 1 vs их 2-3). pointer-events
+   отключены, чтобы не перехватывать тапы. */
+.comic-root::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	z-index: 1;
+	background: radial-gradient(
+		ellipse at center,
+		transparent 45%,
+		rgba(0, 0, 0, 0.45) 80%,
+		rgba(0, 0, 0, 0.75) 100%
+	);
+}
+
+.comic-panel.shake-slow   { animation: comic-shake 1.6s ease-in-out infinite; }
+.comic-panel.shake-medium { animation: comic-shake 1.0s ease-in-out infinite; }
+.comic-panel.shake-fast   { animation: comic-shake 0.5s ease-in-out infinite; }
+@keyframes comic-shake {
 	0%, 100% { transform: translate(0, 0) scale(1.02); }
 	25%  { transform: translate(-3px, 2px) scale(1.02); }
 	50%  { transform: translate(3px, -2px) scale(1.03); }
 	75%  { transform: translate(-2px, -3px) scale(1.02); }
 }
 
-.intro-skip {
+/* Ken Burns: pan по object-position + zoom через scale запускаются из
+   ComicPlayer через Web Animations API (см. startKen) — это даёт N-точечный
+   path и pause/resume на visibilitychange. Здесь только will-change-хинты
+   уже есть на .comic-panel выше. */
+
+/* Letterbox — две чёрные полосы сверху/снизу, плавно въезжают на старте.
+   Поверх изображения, под кнопкой пропуска. */
+.comic-letterbox-top, .comic-letterbox-bottom {
+	position: absolute;
+	left: 0; right: 0;
+	height: 8%;
+	background: #000;
+	z-index: 1;
+	pointer-events: none;
+	animation: comic-letterbox-in 600ms ease-out both;
+}
+.comic-letterbox-top    { top: 0; transform-origin: top; }
+.comic-letterbox-bottom { bottom: 0; transform-origin: bottom; }
+@keyframes comic-letterbox-in {
+	from { transform: scaleY(0); }
+	to   { transform: scaleY(1); }
+}
+
+/* Caption — реплика поверх панели. Внизу по центру, над нижним letterbox.
+   Полупрозрачный фон + лёгкая тень для читаемости поверх любой картинки. */
+.comic-caption {
+	position: absolute;
+	left: 50%;
+	bottom: calc(12% + var(--sa-bottom));
+	transform: translateX(-50%);
+	max-width: min(80%, 640px);
+	padding: 10px 16px;
+	background: rgba(0, 0, 0, 0.55);
+	color: #fff;
+	font-size: 18px;
+	line-height: 1.35;
+	letter-spacing: 0.2px;
+	text-align: center;
+	border-radius: 6px;
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+	z-index: 2;
+	pointer-events: none;
+	animation: comic-caption-in 200ms ease-out;
+}
+@keyframes comic-caption-in {
+	from { opacity: 0; transform: translate(-50%, 8px); }
+	to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.comic-skip {
 	position: absolute;
 	right: calc(16px + var(--sa-right));
 	bottom: calc(16px + var(--sa-bottom));
 	background: none;
 	border: 0;
 	cursor: pointer;
-	z-index: 2;
+	z-index: 3;
 }
-.intro-skip img { width: 80px; height: 80px; }
+.comic-skip img { width: 80px; height: 80px; }
+
+/* Skip-all — закрывает катсцену целиком (vs. `>` которая листает панели). */
+.comic-skip-all {
+	position: absolute;
+	right: calc(12px + var(--sa-right));
+	top: calc(12px + var(--sa-top));
+	background: none;
+	border: 0;
+	cursor: pointer;
+	z-index: 3;
+	opacity: 0.75;
+}
+.comic-skip-all img { width: 56px; height: 56px; }
+.comic-skip-all:hover { opacity: 1; }
 
 
 /* ---------- Settings ---------- */

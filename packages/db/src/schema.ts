@@ -2,6 +2,7 @@ import {
 	pgTable,
 	text,
 	integer,
+	bigint,
 	timestamp,
 	primaryKey,
 	uniqueIndex,
@@ -105,6 +106,58 @@ export const editorAdmins = pgTable('editor_admins', {
 });
 
 
+/**
+ * group_chats — Telegram-беседы, в которые добавили бота. `chat_id` — это
+ * настоящий Telegram chat_id (отрицательный для групп/супергрупп). Soft
+ * delete через `left_at`: историю не теряем, чтобы при повторном добавлении
+ * не плодить дубликаты записей о результатах.
+ */
+export const groupChats = pgTable('group_chats', {
+	chatId: bigint('chat_id', {mode: 'number'}).primaryKey(),
+	title: text('title').notNull(),
+	type: text('type').notNull(),
+	joinedAt: timestamp('joined_at', {withTimezone: true}).notNull().defaultNow(),
+	leftAt: timestamp('left_at', {withTimezone: true}),
+	updatedAt: timestamp('updated_at', {withTimezone: true}).notNull().defaultNow(),
+});
+
+
+/**
+ * group_progress_levels — рекорды per (chat, user, level). Отдельная таблица
+ * от progress_levels — у одного игрока могут быть разные «лучшие» в DM
+ * (глобальный лидерборд) и в каждой беседе. Индекс под scope-выборку
+ * лидерборда: (chat, level, stars desc, time_ms asc).
+ */
+export const groupProgressLevels = pgTable('group_progress_levels', {
+	chatId: bigint('chat_id', {mode: 'number'}).notNull().references(() => groupChats.chatId, {onDelete: 'cascade'}),
+	userId: text('user_id').notNull().references(() => users.id, {onDelete: 'cascade'}),
+	level: integer('level').notNull(),
+	stars: integer('stars').notNull(),
+	timeMs: integer('time_ms').notNull(),
+	fuelSpent: integer('fuel_spent').notNull(),
+	updatedAt: timestamp('updated_at', {withTimezone: true}).notNull().defaultNow(),
+}, (table) => ({
+	pk: primaryKey({columns: [table.chatId, table.userId, table.level]}),
+	starsCheck: check('group_progress_levels_stars_check', sql`${table.stars} between 0 and 3`),
+	leaderboardIdx: index('group_progress_levels_leaderboard_idx').on(table.chatId, table.level, table.stars, table.timeMs),
+}));
+
+
+/**
+ * group_membership_cache — кэш проверки `getChatMember`, чтобы не дёргать
+ * Telegram API на каждый /progress. Юзер считается участником беседы,
+ * если запись свежая (TTL ~1 час) и `is_member = 1`.
+ */
+export const groupMembershipCache = pgTable('group_membership_cache', {
+	chatId: bigint('chat_id', {mode: 'number'}).notNull(),
+	tgId: text('tg_id').notNull(),
+	isMember: integer('is_member').notNull(),
+	checkedAt: timestamp('checked_at', {withTimezone: true}).notNull().defaultNow(),
+}, (table) => ({
+	pk: primaryKey({columns: [table.chatId, table.tgId]}),
+}));
+
+
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 
@@ -116,3 +169,9 @@ export type NewProgressLevel = typeof progressLevels.$inferInsert;
 
 export type Payment = typeof payments.$inferSelect;
 export type NewPayment = typeof payments.$inferInsert;
+
+export type GroupChat = typeof groupChats.$inferSelect;
+export type NewGroupChat = typeof groupChats.$inferInsert;
+
+export type GroupProgressLevel = typeof groupProgressLevels.$inferSelect;
+export type NewGroupProgressLevel = typeof groupProgressLevels.$inferInsert;

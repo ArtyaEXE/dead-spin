@@ -43,8 +43,15 @@ export async function showMainMenu(ctx: Context): Promise<void> {
 	const kb = new InlineKeyboard()
 		.webApp(L.menu.play, env.WEB_APP_URL).row()
 		.text(L.menu.leaderboard, 'lb:1').text(L.menu.shop, 'shop:open').row()
-		.text(L.menu.profile, 'profile:open').text(L.menu.settings, 'settings:open').row()
-		.text(L.menu.help, 'help:open');
+		.text(L.menu.profile, 'profile:open').text(L.menu.settings, 'settings:open').row();
+	// «Добавить в беседу» — Telegram перехватывает t.me/<bot>?startgroup и
+	// открывает диалог выбора группы. После выбора пользователь увидит
+	// /play в чате и сможет нажать "Старт".
+	const botUsername = ctx.me?.username;
+	if (botUsername) {
+		kb.url(L.group.addedToGroup, `https://t.me/${botUsername}?startgroup=play`).row();
+	}
+	kb.text(L.menu.help, 'help:open');
 
 	await render(ctx, text, kb);
 }

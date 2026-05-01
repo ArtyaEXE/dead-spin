@@ -76,4 +76,17 @@ export const ru = {
 		error: '❌ Что-то пошло не так, попробуй ещё раз.',
 		notFound: 'Не найдено.',
 	},
+	group: {
+		playInvite: '🚀 <b>Dead Spin</b> подключён.\nКто пройдёт уровни быстрее? Жми кнопку ниже — лидерборд считается только среди этой беседы.',
+		addedToGroup: '➕ Добавить в беседу',
+		notify: {
+			levelClear: (name: string, level: number) => `🚀 <b>${name}</b> прошёл уровень ${level}`,
+			withStars: (stars: number) => ` на ${stars}⭐`,
+			personalBest: (time: string) => ` (личный рекорд — ${time})`,
+			leaderTaken: (newLeader: string, prev: string, level: number) =>
+				`👑 <b>${newLeader}</b> скинул <b>${prev}</b> с лидерской позиции уровня ${level}!`,
+			firstLeader: (name: string, level: number) =>
+				`👑 <b>${name}</b> — первый лидер уровня ${level}!`,
+		},
+	},
 };

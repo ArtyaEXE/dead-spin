@@ -1,5 +1,6 @@
 import type {ZodTypeAny} from 'zod';
 import {API_BASE} from '../config';
+import {groupStore} from '../stores/group';
 import {
 	LoginResponseSchema, MeResponseSchema, ProgressResponseSchema,
 	LevelCompleteResponseSchema, FuelSpendResponseSchema, LeaderboardResponseSchema,
@@ -92,9 +93,23 @@ export async function loginTelegram(initData: string) {
 export const api = {
 	me: () => request('GET', '/me', MeResponseSchema),
 	progress: () => request('GET', '/progress', ProgressResponseSchema),
-	levelComplete: (body: {level: number; stars: number; timeMs: number; fuelSpent: number}) =>
-		request('POST', '/progress/level-complete', LevelCompleteResponseSchema, body),
+	levelComplete: (body: {level: number; stars: number; timeMs: number; fuelSpent: number}) => {
+		// Если игра открыта в групповом контексте (через `/play` в беседе),
+		// добавляем chatId+hmac — сервер запишет результат и в групповой
+		// лидерборд, плюс при необходимости пушнёт нотификацию в чат.
+		const g = groupStore.getState();
+		const enriched = g.chatId !== null && g.hmac !== null
+			? {...body, groupChatId: g.chatId, groupHmac: g.hmac}
+			: body;
+		return request('POST', '/progress/level-complete', LevelCompleteResponseSchema, enriched);
+	},
 	fuelSpend: (amount: number) => request('POST', '/fuel/spend', FuelSpendResponseSchema, {amount}),
-	leaderboard: (level: number, limit = 20) =>
-		request('GET', `/leaderboard/${level}?limit=${limit}`, LeaderboardResponseSchema),
+	leaderboard: (level: number, limit = 20) => {
+		// В групповом контексте показываем лидерборд только этой беседы.
+		const g = groupStore.getState();
+		const path = g.chatId !== null && g.hmac !== null
+			? `/leaderboard/group/${g.chatId}/${level}?limit=${limit}&hmac=${g.hmac}`
+			: `/leaderboard/${level}?limit=${limit}`;
+		return request('GET', path, LeaderboardResponseSchema);
+	},
 };

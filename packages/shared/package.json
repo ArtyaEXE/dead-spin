@@ -8,7 +8,10 @@
 	"exports": {
 		".": "./src/index.ts",
 		"./level": "./src/level.ts",
-		"./constants": "./src/constants.ts"
+		"./constants": "./src/constants.ts",
+		"./comic": "./src/comic.ts",
+		"./group-context": "./src/group-context.ts",
+		"./group-hmac": "./src/group-hmac.ts"
 	},
 	"scripts": {
 		"typecheck": "tsc --noEmit"
