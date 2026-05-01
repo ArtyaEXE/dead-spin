@@ -39,10 +39,14 @@ export async function tgGetChatMemberStatus(chatId: number, tgUserId: string): P
 }
 
 
-/** `sendMessage` — нотификация в беседу. parse_mode HTML, без всплывашки. */
-export async function tgSendMessage(chatId: number, html: string): Promise<void> {
-	if (!env.TELEGRAM_BOT_TOKEN) return;
-	if (!html) return;
+/**
+ * `sendMessage` — нотификация в беседу. parse_mode HTML, без всплывашки.
+ * Возвращает `message_id` для последующего `setMessageReaction`, или null
+ * при любой ошибке (нотификация best-effort, не критична).
+ */
+export async function tgSendMessage(chatId: number, html: string): Promise<number | null> {
+	if (!env.TELEGRAM_BOT_TOKEN) return null;
+	if (!html) return null;
 	const url = `${BOT_API}/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`;
 	try {
 		const r = await fetch(url, {
@@ -58,8 +62,40 @@ export async function tgSendMessage(chatId: number, html: string): Promise<void>
 		if (!r.ok) {
 			const body = await r.text().catch(() => '');
 			console.warn(`tgSendMessage non-2xx: ${r.status} ${body.slice(0, 200)}`);
+			return null;
 		}
+		const data = await r.json() as {ok: boolean; result?: {message_id?: number}};
+		return data.ok && data.result?.message_id ? data.result.message_id : null;
 	} catch (e) {
 		console.warn('tgSendMessage failed:', e instanceof Error ? e.message : e);
+		return null;
+	}
+}
+
+
+/**
+ * `setMessageReaction` — добавить эмодзи-реакцию к сообщению (нашему же,
+ * только что отправленному). Telegram-клиент рендерит её на сообщении
+ * как акцент. Список валидных эмодзи описан в Bot API; используем
+ * "сейфные" из топ-50 (🏆 👑 🔥 ⚡ ⭐).
+ */
+export async function tgSetMessageReaction(
+	chatId: number, messageId: number, emoji: string,
+): Promise<void> {
+	if (!env.TELEGRAM_BOT_TOKEN) return;
+	const url = `${BOT_API}/bot${env.TELEGRAM_BOT_TOKEN}/setMessageReaction`;
+	try {
+		await fetch(url, {
+			method: 'POST',
+			headers: {'content-type': 'application/json'},
+			body: JSON.stringify({
+				chat_id: chatId,
+				message_id: messageId,
+				reaction: [{type: 'emoji', emoji}],
+				is_big: false,
+			}),
+		});
+	} catch (e) {
+		console.warn('tgSetMessageReaction failed:', e instanceof Error ? e.message : e);
 	}
 }

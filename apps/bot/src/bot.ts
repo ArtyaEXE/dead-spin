@@ -8,7 +8,8 @@ import {showLeaderboard} from './handlers/leaderboard';
 import {showHelp} from './handlers/help';
 import {showSettings, setLocale} from './handlers/settings';
 import {handlePreCheckout, handleSuccessfulPayment} from './handlers/payments';
-import {handleMyChatMember, handlePlayInGroup} from './handlers/groups';
+import {handleMyChatMember, handlePlayInGroup, handleNewChatMembers} from './handlers/groups';
+import {handleGroupLeaderboard, handleGroupMe, handleGroupBest} from './handlers/group-stats';
 import {toast} from './lib/nav';
 
 
@@ -21,10 +22,16 @@ export function createBot(): Bot {
 	bot.command('help', showHelp);
 	bot.command('shop', showShop);
 	bot.command('play', handlePlayInGroup);
+	// Групповые stat-команды — действуют только в group/supergroup.
+	bot.command(['lb', 'leaderboard'], handleGroupLeaderboard);
+	bot.command('me', handleGroupMe);
+	bot.command('best', handleGroupBest);
 
 	// Бот добавлен/удалён из беседы — регистрируем/деактивируем чат для
 	// группового лидерборда.
 	bot.on('my_chat_member', handleMyChatMember);
+	// Новый участник вошёл в беседу — приветствуем (skip ботов).
+	bot.on('message:new_chat_members', handleNewChatMembers);
 
 	// Навигация из callback_data
 	bot.callbackQuery('nav:home', showMainMenu);

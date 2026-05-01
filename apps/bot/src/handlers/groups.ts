@@ -43,6 +43,31 @@ export async function handleMyChatMember(ctx: Context): Promise<void> {
 
 
 /**
+ * Service-сообщение `new_chat_members` приходит когда в беседу добавили
+ * участника. Отвечаем приветствием с подсказкой `/play`. Бота-добавленцы
+ * фильтруются (включая нашего собственного — для него отдельно отрабатывает
+ * `my_chat_member` с регистрацией беседы).
+ */
+export async function handleNewChatMembers(ctx: Context): Promise<void> {
+	const chat = ctx.chat;
+	if (!chat) return;
+	if (chat.type !== 'group' && chat.type !== 'supergroup') return;
+	const members = ctx.message?.new_chat_members ?? [];
+	if (members.length === 0) return;
+
+	const locale = toLocale(ctx.from?.language_code ?? 'en');
+	const L = t(locale);
+
+	for (const m of members) {
+		if (m.is_bot) continue;
+		const display = m.first_name || m.username || 'игрок';
+		const safe = display.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+		await ctx.reply(L.group.welcome(safe), {parse_mode: 'HTML'}).catch(() => {/* noop */});
+	}
+}
+
+
+/**
  * `/play` (или `/play@bot`) в группе — отправляет сообщение с inline-кнопкой,
  * запускающей Mini App с подписанным групповым контекстом. Подпись HMAC
  * привязывает chatId к bot token'у, чтобы клиент не мог подсунуть

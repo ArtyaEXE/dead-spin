@@ -79,6 +79,7 @@ export const en = {
 	group: {
 		playInvite: '🚀 <b>Dead Spin</b> is here.\nWho clears levels faster? Tap below — the leaderboard is scoped to this chat only.',
 		addedToGroup: '➕ Add to a group',
+		welcome: (name: string) => `👋 Hey <b>${name}</b>! We play Dead Spin here — hit <b>/play</b> to join this chat\'s leaderboard.`,
 		notify: {
 			levelClear: (name: string, level: number) => `🚀 <b>${name}</b> cleared level ${level}`,
 			withStars: (stars: number) => ` with ${stars}⭐`,
@@ -87,6 +88,15 @@ export const en = {
 				`👑 <b>${newLeader}</b> kicked <b>${prev}</b> off the level ${level} throne!`,
 			firstLeader: (name: string, level: number) =>
 				`👑 <b>${name}</b> — first leader on level ${level}!`,
+		},
+		stats: {
+			notRegistered: '<i>Open the bot in DM via /start first.</i>',
+			youNothing: '<i>You haven\'t cleared any level in this chat yet. /play — let\'s go!</i>',
+			youTitle: (name: string) => `📊 <b>${name}</b> in this chat`,
+			youSummary: (lvls: number, lvlsMax: number, stars: number, starsMax: number) =>
+				`🏁 Levels: <code>${lvls}/${lvlsMax}</code>   ⭐ Stars: <code>${stars}/${starsMax}</code>`,
+			bestEmpty: '<i>No one has cleared a level in this chat yet.</i>',
+			bestTitle: '🏆 <b>Chat top</b>',
 		},
 	},
 };

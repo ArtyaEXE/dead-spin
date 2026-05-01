@@ -79,6 +79,7 @@ export const ru = {
 	group: {
 		playInvite: '🚀 <b>Dead Spin</b> подключён.\nКто пройдёт уровни быстрее? Жми кнопку ниже — лидерборд считается только среди этой беседы.',
 		addedToGroup: '➕ Добавить в беседу',
+		welcome: (name: string) => `👋 Привет, <b>${name}</b>! Тут играют в Dead Spin — жми <b>/play</b> и попадёшь в лидерборд этой беседы.`,
 		notify: {
 			levelClear: (name: string, level: number) => `🚀 <b>${name}</b> прошёл уровень ${level}`,
 			withStars: (stars: number) => ` на ${stars}⭐`,
@@ -87,6 +88,15 @@ export const ru = {
 				`👑 <b>${newLeader}</b> скинул <b>${prev}</b> с лидерской позиции уровня ${level}!`,
 			firstLeader: (name: string, level: number) =>
 				`👑 <b>${name}</b> — первый лидер уровня ${level}!`,
+		},
+		stats: {
+			notRegistered: '<i>Сначала открой бот в личке через /start.</i>',
+			youNothing: '<i>Пока что в этой беседе ты не прошёл ни одного уровня. /play — поехали!</i>',
+			youTitle: (name: string) => `📊 <b>${name}</b> в этой беседе`,
+			youSummary: (lvls: number, lvlsMax: number, stars: number, starsMax: number) =>
+				`🏁 Уровни: <code>${lvls}/${lvlsMax}</code>   ⭐ Звёзды: <code>${stars}/${starsMax}</code>`,
+			bestEmpty: '<i>В этой беседе ещё никто не прошёл ни одного уровня.</i>',
+			bestTitle: '🏆 <b>Топ беседы</b>',
 		},
 	},
 };

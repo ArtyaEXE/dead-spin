@@ -1,4 +1,4 @@
-import {tgSendMessage} from './telegram-bot';
+import {tgSendMessage, tgSetMessageReaction} from './telegram-bot';
 
 
 /**
@@ -109,6 +109,22 @@ export function buildNotificationHtml(args: {
 }
 
 
+/**
+ * Подбираем эмодзи-реакцию к нотификации по приоритету:
+ *   👑 — первый лидер уровня в этой беседе
+ *   🏆 — смена лидера (skin-of-the-throne)
+ *   🔥 — первая зачистка с 3⭐
+ *   ⚡ — личный рекорд по времени без улучшения звёзд
+ * null — без реакции (например просто улучшил время на средний результат).
+ */
+function pickReactionEmoji(diff: GroupDiff): string | null {
+	if (diff.leaderChanged) return diff.oldLeader ? '🏆' : '👑';
+	if (diff.isFirstClear && diff.newStars === 3) return '🔥';
+	if (!diff.isFirstClear && !diff.starsImproved && diff.timeImproved) return '⚡';
+	return null;
+}
+
+
 export async function sendGroupNotification(args: {
 	chatId: number;
 	level: number;
@@ -118,5 +134,8 @@ export async function sendGroupNotification(args: {
 }): Promise<void> {
 	const html = buildNotificationHtml(args);
 	if (!html) return;
-	await tgSendMessage(args.chatId, html);
+	const messageId = await tgSendMessage(args.chatId, html);
+	if (messageId === null) return;
+	const emoji = pickReactionEmoji(args.diff);
+	if (emoji) await tgSetMessageReaction(args.chatId, messageId, emoji);
 }
