@@ -5,6 +5,7 @@ import {env} from '../config';
 import {ensureUser} from '../lib/user';
 import {LINE} from '../lib/format';
 import {showMainMenu} from './menu';
+import {handlePlayInGroup} from './groups';
 
 
 /**
@@ -17,6 +18,14 @@ import {showMainMenu} from './menu';
 export async function handleStart(ctx: Context): Promise<void> {
 	if (!ctx.from || !ctx.chat) return;
 	if (ctx.from.is_bot) return;
+
+	// /start в группе (например, после `?startgroup=play`) — DM-меню с
+	// `web_app` inline-кнопкой не пройдёт (Telegram возвращает
+	// BUTTON_TYPE_INVALID для группы). Показываем приглашение играть.
+	if (ctx.chat.type !== 'private') {
+		await handlePlayInGroup(ctx);
+		return;
+	}
 
 	const tgId = String(ctx.from.id);
 	const username = ctx.from.username ?? '';

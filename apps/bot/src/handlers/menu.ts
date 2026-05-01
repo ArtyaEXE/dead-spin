@@ -4,6 +4,7 @@ import {t, toLocale} from '../i18n';
 import {render} from '../lib/nav';
 import {findUserByTgId, getUserStats} from '../lib/user';
 import {LINE, statsCard} from '../lib/format';
+import {handlePlayInGroup} from './groups';
 
 
 /**
@@ -11,6 +12,14 @@ import {LINE, statsCard} from '../lib/format';
  * Рендерится как по /menu, так и по callback "nav:home".
  */
 export async function showMainMenu(ctx: Context): Promise<void> {
+	// DM-меню содержит web_app inline-кнопку, которая в группах валится
+	// с BUTTON_TYPE_INVALID. В групповом контексте показываем
+	// групповое приглашение играть, а не персональный stats-card.
+	if (ctx.chat?.type && ctx.chat.type !== 'private') {
+		await handlePlayInGroup(ctx);
+		return;
+	}
+
 	const tgId = String(ctx.from?.id ?? '');
 	const user = tgId ? await findUserByTgId(tgId) : null;
 	if (!user) {

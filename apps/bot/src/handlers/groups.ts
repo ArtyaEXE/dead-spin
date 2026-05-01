@@ -47,13 +47,25 @@ export async function handleMyChatMember(ctx: Context): Promise<void> {
  * запускающей Mini App с подписанным групповым контекстом. Подпись HMAC
  * привязывает chatId к bot token'у, чтобы клиент не мог подсунуть
  * произвольный chatId в наш API.
+ *
+ * ВАЖНО про тип кнопки. Telegram отказывает (`BUTTON_TYPE_INVALID`) при
+ * `web_app` inline-кнопке в группе — этот тип private-only. Поэтому
+ * шлём `url`-кнопку с deep-link'ом `t.me/<bot>?startapp=<param>`, который
+ * Telegram сам разворачивает в запуск Main Mini App; `start_param` приходит
+ * в `Telegram.WebApp.initDataUnsafe.start_param`. На стороне Mini App это
+ * хэндлится в `groupStore.hydrate()` (fallback на initDataUnsafe).
+ *
+ * Требует, чтобы у бота через @BotFather было настроено Main Mini App —
+ * иначе `t.me/<bot>?startapp=` просто откроет диалог с ботом без игры.
  */
 export async function handlePlayInGroup(ctx: Context): Promise<void> {
 	const chat = ctx.chat;
 	if (!chat) return;
+	if (chat.type !== 'group' && chat.type !== 'supergroup') return;
 
-	if (chat.type !== 'group' && chat.type !== 'supergroup') {
-		// В DM /play не нужен — игра запускается из меню. Тихо игнорим.
+	const botUsername = ctx.me?.username;
+	if (!botUsername) {
+		console.warn('handlePlayInGroup: ctx.me.username unavailable, cannot build deep-link');
 		return;
 	}
 
@@ -62,14 +74,9 @@ export async function handlePlayInGroup(ctx: Context): Promise<void> {
 
 	const hmac = signGroupContext(chat.id, env.TELEGRAM_BOT_TOKEN);
 	const startParam = makeGroupStartParam(chat.id, hmac);
-	// Для inline-кнопки `web_app` Telegram НЕ выставляет automatically
-	// `initDataUnsafe.start_param` — это происходит только при запуске
-	// через direct-link (`t.me/<bot>/<app>?startapp=...`). Поэтому шлём
-	// контекст обычным query-параметром `?g=...`, а Mini App читает
-	// `window.location.search` (см. `apps/game/src/stores/group.ts`).
-	const url = `${env.WEB_APP_URL}?g=${encodeURIComponent(startParam)}`;
+	const deepLink = `https://t.me/${botUsername}?startapp=${encodeURIComponent(startParam)}`;
 
-	const kb = new InlineKeyboard().webApp(L.menu.play, url);
+	const kb = new InlineKeyboard().url(L.menu.play, deepLink);
 
 	await ctx.reply(L.group.playInvite, {reply_markup: kb, parse_mode: 'HTML'});
 }
