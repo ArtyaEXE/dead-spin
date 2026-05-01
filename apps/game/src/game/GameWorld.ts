@@ -7,9 +7,11 @@ import {
 	PLAYER_RADIUS, STAR_RADIUS, FINISH_RADIUS, BOOST_FORCE,
 	FUEL_CONSUMPTION_PER_BOOST,
 } from '@dead-spin/shared';
-import type {Level} from '@dead-spin/shared';
+import type {Level, GhostRecording} from '@dead-spin/shared';
 
 import {Camera} from './camera';
+import {Recorder} from './recorder';
+import {GhostPlayer} from './ghost-player';
 import {loadGameTextures, loadShipTexture, type GameTextures} from './assets';
 import {getSelectedSkinId} from '../stores/skin';
 import {createWallsLayer, type WallsLayer} from './renderers/walls';
@@ -67,6 +69,9 @@ export class GameWorld {
 	private time = 0;
 	private collected = 0;
 	private result: GameResult | null = null;
+	private recorder: Recorder | null = null;
+	private ghost: GhostPlayer | null = null;
+	private ghostRecording: GhostRecording | null = null;
 
 	// Каждый тап буста запускает envelope-анимацию пламени:
 	// expand → flicker hold → decay. Re-tap до окончания просто перезапускает с 0.
@@ -86,7 +91,11 @@ export class GameWorld {
 	private readonly FINISH_MS = 800;
 
 
-	constructor(private level: Level, private callbacks: GameCallbacks) {}
+	constructor(
+		private level: Level,
+		private levelNumber: number,
+		private callbacks: GameCallbacks,
+	) {}
 
 
 	async mount(host: HTMLElement, initialFuel: number): Promise<void> {
@@ -120,6 +129,8 @@ export class GameWorld {
 
 		this.buildScene();
 		this.resetPlayer();
+		this.resetRecorder();
+		this.refreshGhost();
 		this.prepareSpatialIndex();
 		this.beginSpawnAnim();
 
@@ -164,7 +175,48 @@ export class GameWorld {
 		this.world.removeChildren();
 		this.buildScene();
 		this.resetPlayer();
+		this.resetRecorder();
+		this.refreshGhost();
 		this.beginSpawnAnim();
+	}
+
+
+	private resetRecorder(): void {
+		this.recorder = new Recorder({
+			level: this.levelNumber,
+			gravity: this.level.gravity,
+		});
+		this.recorder.add('start', 0, this.player);
+	}
+
+
+	getRecording(): GhostRecording | null {
+		return this.recorder ? this.recorder.finalize() : null;
+	}
+
+
+	/**
+	 * Установить запись лидера для воспроизведения как ghost. null — убрать.
+	 * Вызывать можно как до, так и после mount(); если сцена ещё не готова,
+	 * запись запомнится и применится в первом `refreshGhost()`.
+	 */
+	setGhostRecording(rec: GhostRecording | null): void {
+		this.ghostRecording = rec;
+		this.refreshGhost();
+	}
+
+
+	private refreshGhost(): void {
+		if (this.ghost) {
+			this.ghost.destroy();
+			this.ghost = null;
+		}
+		if (!this.ghostRecording || !this.textures || !this.playerSprite) return;
+		this.ghost = new GhostPlayer(this.ghostRecording, this.textures.ship);
+		// Помещаем под спрайт игрока, чтобы наш корабль перекрывал ghost'а
+		// при пересечении (визуально приоритет на нашем).
+		const idx = this.world.getChildIndex(this.playerSprite.container);
+		this.world.addChildAt(this.ghost.container, idx);
 	}
 
 
@@ -289,6 +341,11 @@ export class GameWorld {
 		this.callbacks.onFuelChange(this.fuel);
 		this.boostStartedAt = performance.now();
 
+		// Снимок ПОСЛЕ applyForce — в vx/vy уже зашит импульс. Replay
+		// ghost'а на этом event'е резко перезапишет state, и между
+		// boost'ами пойдёт ballistic-движение по гравитации.
+		this.recorder?.add('boost', this.time, this.player);
+
 		audio.play('booster', 0.7);
 
 		// Дым за соплом — в 35px от центра в противоположном направлении от носа.
@@ -334,6 +391,12 @@ export class GameWorld {
 
 		this.time += Math.round(dt * 1000);
 		this.callbacks.onTimeChange(this.time);
+
+		// Призрак движется в реальном игровом времени; pause/result обработаны
+		// выше — в step() мы доходим только в running-state, поэтому тут
+		// безопасно. Replay внутри ghost'а сам snap'ит state'ом на event'ах
+		// и считает ballistic между ними.
+		this.ghost?.setTime(this.time);
 
 		const near = getNearStrokesByPoint(this.chunks, this.player);
 		if (Physics.checkMovingCircle(this.player, near, dt)) {
@@ -436,6 +499,7 @@ export class GameWorld {
 			timeMs: this.time,
 			fuelSpent: Math.max(0, this.initialFuel - this.fuel),
 		};
+		this.recorder?.add(type, this.time, this.player);
 		// Сообщаем сразу — UI сам решит когда показывать overlay. Это позволяет
 		// запустить shake/вспышку параллельно со взрывом, а показ ResultScreen
 		// отложить в GameScreen (через setTimeout на его стороне).

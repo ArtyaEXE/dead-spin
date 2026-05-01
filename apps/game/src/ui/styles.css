@@ -664,6 +664,25 @@ html, body, #root {
 	display: flex;
 	flex-direction: column;
 }
+
+/* Плашка ghost'а — видна только в групповом контексте, когда есть лидер. */
+.ghost-badge {
+	position: absolute;
+	top: calc(60px + var(--sa-top));
+	left: calc(12px + var(--sa-left));
+	background: rgba(0, 0, 0, 0.55);
+	color: #cdf;
+	font-size: 13px;
+	padding: 4px 10px;
+	border-radius: 6px;
+	z-index: 5;
+	pointer-events: none;
+	letter-spacing: 0.2px;
+}
+.ghost-badge code {
+	color: #fff;
+	font-family: ui-monospace, SFMono-Regular, monospace;
+}
 .game-screen.shake {
 	animation: earthquake 0.4s ease-in-out;
 	transform-origin: center center;

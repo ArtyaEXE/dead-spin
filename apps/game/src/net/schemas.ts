@@ -69,3 +69,24 @@ export const LeaderboardResponseSchema = z.object({
 
 
 export const MeResponseSchema = z.object({user: UserSchema});
+
+
+export const GhostResponseSchema = z.object({
+	level: z.number().int(),
+	userId: z.string(),
+	username: z.string(),
+	stars: z.number().int(),
+	timeMs: z.number().int(),
+	recording: z.object({
+		level: z.number().int(),
+		gravity: z.object({x: z.number(), y: z.number()}),
+		events: z.array(z.object({
+			type: z.enum(['start', 'boost', 'loose', 'win']),
+			time: z.number(),
+			x: z.number(), y: z.number(), r: z.number(),
+			vx: z.number(), vy: z.number(), vr: z.number(),
+		})),
+	}),
+	recordedAt: z.string(),
+});
+export type GhostResponse = z.infer<typeof GhostResponseSchema>;

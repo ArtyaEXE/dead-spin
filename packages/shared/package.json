@@ -11,7 +11,8 @@
 		"./constants": "./src/constants.ts",
 		"./comic": "./src/comic.ts",
 		"./group-context": "./src/group-context.ts",
-		"./group-hmac": "./src/group-hmac.ts"
+		"./group-hmac": "./src/group-hmac.ts",
+		"./ghost": "./src/ghost.ts"
 	},
 	"scripts": {
 		"typecheck": "tsc --noEmit"

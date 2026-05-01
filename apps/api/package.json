@@ -16,6 +16,7 @@
 	},
 	"dependencies": {
 		"@dead-spin/db": "workspace:*",
+		"@dead-spin/levels": "workspace:*",
 		"@dead-spin/shared": "workspace:*",
 		"@hono/node-server": "^1.13.2",
 		"drizzle-orm": "^0.36.0",

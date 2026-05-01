@@ -4,6 +4,7 @@ import {LEVEL_COUNT} from '@dead-spin/shared';
 import {api} from '../net/client';
 import {authStore} from '../stores/auth';
 import {progressStore} from '../stores/progress';
+import {ghostStore, useGhost} from '../stores/ghost';
 import {GameWorld, type GameResult} from '../game/GameWorld';
 import {audio, type LoopHandle} from '../game/audio';
 import {TopBar} from './TopBar';
@@ -13,6 +14,14 @@ import {TutorialOverlay, computeTutorialQueue, markSeen} from './Tutorial';
 
 
 const LOW_FUEL_THRESHOLD = 2000;
+
+
+function fmtTime(ms: number): string {
+	const totalSec = Math.floor(ms / 1000);
+	const m = Math.floor(totalSec / 60);
+	const s = totalSec % 60;
+	return `${m}:${String(s).padStart(2, '0')}`;
+}
 
 
 const ZOOM_STEP = 0.2;
@@ -70,7 +79,7 @@ export function GameScreen(props: {
 		if (!level || !hostRef) return;
 
 		const user = authStore.getState().user;
-		world = new GameWorld(level, {
+		world = new GameWorld(level, levelNumber, {
 			onFuelChange: setFuel,
 			onStarsChange: setStars,
 			onTimeChange: setTime,
@@ -94,11 +103,13 @@ export function GameScreen(props: {
 				if (r.type === 'win') {
 					progressStore.getState().recordLocal(levelNumber, r.stars, r.timeMs, r.fuelSpent);
 					try {
+						const recording = world?.getRecording() ?? null;
 						await api.levelComplete({
 							level: levelNumber,
 							stars: r.stars,
 							timeMs: r.timeMs,
 							fuelSpent: r.fuelSpent,
+							recording: recording ?? undefined,
 						});
 					} catch {}
 				}
@@ -112,8 +123,25 @@ export function GameScreen(props: {
 				}
 			},
 		});
-		void world.mount(hostRef, user?.fuel ?? 10_000);
+		void world.mount(hostRef, user?.fuel ?? 10_000).then(() => {
+			// После того как сцена готова — применяем ghost (если он уже
+			// загружен ghostStore'ом). На случай гонки: setGhostRecording
+			// будет вызвана повторно из createEffect ниже когда стор обновится.
+			const cur = ghostStore.getState().current;
+			world?.setGhostRecording(cur ? cur.recording : null);
+		});
 	};
+
+	// Грузим ghost для текущего уровня (только в групповом контексте — в DM
+	// store просто отдаст null без сети). После успеха setGhostRecording
+	// автоматически применит запись.
+	void ghostStore.getState().load(props.levelNumber);
+
+	const ghost = useGhost();
+	createEffect(() => {
+		const cur = ghost().current;
+		world?.setGhostRecording(cur ? cur.recording : null);
+	});
 
 	onMount(() => {
 		const queue = computeTutorialQueue(props.levelNumber);
@@ -166,6 +194,14 @@ export function GameScreen(props: {
 	return (
 		<div class="game-screen" classList={{shake: shake()}}>
 			<TopBar fuel={fuel()} time={time()} stars={stars()} />
+
+			<Show when={ghost().current}>
+				{(g) => (
+					<div class="ghost-badge">
+						👻 <b>{g().username}</b> — {g().stars}⭐ <code>{fmtTime(g().timeMs)}</code>
+					</div>
+				)}
+			</Show>
 
 			<div ref={hostRef} class="game-host">
 				{/* Виньетка — статичная маска по краям экрана; light.png

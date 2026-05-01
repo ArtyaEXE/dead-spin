@@ -2,6 +2,7 @@ import {createStore} from 'zustand/vanilla';
 import {api} from '../net/client';
 import type {ProgressLevel} from '../net/schemas';
 import {createSolidStoreAdapter} from './solid';
+import {groupStore} from './group';
 
 
 type ProgressState = {
@@ -19,7 +20,14 @@ export const progressStore = createStore<ProgressState>((set, get) => ({
 	loaded: false,
 
 	async refresh() {
-		const res = await api.progress();
+		// Прогресс в группе считается отдельно от DM-прогресса. Если игра
+		// открыта через `/play` в беседе — лидерборд/уровни показывают
+		// "чистый" прогресс этой беседы, даже если игрок ранее всё прошёл
+		// в DM или другой группе.
+		const g = groupStore.getState();
+		const res = g.chatId !== null && g.hmac !== null
+			? await api.groupProgress(g.chatId, g.hmac)
+			: await api.progress();
 		const map: Record<number, ProgressLevel> = {};
 		for (const row of res.levels) map[row.level] = row;
 		set({summaryStars: res.summaryStars, levels: map, loaded: true});

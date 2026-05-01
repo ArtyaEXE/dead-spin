@@ -1,9 +1,11 @@
 import type {ZodTypeAny} from 'zod';
+import type {GhostRecording} from '@dead-spin/shared';
 import {API_BASE} from '../config';
 import {groupStore} from '../stores/group';
 import {
 	LoginResponseSchema, MeResponseSchema, ProgressResponseSchema,
 	LevelCompleteResponseSchema, FuelSpendResponseSchema, LeaderboardResponseSchema,
+	GhostResponseSchema,
 } from './schemas';
 
 
@@ -92,15 +94,24 @@ export async function loginTelegram(initData: string) {
 
 export const api = {
 	me: () => request('GET', '/me', MeResponseSchema),
+	/** Глобальный прогресс игрока (DM-сценарий). */
 	progress: () => request('GET', '/progress', ProgressResponseSchema),
-	levelComplete: (body: {level: number; stars: number; timeMs: number; fuelSpent: number}) => {
+	/** Прогресс в рамках конкретной беседы — отдельный «save» per chat. */
+	groupProgress: (chatId: number, hmac: string) =>
+		request('GET', `/progress/group/${chatId}?hmac=${hmac}`, ProgressResponseSchema),
+	levelComplete: (body: {
+		level: number; stars: number; timeMs: number; fuelSpent: number;
+		recording?: GhostRecording;
+	}) => {
 		// Если игра открыта в групповом контексте (через `/play` в беседе),
 		// добавляем chatId+hmac — сервер запишет результат и в групповой
 		// лидерборд, плюс при необходимости пушнёт нотификацию в чат.
+		// Recording (ghost-запись) отправляем только в групповом контексте —
+		// в DM-сценарии она бесполезна и только нагружает payload.
 		const g = groupStore.getState();
 		const enriched = g.chatId !== null && g.hmac !== null
 			? {...body, groupChatId: g.chatId, groupHmac: g.hmac}
-			: body;
+			: {...body, recording: undefined};
 		return request('POST', '/progress/level-complete', LevelCompleteResponseSchema, enriched);
 	},
 	fuelSpend: (amount: number) => request('POST', '/fuel/spend', FuelSpendResponseSchema, {amount}),
@@ -112,4 +123,6 @@ export const api = {
 			: `/leaderboard/${level}?limit=${limit}`;
 		return request('GET', path, LeaderboardResponseSchema);
 	},
+	groupGhost: (chatId: number, hmac: string, level: number) =>
+		request('GET', `/leaderboard/group/${chatId}/${level}/ghost?hmac=${hmac}`, GhostResponseSchema),
 };

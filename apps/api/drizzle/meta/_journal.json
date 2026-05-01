@@ -15,6 +15,13 @@
       "when": 1777622558239,
       "tag": "0001_groups",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1777624838971,
+      "tag": "0002_ghosts",
+      "breakpoints": true
     }
   ]
 }

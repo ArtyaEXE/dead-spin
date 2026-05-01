@@ -4,13 +4,14 @@ import {
 	integer,
 	bigint,
 	timestamp,
+	jsonb,
 	primaryKey,
 	uniqueIndex,
 	index,
 	check,
 } from 'drizzle-orm/pg-core';
 import {sql} from 'drizzle-orm';
-import {FUEL_INITIAL} from '@dead-spin/shared';
+import {FUEL_INITIAL, type GhostRecording} from '@dead-spin/shared';
 
 
 /**
@@ -170,8 +171,31 @@ export type NewProgressLevel = typeof progressLevels.$inferInsert;
 export type Payment = typeof payments.$inferSelect;
 export type NewPayment = typeof payments.$inferInsert;
 
+/**
+ * group_ghosts — запись прохождения текущего лидера (chat, level). При
+ * улучшении лидером (или сменой лидера) запись перезаписывается. Mini App
+ * фетчит её на старте уровня и проигрывает translucent-кораблём.
+ *
+ * `recording` — JSONB по схеме `GhostRecording` из `@dead-spin/shared`.
+ */
+export const groupGhosts = pgTable('group_ghosts', {
+	chatId: bigint('chat_id', {mode: 'number'}).notNull().references(() => groupChats.chatId, {onDelete: 'cascade'}),
+	level: integer('level').notNull(),
+	userId: text('user_id').notNull().references(() => users.id, {onDelete: 'cascade'}),
+	stars: integer('stars').notNull(),
+	timeMs: integer('time_ms').notNull(),
+	recording: jsonb('recording').$type<GhostRecording>().notNull(),
+	recordedAt: timestamp('recorded_at', {withTimezone: true}).notNull().defaultNow(),
+}, (table) => ({
+	pk: primaryKey({columns: [table.chatId, table.level]}),
+}));
+
+
 export type GroupChat = typeof groupChats.$inferSelect;
 export type NewGroupChat = typeof groupChats.$inferInsert;
 
 export type GroupProgressLevel = typeof groupProgressLevels.$inferSelect;
 export type NewGroupProgressLevel = typeof groupProgressLevels.$inferInsert;
+
+export type GroupGhost = typeof groupGhosts.$inferSelect;
+export type NewGroupGhost = typeof groupGhosts.$inferInsert;

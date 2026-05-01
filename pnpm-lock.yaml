@@ -23,6 +23,9 @@ importers:
       '@dead-spin/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@dead-spin/levels':
+        specifier: workspace:*
+        version: link:../../packages/levels
       '@dead-spin/shared':
         specifier: workspace:*
         version: link:../../packages/shared

@@ -4,9 +4,9 @@ import {z} from 'zod';
 import {MAX_LEVEL_NUMBER, GROUP_HMAC_LEN} from '@dead-spin/shared';
 import {verifyGroupContext} from '@dead-spin/shared/group-hmac';
 import {db} from '../db/client';
-import {progressLevels, groupChats, groupProgressLevels, users} from '../db/schema';
+import {progressLevels, groupChats, groupProgressLevels, groupGhosts, users} from '../db/schema';
 import {requireAuth, type AuthedEnv} from '../middleware/auth';
-import {badRequest, forbidden} from '../lib/errors';
+import {badRequest, forbidden, notFound} from '../lib/errors';
 import {env} from '../config';
 import {isGroupMember} from '../lib/group-membership';
 
@@ -151,5 +151,61 @@ leaderboardRoutes.get('/group/:chatId/:level', requireAuth, async (c) => {
 		me: myRank
 			? {rank: Number(myRank.rank), stars: myRank.stars, timeMs: myRank.time_ms}
 			: null,
+	});
+});
+
+
+/**
+ * GET /leaderboard/group/:chatId/:level/ghost?hmac=<12hex>
+ *
+ * Запись прохождения текущего лидера (chat, level) — Mini App проигрывает
+ * её translucent-кораблём поверх трека. Авторизация та же, что у группового
+ * лидерборда: HMAC chatId + членство юзера в чате.
+ *
+ * 404 если ghost ещё не записан (никто пока не прошёл уровень).
+ */
+leaderboardRoutes.get('/group/:chatId/:level/ghost', requireAuth, async (c) => {
+	const params = GroupParams.safeParse({chatId: c.req.param('chatId'), level: c.req.param('level')});
+	if (!params.success) throw badRequest('invalidParams');
+
+	const hmac = c.req.query('hmac') ?? '';
+	if (!new RegExp(`^[0-9a-f]{${GROUP_HMAC_LEN}}$`).test(hmac)) throw badRequest('invalidHmac');
+	if (!verifyGroupContext(params.data.chatId, hmac, env.TELEGRAM_BOT_TOKEN)) throw forbidden('hmacMismatch');
+
+	const [chat] = await db.select()
+		.from(groupChats)
+		.where(and(eq(groupChats.chatId, params.data.chatId), isNull(groupChats.leftAt)))
+		.limit(1);
+	if (!chat) throw forbidden('groupInactive');
+
+	if (!await isGroupMember(params.data.chatId, c.var.user.tgId)) throw forbidden('notMember');
+
+	const [row] = await db
+		.select({
+			userId: groupGhosts.userId,
+			username: users.username,
+			stars: groupGhosts.stars,
+			timeMs: groupGhosts.timeMs,
+			recording: groupGhosts.recording,
+			recordedAt: groupGhosts.recordedAt,
+		})
+		.from(groupGhosts)
+		.innerJoin(users, eq(users.id, groupGhosts.userId))
+		.where(and(
+			eq(groupGhosts.chatId, params.data.chatId),
+			eq(groupGhosts.level, params.data.level),
+		))
+		.limit(1);
+
+	if (!row) throw notFound('noGhost');
+
+	return c.json({
+		level: params.data.level,
+		userId: row.userId,
+		username: row.username,
+		stars: row.stars,
+		timeMs: row.timeMs,
+		recording: row.recording,
+		recordedAt: row.recordedAt,
 	});
 });

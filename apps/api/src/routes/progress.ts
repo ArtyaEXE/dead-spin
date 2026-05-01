@@ -8,12 +8,16 @@ import {
 	STARS_MIN,
 	STARS_MAX,
 	GROUP_HMAC_LEN,
+	GhostRecordingSchema,
+	isPlausibleRecording,
+	type GhostRecording,
 } from '@dead-spin/shared';
+import {getLevelByNumber} from '@dead-spin/levels';
 import {verifyGroupContext} from '@dead-spin/shared/group-hmac';
 import {db} from '../db/client';
-import {progresses, progressLevels, groupChats, groupProgressLevels, users} from '../db/schema';
+import {progresses, progressLevels, groupChats, groupProgressLevels, groupGhosts, users} from '../db/schema';
 import {requireAuth, type AuthedEnv} from '../middleware/auth';
-import {badRequest} from '../lib/errors';
+import {badRequest, forbidden} from '../lib/errors';
 import {env} from '../config';
 import {isGroupMember} from '../lib/group-membership';
 import {sendGroupNotification, type GroupDiff} from '../lib/group-notifications';
@@ -46,6 +50,56 @@ progressRoutes.get('/', requireAuth, async (c) => {
 });
 
 
+/**
+ * GET /progress/group/:chatId?hmac=<12hex>
+ *
+ * Прогресс игрока В РАМКАХ беседы — отдельный от глобального. Когда игра
+ * запущена через `/play` в группе, Mini App тянет именно этот эндпоинт,
+ * чтобы лидерборд/уровни показывали состояние per-chat: уровни, ранее
+ * пройденные глобально (в DM или в другой группе), считаются здесь
+ * непройденными. Это "чистый старт" внутри беседы.
+ *
+ * Авторизация: HMAC + членство в чате (как в group leaderboard).
+ */
+progressRoutes.get('/group/:chatId', requireAuth, async (c) => {
+	const chatId = Number(c.req.param('chatId'));
+	if (!Number.isInteger(chatId)) throw badRequest('invalidChatId');
+
+	const hmac = c.req.query('hmac') ?? '';
+	if (!new RegExp(`^[0-9a-f]{${GROUP_HMAC_LEN}}$`).test(hmac)) throw badRequest('invalidHmac');
+	if (!verifyGroupContext(chatId, hmac, env.TELEGRAM_BOT_TOKEN)) throw forbidden('hmacMismatch');
+
+	const [chat] = await db.select()
+		.from(groupChats)
+		.where(and(eq(groupChats.chatId, chatId), isNull(groupChats.leftAt)))
+		.limit(1);
+	if (!chat) throw forbidden('groupInactive');
+
+	if (!await isGroupMember(chatId, c.var.user.tgId)) throw forbidden('notMember');
+
+	const userId = c.var.user.id;
+
+	const rows = await db
+		.select({
+			userId: groupProgressLevels.userId,
+			level: groupProgressLevels.level,
+			stars: groupProgressLevels.stars,
+			timeMs: groupProgressLevels.timeMs,
+			fuelSpent: groupProgressLevels.fuelSpent,
+			updatedAt: groupProgressLevels.updatedAt,
+		})
+		.from(groupProgressLevels)
+		.where(and(
+			eq(groupProgressLevels.chatId, chatId),
+			eq(groupProgressLevels.userId, userId),
+		));
+
+	const summaryStars = rows.reduce((acc, r) => acc + r.stars, 0);
+
+	return c.json({summaryStars, levels: rows});
+});
+
+
 const LevelCompleteSchema = z.object({
 	level: z.number().int().min(1).max(MAX_LEVEL_NUMBER),
 	stars: z.number().int().min(STARS_MIN).max(STARS_MAX),
@@ -57,6 +111,10 @@ const LevelCompleteSchema = z.object({
 	// записывается как обычно.
 	groupChatId: z.number().int().optional(),
 	groupHmac: z.string().regex(new RegExp(`^[0-9a-f]{${GROUP_HMAC_LEN}}$`)).optional(),
+	// Ghost-запись прохождения (event-based, см. shared/ghost.ts).
+	// Принимается только в групповом контексте; сервер сохраняет только
+	// запись текущего лидера (chat, level).
+	recording: GhostRecordingSchema.optional(),
 });
 
 
@@ -79,7 +137,7 @@ progressRoutes.post('/level-complete', requireAuth, async (c) => {
 	const parsed = LevelCompleteSchema.safeParse(raw);
 	if (!parsed.success) throw badRequest('invalidBody');
 
-	const {level, stars, timeMs, fuelSpent, groupChatId, groupHmac} = parsed.data;
+	const {level, stars, timeMs, fuelSpent, groupChatId, groupHmac, recording} = parsed.data;
 
 	const newStars = await db.transaction(async (tx) => {
 		const [existing] = await tx
@@ -137,6 +195,7 @@ progressRoutes.post('/level-complete', requireAuth, async (c) => {
 			chatId: groupChatId, hmac: groupHmac,
 			userId, tgId, username, locale,
 			level, stars, timeMs, fuelSpent,
+			recording,
 		}).catch((e) => console.warn('processGroupResult failed:', e instanceof Error ? e.message : e));
 	}
 
@@ -160,8 +219,9 @@ async function processGroupResult(args: {
 	stars: number;
 	timeMs: number;
 	fuelSpent: number;
+	recording?: GhostRecording;
 }): Promise<void> {
-	const {chatId, hmac, userId, tgId, username, locale, level, stars, timeMs, fuelSpent} = args;
+	const {chatId, hmac, userId, tgId, username, locale, level, stars, timeMs, fuelSpent, recording} = args;
 
 	if (!verifyGroupContext(chatId, hmac, env.TELEGRAM_BOT_TOKEN)) {
 		console.warn(`group HMAC mismatch for chat ${chatId} user ${userId}`);
@@ -184,6 +244,27 @@ async function processGroupResult(args: {
 	}
 
 	const diff = await db.transaction(async (tx): Promise<GroupDiff | null> => {
+		// Прогресс в беседе — отдельный от глобального. Чтобы лидерборд
+		// per chat начинался "с чистого листа", ставим тот же gate, что и
+		// в глобальном пути: уровень N доступен только когда есть запись
+		// о N-1 в этой беседе. На нарушении тихо выходим — глобальная
+		// запись уже успешно сделана выше.
+		if (level > 1) {
+			const [prev] = await tx
+				.select({level: groupProgressLevels.level})
+				.from(groupProgressLevels)
+				.where(and(
+					eq(groupProgressLevels.chatId, chatId),
+					eq(groupProgressLevels.userId, userId),
+					eq(groupProgressLevels.level, level - 1),
+				))
+				.limit(1);
+			if (!prev) {
+				console.warn(`group prev-level gate: user ${userId} chat ${chatId} level ${level} skipped (no level ${level - 1})`);
+				return null;
+			}
+		}
+
 		// Лидер до апдейта.
 		const oldLeaderRows = await tx
 			.select({userId: groupProgressLevels.userId, username: users.username})
@@ -266,6 +347,32 @@ async function processGroupResult(args: {
 	});
 
 	if (!diff) return;
+
+	// Ghost: если этот результат сделал юзера лидером per (chat, level) —
+	// перезаписываем сохранённую запись на новую (лучшую). Sanity-проверки
+	// отсекают мусор от чита-клиента; падение проверок просто скипает ghost,
+	// нотификацию про рекорд это не блокирует.
+	if (recording && diff.newLeader.userId === userId) {
+		const lvl = getLevelByNumber(level);
+		const ok = lvl && isPlausibleRecording({
+			rec: recording,
+			level,
+			startPoint: lvl.startPoint,
+			finishPoint: lvl.finishPoint,
+			timeMs,
+		});
+		if (ok) {
+			await db.insert(groupGhosts)
+				.values({chatId, level, userId, stars, timeMs, recording})
+				.onConflictDoUpdate({
+					target: [groupGhosts.chatId, groupGhosts.level],
+					set: {userId, stars, timeMs, recording, recordedAt: sql`now()`},
+				})
+				.catch((e) => console.warn('group_ghosts upsert failed:', e instanceof Error ? e.message : e));
+		} else {
+			console.warn(`ghost recording rejected by sanity-check (chat=${chatId}, level=${level}, user=${userId})`);
+		}
+	}
 
 	await sendGroupNotification({chatId, level, username, locale, diff});
 }
