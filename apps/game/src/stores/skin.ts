@@ -48,3 +48,19 @@ export function getSkinById(id: SkinId): SkinDef {
 export function isSkinUnlocked(skin: SkinDef, summaryStars: number): boolean {
 	return summaryStars >= skin.requiredStars;
 }
+
+
+/**
+ * Активный скин — выбранный из localStorage с проверкой того, что он
+ * разблокирован в **текущем** контексте. Скины зависят от прогресса:
+ * в DM это глобальные звёзды, в группе — звёзды только этой беседы.
+ *
+ * Без этой проверки игрок, разблокировавший Wanderer в DM, открывая
+ * Mini App в свежей беседе с 0★, играл бы Wanderer'ом — что неправильно
+ * по правилам прогрессии в группе.
+ */
+export function getActiveSkinId(summaryStars: number): SkinId {
+	const selected = getSelectedSkinId();
+	const skin = getSkinById(selected);
+	return isSkinUnlocked(skin, summaryStars) ? selected : 'prospector';
+}

@@ -13,7 +13,8 @@ import {Camera} from './camera';
 import {Recorder} from './recorder';
 import {GhostPlayer} from './ghost-player';
 import {loadGameTextures, loadShipTexture, type GameTextures} from './assets';
-import {getSelectedSkinId} from '../stores/skin';
+import {getActiveSkinId} from '../stores/skin';
+import {progressStore} from '../stores/progress';
 import {createWallsLayer, type WallsLayer} from './renderers/walls';
 import {createPlayer} from './renderers/player';
 import {createStar, animateStarSpawn, type StarSprite} from './renderers/stars';
@@ -107,8 +108,12 @@ export class GameWorld {
 		this.zoom = Number.isFinite(storedZoom) && storedZoom >= 0.6 && storedZoom <= 1.4 ? storedZoom : 1;
 
 		this.textures = await loadGameTextures();
-		// Подменяем ship-текстуру на выбранный скин (по умолчанию — prospector / ship2.png).
-		this.textures = {...this.textures, ship: await loadShipTexture(getSelectedSkinId())};
+		// Активный скин валидируется по текущему прогресс-контексту: в группе
+		// это звёзды только этой беседы, в DM — глобальные. Если выбранный
+		// скин залочен в текущем контексте, фолбэчимся на prospector
+		// (см. getActiveSkinId в stores/skin.ts).
+		const activeSkin = getActiveSkinId(progressStore.getState().summaryStars);
+		this.textures = {...this.textures, ship: await loadShipTexture(activeSkin)};
 
 		await this.app.init({
 			resizeTo: host,
@@ -212,7 +217,7 @@ export class GameWorld {
 			this.ghost = null;
 		}
 		if (!this.ghostRecording || !this.textures || !this.playerSprite) return;
-		this.ghost = new GhostPlayer(this.ghostRecording, this.textures.ship);
+		this.ghost = new GhostPlayer(this.ghostRecording, this.textures.ship, this.textures.booster);
 		// Помещаем под спрайт игрока, чтобы наш корабль перекрывал ghost'а
 		// при пересечении (визуально приоритет на нашем).
 		const idx = this.world.getChildIndex(this.playerSprite.container);

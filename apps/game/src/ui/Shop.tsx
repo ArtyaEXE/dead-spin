@@ -2,7 +2,10 @@ import {createSignal, createEffect, For, Show} from 'solid-js';
 import {progressStore, useProgress} from '../stores/progress';
 import {useAuth} from '../stores/auth';
 import {useLiveFuel} from '../stores/fuel';
-import {SKINS, getSelectedSkinId, setSelectedSkinId, isSkinUnlocked, type SkinId, type SkinDef} from '../stores/skin';
+import {
+	SKINS, getActiveSkinId, setSelectedSkinId, isSkinUnlocked,
+	type SkinId, type SkinDef,
+} from '../stores/skin';
 
 
 /**
@@ -15,7 +18,17 @@ export function Shop(props: {onBack: () => void}) {
 	const progress = useProgress();
 	const liveFuel = useLiveFuel();
 	const fuelK = () => (liveFuel() / 1000).toFixed(2);
-	const [selected, setSelected] = createSignal<SkinId>(getSelectedSkinId());
+
+	// `active` — фактически применяющийся скин в текущем контексте: выбор
+	// игрока из localStorage, но если он залочен (например, выбрал в DM,
+	// зашёл в свежую беседу с 0★) — fallback на prospector. Через
+	// `skinTick` форсим пересчёт после ручного выбора (localStorage сам
+	// не реактивен).
+	const [skinTick, setSkinTick] = createSignal(0);
+	const active = (): SkinId => {
+		skinTick();
+		return getActiveSkinId(progress().summaryStars);
+	};
 
 	// Гарантируем свежий счётчик звёзд при открытии магазина — на тот случай,
 	// если App-уровневый refresh не успел или упал.
@@ -27,8 +40,8 @@ export function Shop(props: {onBack: () => void}) {
 
 	const choose = (skin: SkinDef): void => {
 		if (!isSkinUnlocked(skin, progress().summaryStars)) return;
-		setSelected(skin.id);
 		setSelectedSkinId(skin.id);
+		setSkinTick(v => v + 1);
 	};
 
 	return (
@@ -51,7 +64,7 @@ export function Shop(props: {onBack: () => void}) {
 				<For each={SKINS}>
 					{(skin) => {
 						const unlocked = (): boolean => isSkinUnlocked(skin, progress().summaryStars);
-						const isSelected = (): boolean => selected() === skin.id;
+						const isSelected = (): boolean => active() === skin.id;
 						return (
 							<div
 								class="shop-card"
