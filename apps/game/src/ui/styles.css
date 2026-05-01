@@ -666,10 +666,11 @@ html, body, #root {
 }
 
 /* Плашка беседы (группа) — название команды + эмодзи. Видна когда игра
-   открыта через /play в беседе. Над ghost-badge. */
+   открыта через /play в беседе. Над ghost-badge. Опускаем под TopBar
+   с запасом, чтобы не упиралась в шкалу топлива/время. */
 .group-badge {
 	position: absolute;
-	top: calc(60px + var(--sa-top));
+	top: calc(110px + var(--sa-top));
 	right: calc(12px + var(--sa-right));
 	background: rgba(0, 0, 0, 0.55);
 	color: #fff;
@@ -688,7 +689,7 @@ html, body, #root {
 /* Плашка ghost'а — видна только в групповом контексте, когда есть лидер. */
 .ghost-badge {
 	position: absolute;
-	top: calc(60px + var(--sa-top));
+	top: calc(110px + var(--sa-top));
 	left: calc(12px + var(--sa-left));
 	background: rgba(0, 0, 0, 0.55);
 	color: #cdf;

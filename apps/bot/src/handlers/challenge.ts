@@ -7,19 +7,24 @@ import {findUserByTgId} from '../lib/user';
 
 
 /**
- * `/challenge @username N` — дуэль 1×1 на уровне N в этой беседе. Через
- * 24 часа (или раньше, когда оба сыграли) бот объявит победителя по
- * правилу: больше звёзд > меньше времени.
+ * `/challenge @username N` — дуэль 1×1 на уровне N в этой беседе.
+ * Single-attempt: **первое прохождение** каждого после вызова — это его
+ * результат в дуэли (последующие улучшения не учитываются). Когда оба
+ * сыграли — итог. Победитель: больше звёзд > меньше времени.
  *
  * @user определяется по username из БД (мы храним telegram username
  * в `users.username`). Если такого юзера нет — отказ.
  *
  * Создание дуэли НЕ требует подтверждения от вызываемого — он просто
  * играет уровень в обычном режиме, мы засчитаем результат автоматически.
+ *
+ * Cleanup: pending-дуэли стоят 7 дней как safety-net (если кто-то так и
+ * не сыграл — не висят вечно). По истечению одного-сыгравшего объявляем
+ * победителем, никого-сыгравшего — тихо expired.
  */
 
 
-const DUEL_DURATION_MS = 24 * 60 * 60 * 1000;
+const DUEL_CLEANUP_MS = 7 * 24 * 60 * 60 * 1000;
 
 
 function isGroupChat(ctx: Context): boolean {
@@ -98,7 +103,7 @@ export async function handleChallenge(ctx: Context): Promise<void> {
 		return;
 	}
 
-	const expiresAt = new Date(Date.now() + DUEL_DURATION_MS);
+	const expiresAt = new Date(Date.now() + DUEL_CLEANUP_MS);
 	const text = L.group.challenge.posted(
 		escapeHtml(challenger.username),
 		escapeHtml(challengee.username),

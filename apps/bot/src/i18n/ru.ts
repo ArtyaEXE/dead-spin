@@ -113,7 +113,9 @@ export const ru = {
 			selfChallenge: '<i>Себя вызвать нельзя.</i>',
 			alreadyPending: '<i>У вас уже есть активная дуэль на этом уровне с этим игроком.</i>',
 			posted: (a: string, b: string, level: number) =>
-				`👊 <b>${a}</b> вызывает <b>${b}</b> на уровень ${level}!\n\nДуэль 24 часа. Кто соберёт больше звёзд за меньшее время — победит. Просто играйте /play как обычно — результаты засчитаются автоматом.`,
+				`👊 <b>${a}</b> вызывает <b>${b}</b> на уровень ${level}!\n\nКаждый играет один раз — какой результат у первого прохождения, тот и зачтётся. Больше звёзд > меньше времени.`,
+			waitingFor: (who: string, otherStars: number, otherTime: string, opponent: string, level: number) =>
+				`⏳ <b>${who}</b> сыграл уровень ${level}: ${otherStars}⭐ <code>${otherTime}</code>. Ход за <b>${opponent}</b>.`,
 			result: (winner: string, loser: string, level: number, ws: number, wt: string, ls: number, lt: string) =>
 				`✅ <b>Дуэль на уровне ${level} завершена!</b>\n\n🏆 Победил <b>${winner}</b>: ${ws}⭐ ${wt}\n   <b>${loser}</b>: ${ls}⭐ ${lt}`,
 			oneSided: (winner: string, level: number, ws: number, wt: string, loser: string) =>

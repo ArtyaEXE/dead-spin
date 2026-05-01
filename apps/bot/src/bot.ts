@@ -18,6 +18,19 @@ import {toast} from './lib/nav';
 export function createBot(): Bot {
 	const bot = new Bot(env.TELEGRAM_BOT_TOKEN);
 
+	// Авто-уборка /-команд в группах: после того как handler ответил —
+	// удаляем сообщение юзера, чтобы не копился спам тех-команд (/play, /lb,
+	// /me, /best и т.п.). Best-effort: если бот не админ или нет права
+	// `can_delete_messages` — Telegram вернёт 400, мы тихо проглатываем.
+	// В DM ничего не удаляем — там уборка не нужна, бот общается тет-а-тет.
+	bot.use(async (ctx, next) => {
+		await next();
+		const msg = ctx.message;
+		if (!msg || !msg.text || !msg.text.startsWith('/')) return;
+		if (ctx.chat?.type !== 'group' && ctx.chat?.type !== 'supergroup') return;
+		await ctx.api.deleteMessage(ctx.chat.id, msg.message_id).catch(() => {/* noop */});
+	});
+
 	// Команды
 	bot.command('start', handleStart);
 	bot.command(['menu', 'home'], showMainMenu);

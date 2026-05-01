@@ -1,7 +1,7 @@
 import {and, eq, gt, lt, or, sql} from 'drizzle-orm';
 import {db} from '../db/client';
 import {groupChallenges, users} from '../db/schema';
-import {tgEditMessageText, tgSetMessageReaction} from './telegram-bot';
+import {tgEditMessageText, tgSendMessage, tgSetMessageReaction} from './telegram-bot';
 
 
 /**
@@ -145,6 +145,30 @@ function textTie(a: string, b: string, level: number, locale: 'ru' | 'en'): stri
 
 
 /**
+ * Промежуточное «X сыграл, ход за Y». Отдельным сообщением, чтобы оппонент
+ * увидел push в чате — можно было пойти попробовать ответный заход.
+ */
+async function sendIntermediateUpdate(
+	ch: ChallengeRow,
+	isChallenger: boolean,
+	stars: number,
+	timeMs: number,
+	locale: 'ru' | 'en',
+): Promise<void> {
+	const challengerName = await getUsername(ch.challengerUserId);
+	const challengeeName = await getUsername(ch.challengeeUserId);
+	const who = isChallenger ? challengerName : challengeeName;
+	const opponent = isChallenger ? challengeeName : challengerName;
+
+	const html = locale === 'ru'
+		? `⏳ <b>${escapeHtml(who)}</b> сыграл уровень ${ch.level}: ${stars}⭐ <code>${fmtTime(timeMs)}</code>. Ход за <b>${escapeHtml(opponent)}</b>.`
+		: `⏳ <b>${escapeHtml(who)}</b> ran level ${ch.level}: ${stars}⭐ <code>${fmtTime(timeMs)}</code>. <b>${escapeHtml(opponent)}</b>'s turn.`;
+
+	await tgSendMessage(ch.chatId, html);
+}
+
+
+/**
  * Главный entrypoint, вызывается из processGroupResult после успешной
  * group-записи. Делает 2 вещи:
  *  1) Обновляет результат текущего юзера в активных дуэлях с его участием.
@@ -180,10 +204,9 @@ export async function trackChallengeResultAndCollect(args: {
 		const curStars = isChallenger ? ch.challengerStars : ch.challengeeStars;
 		const curTime = isChallenger ? ch.challengerTimeMs : ch.challengeeTimeMs;
 
-		// Записываем только если результат стал лучше (или ещё не было).
-		const better = curStars === null || curTime === null
-			|| compareResults(stars, timeMs, curStars, curTime) > 0;
-		if (!better) continue;
+		// Single-attempt: только если этот юзер ещё НЕ играл в данной дуэли.
+		// Любые последующие улучшения не учитываются — first run = duel score.
+		if (curStars !== null && curTime !== null) continue;
 
 		const updateFields = isChallenger
 			? {challengerStars: stars, challengerTimeMs: timeMs}
@@ -203,7 +226,12 @@ export async function trackChallengeResultAndCollect(args: {
 			updated.challengerStars !== null && updated.challengerTimeMs !== null &&
 			updated.challengeeStars !== null && updated.challengeeTimeMs !== null;
 
-		if (bothPlayed) await finalize(updated, locale);
+		if (bothPlayed) {
+			await finalize(updated, locale);
+		} else {
+			// Один сыграл — постим промежуточный апдейт «ход за вторым».
+			await sendIntermediateUpdate(updated, isChallenger, stars, timeMs, locale);
+		}
 	}
 
 	// 2) Истёкшие pending в этой беседе — финализируем заодно.

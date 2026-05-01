@@ -113,7 +113,9 @@ export const en = {
 			selfChallenge: '<i>Can\'t challenge yourself.</i>',
 			alreadyPending: '<i>You already have an active duel on this level with this player.</i>',
 			posted: (a: string, b: string, level: number) =>
-				`👊 <b>${a}</b> challenges <b>${b}</b> on level ${level}!\n\nDuel runs for 24h. Best stars / fastest time wins. Just /play as usual — results will be counted.`,
+				`👊 <b>${a}</b> challenges <b>${b}</b> on level ${level}!\n\nOne attempt each — first run counts. More stars > less time.`,
+			waitingFor: (who: string, otherStars: number, otherTime: string, opponent: string, level: number) =>
+				`⏳ <b>${who}</b> ran level ${level}: ${otherStars}⭐ <code>${otherTime}</code>. <b>${opponent}</b>'s turn.`,
 			result: (winner: string, loser: string, level: number, ws: number, wt: string, ls: number, lt: string) =>
 				`✅ <b>Duel on level ${level} finished!</b>\n\n🏆 <b>${winner}</b> wins: ${ws}⭐ ${wt}\n   <b>${loser}</b>: ${ls}⭐ ${lt}`,
 			oneSided: (winner: string, level: number, ws: number, wt: string, loser: string) =>
