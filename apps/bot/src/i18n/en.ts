@@ -76,6 +76,20 @@ export const en = {
 		error: '❌ Something went wrong, try again.',
 		notFound: 'Not found.',
 	},
+	reset: {
+		privateOnly: '<i>/reset only works in DM with the bot.</i>',
+		confirm: '⚠️ <b>Reset all progress?</b>\n\nWill remove: per-level records (global + every chat), star total. Will keep: fuel, coins, skins, payments.',
+		yes: 'Yes, reset',
+		no: 'Cancel',
+		done: 'Progress reset',
+		doneFull: '✅ Progress reset. Hit /play to start over.',
+		cancelled: 'Cancelled.',
+	},
+	feedback: {
+		intro: '🐞 <b>Found a bug or have an idea?</b>\n\nDrop it here — we read everything.',
+		button: 'Open',
+		notConfigured: '<i>Feedback channel not configured yet.</i>',
+	},
 	group: {
 		playInvite: '🚀 <b>Dead Spin</b> is here.\nWho clears levels faster? Tap below — the leaderboard is scoped to this chat only.',
 		addedToGroup: '➕ Add to a group',

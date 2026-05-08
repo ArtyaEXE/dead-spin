@@ -49,6 +49,11 @@ export function Settings(props: {onBack: () => void}) {
 						/>
 					</div>
 				</div>
+
+				<div class="settings-meta">
+					<div class="settings-version">build {__APP_VERSION__}</div>
+					<a class="settings-link" href="/privacy.html" target="_blank" rel="noreferrer">Privacy</a>
+				</div>
 			</div>
 		</div>
 	);

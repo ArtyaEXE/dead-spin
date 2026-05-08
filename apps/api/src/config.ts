@@ -24,6 +24,9 @@ const EnvSchema = z.object({
 	 * `X-Cron-Secret`. Если пусто — cron-эндпоинты возвращают 503.
 	 */
 	CRON_SECRET: z.string().default(''),
+
+	/** Sentry DSN. Если пусто — Sentry не инициализируется (no-op). */
+	SENTRY_DSN: z.string().default(''),
 });
 
 

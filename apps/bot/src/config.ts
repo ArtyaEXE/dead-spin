@@ -14,6 +14,13 @@ const EnvSchema = z.object({
 	WEBHOOK_PORT: z.coerce.number().int().positive().default(3002),
 
 	ALLOWLIST_OPEN: z.coerce.number().int().min(0).max(1).default(0),
+
+	/**
+	 * Куда тестеры пишут баги — публичная ссылка (t.me/chat, t.me/username,
+	 * https://github.com/.../issues). Если пусто — команда `/feedback` и
+	 * UI-кнопка просто скрываются.
+	 */
+	FEEDBACK_URL: z.string().default(''),
 });
 
 

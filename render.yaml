@@ -37,6 +37,8 @@ services:
         sync: false
       - key: CRON_SECRET           # для POST /cron/* (weekly digest и т.п.)
         generateValue: true
+      - key: SENTRY_DSN            # опционально: error tracking. Пусто = отключён
+        sync: false
 
   # ---------- Bot (polling) ----------
   - type: web
@@ -69,3 +71,5 @@ services:
         value: polling
       - key: ALLOWLIST_OPEN
         value: "0"
+      - key: FEEDBACK_URL          # e.g. "https://t.me/dead_spin_testers" — куда тестеры пишут о багах
+        sync: false

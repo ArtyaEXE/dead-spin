@@ -14,17 +14,21 @@ type BotCommand = {command: string; description: string};
  */
 export async function registerCommandsScopes(bot: Bot): Promise<void> {
 	const dmCommands: BotCommand[] = [
-		{command: 'menu',  description: 'Главное меню'},
-		{command: 'start', description: 'Регистрация / приветствие'},
-		{command: 'shop',  description: 'Магазин'},
-		{command: 'help',  description: 'Справка'},
+		{command: 'menu',     description: 'Главное меню'},
+		{command: 'start',    description: 'Регистрация / приветствие'},
+		{command: 'shop',     description: 'Магазин'},
+		{command: 'help',     description: 'Справка'},
+		{command: 'feedback', description: 'Сообщить о баге'},
+		{command: 'reset',    description: 'Сбросить прогресс'},
 	];
 
 	const groupCommands: BotCommand[] = [
-		{command: 'play', description: 'Открыть игру в этой беседе'},
-		{command: 'lb',   description: 'Лидерборд уровня (например, /lb 5)'},
-		{command: 'me',   description: 'Моя статистика в этой беседе'},
-		{command: 'best', description: 'Топ беседы по сумме звёзд'},
+		{command: 'play',      description: 'Открыть игру в этой беседе'},
+		{command: 'lb',        description: 'Лидерборд уровня (например, /lb 5)'},
+		{command: 'me',        description: 'Моя статистика в этой беседе'},
+		{command: 'best',      description: 'Топ беседы по сумме звёзд'},
+		{command: 'challenge', description: 'Дуэль с игроком: /challenge @user 5'},
+		{command: 'feedback',  description: 'Сообщить о баге'},
 	];
 
 	try {

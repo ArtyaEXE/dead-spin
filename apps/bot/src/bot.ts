@@ -12,6 +12,8 @@ import {handleMyChatMember, handlePlayInGroup, handleNewChatMembers} from './han
 import {handleGroupLeaderboard, handleGroupMe, handleGroupBest} from './handlers/group-stats';
 import {handleSetName, handleSetEmoji} from './handlers/group-identity';
 import {handleChallenge} from './handlers/challenge';
+import {handleResetCommand, handleResetConfirm, handleResetCancel} from './handlers/reset';
+import {handleFeedback} from './handlers/feedback';
 import {toast} from './lib/nav';
 
 
@@ -44,6 +46,10 @@ export function createBot(): Bot {
 	bot.command('setname', handleSetName);
 	bot.command('setemoji', handleSetEmoji);
 	bot.command('challenge', handleChallenge);
+	bot.command('reset', handleResetCommand);
+	bot.command('feedback', handleFeedback);
+	bot.callbackQuery('reset:yes', handleResetConfirm);
+	bot.callbackQuery('reset:no', handleResetCancel);
 
 	// Бот добавлен/удалён из беседы — регистрируем/деактивируем чат для
 	// группового лидерборда.

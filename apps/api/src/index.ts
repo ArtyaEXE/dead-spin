@@ -4,6 +4,7 @@ import {cors} from 'hono/cors';
 import {logger} from 'hono/logger';
 import {env, isProd} from './config';
 import {ApiError, formatError} from './lib/errors';
+import {initSentry, captureException} from './lib/sentry';
 import {authRoutes} from './routes/auth';
 import {meRoutes} from './routes/me';
 import {progressRoutes} from './routes/progress';
@@ -15,6 +16,10 @@ import type {AuthedEnv} from './middleware/auth';
 
 
 export function createApp() {
+	// Sentry инициализируем перед созданием роутов, чтобы любые
+	// uncaught внутри них уже летели в Sentry. Без DSN — no-op.
+	initSentry();
+
 	const app = new Hono<AuthedEnv>();
 
 	const origins = env.CORS_ORIGINS === '*'
@@ -24,7 +29,11 @@ export function createApp() {
 	app.use('*', logger());
 	app.use('*', cors({origin: origins, credentials: origins !== '*'}));
 
-	app.get('/healthz', (c) => c.json({ok: true, env: env.NODE_ENV}));
+	app.get('/healthz', (c) => c.json({
+		ok: true,
+		env: env.NODE_ENV,
+		version: process.env['RENDER_GIT_COMMIT']?.slice(0, 7) ?? 'dev',
+	}));
 
 	app.route('/auth', authRoutes);
 	app.route('/me', meRoutes);
@@ -35,7 +44,14 @@ export function createApp() {
 	app.route('/cron', cronRoutes);
 
 	app.onError((err, c) => {
-		if (err instanceof ApiError) return formatError(c, err);
+		// Не флудим в Sentry бизнес-ошибки (400/401/403/404/etc) —
+		// шлём только реально неожиданные.
+		if (!(err instanceof ApiError)) {
+			captureException(err, {
+				path: c.req.path,
+				method: c.req.method,
+			});
+		}
 		return formatError(c, err);
 	});
 
