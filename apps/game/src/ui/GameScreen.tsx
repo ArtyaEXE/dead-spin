@@ -5,7 +5,8 @@ import {api} from '../net/client';
 import {authStore} from '../stores/auth';
 import {progressStore} from '../stores/progress';
 import {ghostStore, useGhost} from '../stores/ghost';
-import {useGroup} from '../stores/group';
+import {groupStore, useGroup} from '../stores/group';
+import {track} from '../analytics';
 import {GameWorld, type GameResult} from '../game/GameWorld';
 import {audio, type LoopHandle} from '../game/audio';
 import {TopBar} from './TopBar';
@@ -103,6 +104,13 @@ export function GameScreen(props: {
 
 				if (r.type === 'win') {
 					progressStore.getState().recordLocal(levelNumber, r.stars, r.timeMs, r.fuelSpent);
+					track('level_win', {
+						level: levelNumber,
+						stars: r.stars,
+						time_ms: r.timeMs,
+						fuel_spent: r.fuelSpent,
+						in_group: groupStore.getState().chatId !== null,
+					});
 					try {
 						const recording = world?.getRecording() ?? null;
 						await api.levelComplete({
@@ -113,6 +121,13 @@ export function GameScreen(props: {
 							recording: recording ?? undefined,
 						});
 					} catch {}
+				} else if (r.type === 'loose') {
+					track('level_loose', {
+						level: levelNumber,
+						time_ms: r.timeMs,
+						fuel_spent: r.fuelSpent,
+						in_group: groupStore.getState().chatId !== null,
+					});
 				}
 
 				if (r.fuelSpent > 0) {
@@ -130,6 +145,10 @@ export function GameScreen(props: {
 			// будет вызвана повторно из createEffect ниже когда стор обновится.
 			const cur = ghostStore.getState().current;
 			world?.setGhostRecording(cur ? cur.recording : null);
+		});
+		track('level_start', {
+			level: levelNumber,
+			in_group: groupStore.getState().chatId !== null,
 		});
 	};
 

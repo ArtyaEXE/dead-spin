@@ -6,6 +6,8 @@ import {
 	LoginResponseSchema, MeResponseSchema, ProgressResponseSchema,
 	LevelCompleteResponseSchema, FuelSpendResponseSchema, LeaderboardResponseSchema,
 	GhostResponseSchema, GroupInfoResponseSchema,
+	DailyStateResponseSchema, DailyClaimResponseSchema,
+	AchievementsResponseSchema, SpendCoinsResponseSchema,
 } from './schemas';
 
 
@@ -127,4 +129,9 @@ export const api = {
 		request('GET', `/leaderboard/group/${chatId}/${level}/ghost?hmac=${hmac}`, GhostResponseSchema),
 	groupInfo: (chatId: number, hmac: string) =>
 		request('GET', `/groups/${chatId}/info?hmac=${hmac}`, GroupInfoResponseSchema),
+	dailyState: () => request('GET', '/me/daily', DailyStateResponseSchema),
+	claimDaily: () => request('POST', '/me/daily', DailyClaimResponseSchema, {}),
+	achievements: () => request('GET', '/me/achievements', AchievementsResponseSchema),
+	spendCoins: (amount: number, reason: string) =>
+		request('POST', '/me/spend-coins', SpendCoinsResponseSchema, {amount, reason}),
 };

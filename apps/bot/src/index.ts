@@ -85,7 +85,7 @@ async function main(): Promise<void> {
 		// `my_chat_member` нужен для регистрации беседы при добавлении бота.
 		// Без явного allowed_updates Telegram сохраняет предыдущее значение —
 		// если webhook ставился до фичи групп, my_chat_member не приходил бы.
-		allowed_updates: ['message', 'callback_query', 'pre_checkout_query', 'my_chat_member'],
+		allowed_updates: ['message', 'callback_query', 'pre_checkout_query', 'my_chat_member', 'inline_query'],
 	});
 	console.log(`Webhook set to ${env.WEBHOOK_URL}`);
 }

@@ -7,6 +7,10 @@ export const en = {
 		notAllowed: 'Sorry, access is closed at the moment. Contact the admin.',
 		needUsername: 'You need a Telegram username to play. Go to <b>Settings → Username</b>, set one, then hit <b>/start</b>.',
 		registered: "You're in. Welcome aboard!",
+		referralBonus: (inviter: string, fuel: number) =>
+			`🎁 You were invited by <b>${inviter}</b> — enjoy <b>+${fuel}</b> fuel to start!`,
+		referralReward: (newUser: string, coins: number) =>
+			`🎁 <b>${newUser}</b> joined via your link — here's <b>+${coins}</b> 💰`,
 	},
 	menu: {
 		play: '🎮 Play',
@@ -17,6 +21,7 @@ export const en = {
 		help: '❓ Help',
 		back: '⬅️ Back',
 		home: '🏠 Home',
+		invite: '🎁 Invite a friend',
 	},
 	profile: {
 		title: '👤 <b>Profile</b>',

@@ -7,6 +7,10 @@ export const ru = {
 		notAllowed: 'К сожалению, сейчас доступ закрыт. Обратись к администратору.',
 		needUsername: 'Чтобы играть, нужен username в Telegram. Зайди в <b>Настройки → Имя пользователя</b> и задай его, потом нажми <b>/start</b>.',
 		registered: 'Регистрация завершена. Добро пожаловать!',
+		referralBonus: (inviter: string, fuel: number) =>
+			`🎁 Тебя пригласил <b>${inviter}</b> — получаешь <b>+${fuel}</b> топлива на старт!`,
+		referralReward: (newUser: string, coins: number) =>
+			`🎁 По твоей ссылке зашёл <b>${newUser}</b> — лови <b>+${coins}</b> 💰`,
 	},
 	menu: {
 		play: '🎮 Играть',
@@ -17,6 +21,7 @@ export const ru = {
 		help: '❓ Помощь',
 		back: '⬅️ Назад',
 		home: '🏠 Главная',
+		invite: '🎁 Пригласить друга',
 	},
 	profile: {
 		title: '👤 <b>Профиль</b>',

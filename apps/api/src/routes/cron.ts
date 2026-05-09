@@ -1,6 +1,7 @@
 import {Hono} from 'hono';
 import {env} from '../config';
 import {runWeeklyDigest} from '../lib/group-digest';
+import {runFullFuelPush} from '../lib/fuel-push';
 import type {AuthedEnv} from '../middleware/auth';
 import {forbidden, notFound} from '../lib/errors';
 
@@ -40,5 +41,22 @@ cronRoutes.post('/weekly-digest', async (c) => {
 	if (!checkSecret(secret)) throw forbidden('cronSecretMismatch');
 
 	const result = await runWeeklyDigest();
+	return c.json({ok: true, ...result});
+});
+
+
+/**
+ * POST /cron/full-fuel-push — пингует юзеров с полным баком, кто
+ * давно не играл. Запускать каждые 30-60 мин (idempotent в окне 24h).
+ */
+cronRoutes.post('/full-fuel-push', async (c) => {
+	if (!env.CRON_SECRET) throw notFound('cronDisabled');
+	const secret = c.req.header('x-cron-secret');
+	if (!checkSecret(secret)) throw forbidden('cronSecretMismatch');
+	if (!env.WEB_APP_URL) {
+		return c.json({ok: false, reason: 'WEB_APP_URL not set'});
+	}
+
+	const result = await runFullFuelPush({webAppUrl: env.WEB_APP_URL});
 	return c.json({ok: true, ...result});
 });

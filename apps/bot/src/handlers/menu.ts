@@ -58,7 +58,13 @@ export async function showMainMenu(ctx: Context): Promise<void> {
 	// /play в чате и сможет нажать "Старт".
 	const botUsername = ctx.me?.username;
 	if (botUsername) {
-		kb.url(L.group.addedToGroup, `https://t.me/${botUsername}?startgroup=play`).row();
+		// Кнопка реферала: deep-link с ?start=ref_<userId> приведёт юзера
+		// к /start с реф-payload'ом, новый получит +1k fuel, пригласивший
+		// +200 coins. Используем tgId, потому что он более стабильный
+		// идентификатор чем UUID (легче отлаживать, нечувствителен к ribbon
+		// reset'ам).
+		kb.url(L.menu.invite, `https://t.me/${botUsername}?start=ref_${tgId}`)
+			.url(L.group.addedToGroup, `https://t.me/${botUsername}?startgroup=play`).row();
 	}
 	kb.text(L.menu.help, 'help:open');
 

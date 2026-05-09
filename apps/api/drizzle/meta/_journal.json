@@ -57,6 +57,27 @@
       "when": 1777629921095,
       "tag": "0007_challenges",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1778317854165,
+      "tag": "0008_daily_rewards",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1778317997154,
+      "tag": "0009_user_engagement_columns",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1778318079012,
+      "tag": "0010_achievements",
+      "breakpoints": true
     }
   ]
 }

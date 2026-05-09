@@ -71,6 +71,48 @@ export const LeaderboardResponseSchema = z.object({
 export const MeResponseSchema = z.object({user: UserSchema});
 
 
+export const DailyRewardSchema = z.object({fuel: z.number().int(), coins: z.number().int()});
+
+
+export const DailyStateResponseSchema = z.object({
+	canClaim: z.boolean(),
+	streakDays: z.number().int(),
+	nextReward: DailyRewardSchema,
+});
+export type DailyStateResponse = z.infer<typeof DailyStateResponseSchema>;
+
+
+export const DailyClaimResponseSchema = z.object({
+	claimed: z.boolean(),
+	streakDays: z.number().int(),
+	reward: DailyRewardSchema.optional(),
+	nextReward: DailyRewardSchema,
+	user: UserSchema,
+});
+export type DailyClaimResponse = z.infer<typeof DailyClaimResponseSchema>;
+
+
+export const AchievementSchema = z.object({
+	key: z.string(),
+	emoji: z.string(),
+	ru: z.string(),
+	en: z.string(),
+	unlocked: z.boolean(),
+	unlockedAt: z.string().nullable(),
+});
+export const AchievementsResponseSchema = z.object({
+	achievements: z.array(AchievementSchema),
+});
+
+
+export const SpendCoinsResponseSchema = z.object({
+	ok: z.literal(true),
+	coins: z.number().int(),
+});
+export type Achievement = z.infer<typeof AchievementSchema>;
+export type AchievementsResponse = z.infer<typeof AchievementsResponseSchema>;
+
+
 export const GroupInfoResponseSchema = z.object({
 	chatId: z.number(),
 	title: z.string(),

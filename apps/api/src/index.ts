@@ -5,6 +5,7 @@ import {logger} from 'hono/logger';
 import {env, isProd} from './config';
 import {ApiError, formatError} from './lib/errors';
 import {initSentry, captureException} from './lib/sentry';
+import {initAnalytics} from './lib/analytics';
 import {authRoutes} from './routes/auth';
 import {meRoutes} from './routes/me';
 import {progressRoutes} from './routes/progress';
@@ -19,6 +20,8 @@ export function createApp() {
 	// Sentry инициализируем перед созданием роутов, чтобы любые
 	// uncaught внутри них уже летели в Sentry. Без DSN — no-op.
 	initSentry();
+	// PostHog для product analytics — отдельная штука, тоже env-driven.
+	initAnalytics();
 
 	const app = new Hono<AuthedEnv>();
 

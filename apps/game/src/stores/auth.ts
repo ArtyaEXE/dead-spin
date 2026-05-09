@@ -2,6 +2,7 @@ import {createStore} from 'zustand/vanilla';
 import {createSolidStoreAdapter} from './solid';
 import {api, getToken, setToken, loginFake, loginTelegram} from '../net/client';
 import type {User} from '../net/schemas';
+import {identify, track} from '../analytics';
 
 
 type AuthState = {
@@ -38,10 +39,17 @@ export const authStore = createStore<AuthState>((set) => ({
 		try {
 			const res = await loginTelegram(initData);
 			set({user: res.user, status: 'authed'});
+			identify(res.user.id, {
+				tg_id: res.user.tgId,
+				username: res.user.username,
+				locale: res.user.locale,
+			});
+			track('login_success', {method: 'telegram'});
 		} catch (err) {
 			setToken(null);
 			const msg = err instanceof Error ? err.message : 'loginFailed';
 			set({status: 'error', error: msg});
+			track('login_failed', {error: msg});
 		}
 	},
 
@@ -50,6 +58,11 @@ export const authStore = createStore<AuthState>((set) => ({
 		try {
 			const res = await api.me();
 			set({user: res.user, status: 'authed'});
+			identify(res.user.id, {
+				tg_id: res.user.tgId,
+				username: res.user.username,
+				locale: res.user.locale,
+			});
 		} catch {
 			setToken(null);
 			set({user: null, status: 'idle'});

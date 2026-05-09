@@ -24,6 +24,8 @@ import {sendGroupNotification, type GroupDiff} from '../lib/group-notifications'
 import {ensurePinnedLeaderboard} from '../lib/group-pinned';
 import {updateStreak, sendStreakNotification} from '../lib/group-streaks';
 import {trackChallengeResultAndCollect} from '../lib/group-challenges';
+import {track} from '../lib/analytics';
+import {evaluateAchievementsAfterLevelComplete, unlockAchievement} from '../lib/achievements';
 
 
 export const progressRoutes = new Hono<AuthedEnv>();
@@ -192,6 +194,22 @@ progressRoutes.post('/level-complete', requireAuth, async (c) => {
 			});
 	}
 
+	// Server-side трек — единственный надёжный (клиентский можно подделать).
+	track({
+		userId,
+		event: 'level_complete',
+		properties: {
+			level, stars, timeMs, fuelSpent, newStars,
+			in_group: groupChatId !== undefined,
+		},
+	});
+
+	// Ачивки — fire-and-forget, чтобы Telegram-нотификации не задерживали ответ.
+	void evaluateAchievementsAfterLevelComplete({
+		userId, tgId, locale,
+		level, stars, timeMs, fuelSpent,
+	}).catch((e) => console.warn('evaluateAchievements failed:', e instanceof Error ? e.message : e));
+
 	// Групповой контекст — ждём DB-write до ответа, чтобы клиентский
 	// refresh после level-complete увидел свежую запись (без этого ловим
 	// race: 200 уходит, group_progress_levels ещё не записан, refresh
@@ -356,6 +374,9 @@ async function processGroupResult(args: {
 	});
 
 	if (!diff) return;
+
+	// Ачивка «Социальный гонщик» — выдаётся при первой групповой записи.
+	void unlockAchievement({userId, key: 'bot_in_group', notify: true, tgId, locale});
 
 	// === Side-effects ===
 	// До этой точки — главная DB-запись (group_progress_levels) уже

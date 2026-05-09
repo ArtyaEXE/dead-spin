@@ -14,6 +14,7 @@ import {handleSetName, handleSetEmoji} from './handlers/group-identity';
 import {handleChallenge} from './handlers/challenge';
 import {handleResetCommand, handleResetConfirm, handleResetCancel} from './handlers/reset';
 import {handleFeedback} from './handlers/feedback';
+import {handleInlineQuery} from './handlers/inline';
 import {toast} from './lib/nav';
 
 
@@ -78,6 +79,10 @@ export function createBot(): Bot {
 		const loc = ctx.match[1] === 'ru' ? 'ru' : 'en';
 		await setLocale(ctx, loc);
 	});
+
+	// Inline-режим: @bot в любом чате → выдаёт карточки с топ-рекордами
+	// юзера и deep-link'ом для шеринга.
+	bot.on('inline_query', handleInlineQuery);
 
 	// Платежи
 	bot.on('pre_checkout_query', handlePreCheckout);

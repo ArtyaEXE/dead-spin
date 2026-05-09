@@ -32,6 +32,11 @@ export const users = pgTable('users', {
 	coins: integer('coins').notNull().default(0),
 	details: integer('details').notNull().default(0),
 
+	/** Когда последний раз шлали "⛽ полный бак" пуш — чтобы не спамить чаще раза в сутки. */
+	lastFullFuelPushAt: timestamp('last_full_fuel_push_at', {withTimezone: true}),
+	/** Telegram-id юзера, который пригласил этого юзера. NULL если регистрация органическая. */
+	referrerId: text('referrer_id'),
+
 	createdAt: timestamp('created_at', {withTimezone: true}).notNull().defaultNow(),
 	updatedAt: timestamp('updated_at', {withTimezone: true}).notNull().defaultNow(),
 }, (table) => ({
@@ -104,6 +109,28 @@ export const allowlist = pgTable('allowlist', {
 export const editorAdmins = pgTable('editor_admins', {
 	tgId: text('tg_id').primaryKey().references(() => allowlist.tgId, {onDelete: 'cascade'}),
 	addedAt: timestamp('added_at', {withTimezone: true}).notNull().defaultNow(),
+});
+
+
+/**
+ * daily_rewards — daily login bonus per юзер. UTC-дата по аналогии со
+ * стриками. Стрик копит за подряд-играющих, на пропуске сбрасывается.
+ *
+ * Награды (фиксированный rotation по дням стрика):
+ *   1 → 500 fuel
+ *   2 → 1000 fuel
+ *   3 → 25 coins
+ *   4 → 2000 fuel
+ *   5 → 50 coins
+ *   6 → 3000 fuel
+ *   7+ → 100 coins (повторяется)
+ */
+export const dailyRewards = pgTable('daily_rewards', {
+	userId: text('user_id').primaryKey().references(() => users.id, {onDelete: 'cascade'}),
+	streakDays: integer('streak_days').notNull().default(1),
+	longestStreak: integer('longest_streak').notNull().default(1),
+	lastClaimDate: text('last_claim_date').notNull(),
+	updatedAt: timestamp('updated_at', {withTimezone: true}).notNull().defaultNow(),
 });
 
 
@@ -271,3 +298,25 @@ export const groupChallenges = pgTable('group_challenges', {
 
 export type GroupChallenge = typeof groupChallenges.$inferSelect;
 export type NewGroupChallenge = typeof groupChallenges.$inferInsert;
+
+export type DailyReward = typeof dailyRewards.$inferSelect;
+export type NewDailyReward = typeof dailyRewards.$inferInsert;
+
+
+/**
+ * achievements — глобальные ачивки игрока. Уникальный (user_id, key).
+ * Список ключей — `apps/api/src/lib/achievements.ts`. Раз получили —
+ * остаются навсегда (нет revoke). Бот шлёт нотификацию в DM при
+ * первой выдаче.
+ */
+export const achievements = pgTable('achievements', {
+	userId: text('user_id').notNull().references(() => users.id, {onDelete: 'cascade'}),
+	key: text('key').notNull(),
+	unlockedAt: timestamp('unlocked_at', {withTimezone: true}).notNull().defaultNow(),
+}, (table) => ({
+	pk: primaryKey({columns: [table.userId, table.key]}),
+}));
+
+
+export type Achievement = typeof achievements.$inferSelect;
+export type NewAchievement = typeof achievements.$inferInsert;
