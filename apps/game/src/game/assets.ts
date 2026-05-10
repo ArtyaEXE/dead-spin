@@ -9,6 +9,8 @@ import {getSkinById, type SkinId} from '../stores/skin';
 export type GameTextures = {
 	cave1: Texture;
 	cave2: Texture;
+	cave2_1: Texture;  // PALLAS outer rock
+	cave2_2: Texture;  // PALLAS inner parallax
 	hole: Texture;
 	ship: Texture;
 	booster: Texture;
@@ -26,6 +28,8 @@ export type GameTextures = {
 const SIMPLE_PATHS = {
 	cave1: '/cave1.jpg',
 	cave2: '/cave2.jpg',
+	cave2_1: '/cave2-1.jpg',
+	cave2_2: '/cave2-2.jpg',
 	hole: '/hole.png',
 	ship: '/ship2.png',
 	booster: '/booster-single.png',
@@ -57,6 +61,20 @@ export async function loadShipTexture(skinId: SkinId): Promise<Texture> {
 	} catch {
 		return Assets.load<Texture>('/ship2.png');
 	}
+}
+
+
+/**
+ * Cave-текстуры по миру. CERES (L1-15) — cave1+cave2, PALLAS (L16-30) —
+ * cave2-1+cave2-2. Будущие миры (JUNO/VESTA/EUNOMIA) добавим сюда же,
+ * когда появятся свои тайлы.
+ */
+export function caveTexturesForLevel(
+	levelNumber: number, t: GameTextures,
+): {outer: Texture; inner: Texture} {
+	const worldIdx = Math.floor((levelNumber - 1) / 15);
+	if (worldIdx === 1) return {outer: t.cave2_1, inner: t.cave2_2};
+	return {outer: t.cave1, inner: t.cave2};
 }
 
 

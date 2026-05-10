@@ -12,7 +12,7 @@ import type {Level, GhostRecording} from '@dead-spin/shared';
 import {Camera} from './camera';
 import {Recorder} from './recorder';
 import {GhostPlayer} from './ghost-player';
-import {loadGameTextures, loadShipTexture, type GameTextures} from './assets';
+import {caveTexturesForLevel, loadGameTextures, loadShipTexture, type GameTextures} from './assets';
 import {getActiveSkinId} from '../stores/skin';
 import {progressStore} from '../stores/progress';
 import {createWallsLayer, type WallsLayer} from './renderers/walls';
@@ -235,7 +235,9 @@ export class GameWorld {
 
 
 	private buildScene(): void {
-		this.walls = createWallsLayer(this.level, this.textures.cave1, this.textures.cave2);
+		// Текстуры пещеры подбираются по миру уровня (CERES/PALLAS/...) — см. caveTexturesForLevel.
+		const {outer, inner} = caveTexturesForLevel(Number(this.level.name), this.textures);
+		this.walls = createWallsLayer(this.level, outer, inner);
 		this.world.addChild(this.walls.container);
 
 		// Декорации — между стенами и маркерами, как фоновый слой сцены.
