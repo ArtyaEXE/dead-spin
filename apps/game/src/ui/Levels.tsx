@@ -3,6 +3,8 @@ import {FUEL_CONSUMPTION_PER_BOOST, LEVEL_COUNT} from '@dead-spin/shared';
 import {useAuth, authStore} from '../stores/auth';
 import {useProgress, progressStore} from '../stores/progress';
 import {useLiveFuel} from '../stores/fuel';
+import {useChallenge} from '../stores/challenge';
+import {groupStore} from '../stores/group';
 import {api} from '../net/client';
 import {track} from '../analytics';
 
@@ -100,6 +102,18 @@ export function Levels(props: {onBack: () => void; onPlay: (levelNumber: number)
 	const canSkip = (): boolean => userCoins() >= SKIP_LOW_FUEL_COST;
 	const summary = () => progress().summaryStars;
 
+	// Подсветка карточки уровня, на котором сейчас активный челлендж — но
+	// только если открыты в той же беседе, где челлендж создан. В DM/чужой
+	// беседе не подсвечиваем — там этот челлендж не играется.
+	const challengeState = useChallenge();
+	const challengeLevel = (): number | null => {
+		const c = challengeState().current;
+		if (!c) return null;
+		const g = groupStore.getState();
+		if (g.chatId !== c.chatId) return null;
+		return c.level;
+	};
+
 	const prevWorld = () => setWorldIndex(w => Math.max(0, w - 1));
 	const nextWorld = () => setWorldIndex(w => Math.min(4, w + 1));
 
@@ -131,9 +145,16 @@ export function Levels(props: {onBack: () => void; onPlay: (levelNumber: number)
 											{(c) => (
 												<div
 													class="lvl-btn"
-													classList={{locked: !c().available, pressable: c().available}}
+													classList={{
+														locked: !c().available,
+														pressable: c().available,
+														'lvl-btn--challenge': challengeLevel() === c().number,
+													}}
 													onClick={() => c().available && tryPlay(c().number)}
 												>
+													<Show when={challengeLevel() === c().number}>
+														<div class="lvl-btn__challenge-badge">⚡</div>
+													</Show>
 													<div>{c().number}</div>
 													<div class="lvl-stars">
 														<img class="lvl-star-1" classList={{'lvl-star-disabled': c().stars < 1}} src="/star.png" alt="" />

@@ -1,8 +1,10 @@
-import {createSignal, onMount, Show} from 'solid-js';
+import {createSignal, createEffect, onCleanup, onMount, Show} from 'solid-js';
 import {getActiveSkinId, getSkinById} from '../stores/skin';
 import {useLiveFuel} from '../stores/fuel';
 import {progressStore} from '../stores/progress';
 import {authStore} from '../stores/auth';
+import {challengeStore, formatTimeLeft, useChallenge} from '../stores/challenge';
+import {groupStore} from '../stores/group';
 import {api, ApiError} from '../net/client';
 import type {DailyStateResponse} from '../net/schemas';
 import {track} from '../analytics';
@@ -25,6 +27,9 @@ export function MainMenu(props: {onPlay: () => void; onSettings: () => void; onS
 	const [daily, setDaily] = createSignal<DailyStateResponse | null>(null);
 	const [claimed, setClaimed] = createSignal<{fuel: number; coins: number} | null>(null);
 	const [showAchievements, setShowAchievements] = createSignal(false);
+	const challengeState = useChallenge();
+	const challenge = () => challengeState().current;
+	const [tick, setTick] = createSignal(0);
 
 	onMount(() => {
 		void api.dailyState()
@@ -33,7 +38,34 @@ export function MainMenu(props: {onPlay: () => void; onSettings: () => void; onS
 				if (e instanceof ApiError && (e.status === 401 || e.status === 0)) return;
 				console.warn('dailyState failed:', e);
 			});
+		void challengeStore.getState().refresh();
 	});
+
+	// Тикалка для лайв-таймера челленджа (раз в секунду пере-рендерим
+	// строку «осталось 47:23»). Без интервала — просто статичная цифра
+	// и юзер видит «50:00» весь час.
+	createEffect(() => {
+		if (!challenge()) return;
+		const id = window.setInterval(() => setTick(t => t + 1), 1000);
+		onCleanup(() => window.clearInterval(id));
+	});
+
+	// Подсказка времени до экспайра, реактивно к tick().
+	const timeLeft = (): string | null => {
+		tick(); // dependency
+		const c = challenge();
+		if (!c) return null;
+		return formatTimeLeft(c.expiresAt);
+	};
+
+	// В DM (нет groupChatId) индикатор приглушённый — челлендж в другом
+	// чате, юзер должен туда пойти. В нужной беседе индикатор «активный».
+	const challengeInThisChat = (): boolean => {
+		const c = challenge();
+		if (!c) return false;
+		const g = groupStore.getState();
+		return g.chatId === c.chatId;
+	};
 
 	const claim = async (): Promise<void> => {
 		const state = daily();
@@ -74,6 +106,36 @@ export function MainMenu(props: {onPlay: () => void; onSettings: () => void; onS
 			</div>
 
 			<img class="mm-logo" src="/dead-spin-logo-shadow.png" alt="Dead Spin" />
+
+			<Show when={challenge()}>
+				{(c) => (
+					<div
+						class="challenge-banner pressable"
+						classList={{
+							'challenge-banner--pending': c().status === 'pending_accept',
+							'challenge-banner--active': c().status === 'active',
+							'challenge-banner--remote': !challengeInThisChat(),
+						}}
+					>
+						<div class="challenge-banner__bg" />
+						<div class="challenge-banner__content">
+							<div class="challenge-banner__title">
+								{c().status === 'pending_accept' ? '⏳ Ждём ответа' : '⚡ Активный челлендж'}
+							</div>
+							<div class="challenge-banner__row">
+								<span class="challenge-banner__opponent">vs <b>{c().opponentUsername}</b></span>
+								<span class="challenge-banner__level">уровень {c().level}</span>
+							</div>
+							<Show when={timeLeft()}>
+								{(tl) => <div class="challenge-banner__timer">{tl()} осталось</div>}
+							</Show>
+							<Show when={!challengeInThisChat()}>
+								<div class="challenge-banner__hint">в чате <i>{c().chatTitle ?? '...'}</i></div>
+							</Show>
+						</div>
+					</div>
+				)}
+			</Show>
 
 			<Show when={daily()?.canClaim}>
 				{(_) => (

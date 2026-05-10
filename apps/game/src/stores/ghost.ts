@@ -3,6 +3,7 @@ import {api, ApiError} from '../net/client';
 import type {GhostResponse} from '../net/schemas';
 import {createSolidStoreAdapter} from './solid';
 import {groupStore} from './group';
+import {challengeStore} from './challenge';
 
 
 type GhostState = {
@@ -34,6 +35,32 @@ export const ghostStore = createStore<GhostState>((set) => ({
 			set({current: null, loaded: true});
 			return;
 		}
+
+		// Если активный челлендж на этом уровне в этой беседе — показываем
+		// ghost оппонента вместо leader-ghost. Если оппонент ещё не сыграл
+		// (recording = null) — ghost не показываем вообще (это решение
+		// по дизайну: пока соперник не сходил, играешь без подсказки).
+		const ch = challengeStore.getState().current;
+		if (ch && ch.status === 'active' && ch.chatId === g.chatId && ch.level === level) {
+			if (ch.opponentRecording) {
+				set({
+					current: {
+						level: ch.level,
+						userId: 'opponent',
+						username: ch.opponentUsername,
+						stars: ch.opponentStars ?? 0,
+						timeMs: ch.opponentTimeMs ?? 0,
+						recording: ch.opponentRecording,
+						recordedAt: new Date().toISOString(),
+					},
+					loaded: true,
+				});
+			} else {
+				set({current: null, loaded: true});
+			}
+			return;
+		}
+
 		try {
 			const res = await api.groupGhost(g.chatId, g.hmac, level);
 			set({current: res, loaded: true});

@@ -12,6 +12,7 @@ import {progressRoutes} from './routes/progress';
 import {fuelRoutes} from './routes/fuel';
 import {leaderboardRoutes} from './routes/leaderboard';
 import {groupsRoutes} from './routes/groups';
+import {challengesRoutes} from './routes/challenges';
 import type {AuthedEnv} from './middleware/auth';
 
 
@@ -43,6 +44,7 @@ export function createApp() {
 	app.route('/fuel', fuelRoutes);
 	app.route('/leaderboard', leaderboardRoutes);
 	app.route('/groups', groupsRoutes);
+	app.route('/challenges', challengesRoutes);
 
 	app.onError((err, c) => {
 		// Не флудим в Sentry бизнес-ошибки (400/401/403/404/etc) —

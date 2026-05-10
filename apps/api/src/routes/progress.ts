@@ -24,7 +24,7 @@ import {tgGetChat} from '../lib/telegram-bot';
 import {sendGroupNotification, type GroupDiff} from '../lib/group-notifications';
 import {ensurePinnedLeaderboard} from '../lib/group-pinned';
 import {updateStreak, sendStreakNotification} from '../lib/group-streaks';
-import {trackChallengeResultAndCollect} from '../lib/group-challenges';
+import {onLevelCompleteForChallenge, sweepExpired as sweepChallenges} from '../lib/group-challenges';
 import {track} from '../lib/analytics';
 import {evaluateAchievementsAfterLevelComplete, unlockAchievement} from '../lib/achievements';
 
@@ -470,17 +470,17 @@ async function runGroupSideEffects(args: {
 		console.warn('streak update failed:', e instanceof Error ? e.message : e);
 	}
 
-	// Дуэли: апдейтим счёт текущего юзера в активных challenges на этом
-	// уровне в этом чате; если оба сыграли — финализируем + edit-сообщение.
-	// Заодно подбираем истекшие pending-дуэли. Best-effort.
+	// Дуэли: новые правила — неограниченные попытки в окне час, в зачёт
+	// идёт лучший заход. Апдейтим best run если он улучшился, заодно
+	// сохраняем recording для opponent-ghost. Финализация — лениво в
+	// sweepChallenges (на каждом level-complete + create + accept итд).
 	try {
-		await trackChallengeResultAndCollect({
-			chatId, userId, level, stars, timeMs,
-			locale: locale === 'ru' ? 'ru' : 'en',
-		});
+		await onLevelCompleteForChallenge({chatId, userId, level, stars, timeMs, recording});
 	} catch (e) {
-		console.warn('trackChallengeResult failed:', e instanceof Error ? e.message : e);
+		console.warn('onLevelCompleteForChallenge failed:', e instanceof Error ? e.message : e);
 	}
+	void sweepChallenges({chatId})
+		.catch((e) => console.warn('sweepChallenges failed:', e instanceof Error ? e.message : e));
 
 	// Обновляем закреплённый лидерборд беседы (отдельный pin'нутый сообщ
 	// сам себя обновляет — все участники в шапке чата видят live-таблицу).

@@ -122,6 +122,45 @@ export const GroupInfoResponseSchema = z.object({
 export type GroupInfoResponse = z.infer<typeof GroupInfoResponseSchema>;
 
 
+/**
+ * Активный или pending челлендж текущего юзера. Если `challenge: null` —
+ * юзер свободен. Используется Mini App'ом для индикатора и ghost-замены.
+ */
+const GhostRecordingSchema = z.object({
+	level: z.number().int(),
+	gravity: z.object({x: z.number(), y: z.number()}),
+	events: z.array(z.object({
+		type: z.enum(['start', 'boost', 'loose', 'win']),
+		time: z.number(),
+		x: z.number(), y: z.number(), r: z.number(),
+		vx: z.number(), vy: z.number(), vr: z.number(),
+	})),
+});
+
+export const ActiveChallengeSchema = z.object({
+	id: z.string(),
+	chatId: z.number(),
+	chatTitle: z.string().nullable(),
+	level: z.number().int(),
+	status: z.enum(['pending_accept', 'active']),
+	role: z.enum(['challenger', 'challengee']),
+	opponentUsername: z.string(),
+	expiresAt: z.string(),
+	acceptedAt: z.string().nullable(),
+	myStars: z.number().int().nullable(),
+	myTimeMs: z.number().int().nullable(),
+	opponentStars: z.number().int().nullable(),
+	opponentTimeMs: z.number().int().nullable(),
+	opponentRecording: GhostRecordingSchema.nullable(),
+});
+export type ActiveChallenge = z.infer<typeof ActiveChallengeSchema>;
+
+export const ActiveChallengeResponseSchema = z.object({
+	challenge: ActiveChallengeSchema.nullable(),
+});
+export type ActiveChallengeResponse = z.infer<typeof ActiveChallengeResponseSchema>;
+
+
 export const GhostResponseSchema = z.object({
 	level: z.number().int(),
 	userId: z.string(),

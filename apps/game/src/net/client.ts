@@ -8,6 +8,7 @@ import {
 	GhostResponseSchema, GroupInfoResponseSchema,
 	DailyStateResponseSchema, DailyClaimResponseSchema,
 	AchievementsResponseSchema, SpendCoinsResponseSchema,
+	ActiveChallengeResponseSchema,
 } from './schemas';
 
 
@@ -132,6 +133,7 @@ export const api = {
 	dailyState: () => request('GET', '/me/daily', DailyStateResponseSchema),
 	claimDaily: () => request('POST', '/me/daily', DailyClaimResponseSchema, {}),
 	achievements: () => request('GET', '/me/achievements', AchievementsResponseSchema),
+	activeChallenge: () => request('GET', '/challenges/active', ActiveChallengeResponseSchema),
 	spendCoins: (amount: number, reason: string) =>
 		request('POST', '/me/spend-coins', SpendCoinsResponseSchema, {amount, reason}),
 };

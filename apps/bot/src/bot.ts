@@ -11,7 +11,7 @@ import {handlePreCheckout, handleSuccessfulPayment} from './handlers/payments';
 import {handleMyChatMember, handlePlayInGroup, handleNewChatMembers} from './handlers/groups';
 import {handleGroupLeaderboard, handleGroupMe, handleGroupBest} from './handlers/group-stats';
 import {handleSetName, handleSetEmoji} from './handlers/group-identity';
-import {handleChallenge} from './handlers/challenge';
+import {handleChallenge, handleAcceptCallback, handleDeclineCallback, handleCancelCallback} from './handlers/challenge';
 import {handleResetCommand, handleResetConfirm, handleResetCancel} from './handlers/reset';
 import {handleFeedback} from './handlers/feedback';
 import {handleInlineQuery} from './handlers/inline';
@@ -51,6 +51,17 @@ export function createBot(): Bot {
 	bot.command('feedback', handleFeedback);
 	bot.callbackQuery('reset:yes', handleResetConfirm);
 	bot.callbackQuery('reset:no', handleResetCancel);
+
+	// Challenge: accept/decline/cancel — id в callback_data.
+	bot.callbackQuery(/^ch:accept:(.+)$/, async (ctx) => {
+		await handleAcceptCallback(ctx, ctx.match[1] ?? '');
+	});
+	bot.callbackQuery(/^ch:decline:(.+)$/, async (ctx) => {
+		await handleDeclineCallback(ctx, ctx.match[1] ?? '');
+	});
+	bot.callbackQuery(/^ch:cancel:(.+)$/, async (ctx) => {
+		await handleCancelCallback(ctx, ctx.match[1] ?? '');
+	});
 
 	// Бот добавлен/удалён из беседы — регистрируем/деактивируем чат для
 	// группового лидерборда.

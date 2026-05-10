@@ -142,20 +142,26 @@ export const en = {
 			emojiSaved: (e: string) => `✅ Team emoji: ${e}`,
 		},
 		challenge: {
-			usage: 'Usage: <code>/challenge @username 5</code>',
+			usage: 'Usage: <code>/challenge @username</code> — level is picked randomly from your common ones.',
 			userNotFound: (u: string) => `<i>Couldn't find @${u} among players. They might not have opened the bot via /start yet.</i>`,
 			selfChallenge: '<i>Can\'t challenge yourself.</i>',
-			alreadyPending: '<i>You already have an active duel on this level with this player.</i>',
+			youHaveActive: '<i>You already have an active challenge. Wait for it to resolve before starting a new one.</i>',
+			opponentHasActive: (u: string) => `<i><b>${u}</b> already has an active challenge. Wait until it resolves.</i>`,
+			noCommonLevels: (u: string) => `<i>You and <b>${u}</b> don\'t share any cleared levels in this chat yet. Play at least one common level, then try again.</i>`,
 			posted: (a: string, b: string, level: number) =>
-				`👊 <b>${a}</b> challenges <b>${b}</b> on level ${level}!\n\nOne attempt each — first run counts. More stars > less time.`,
-			waitingFor: (who: string, otherStars: number, otherTime: string, opponent: string, level: number) =>
-				`⏳ <b>${who}</b> ran level ${level}: ${otherStars}⭐ <code>${otherTime}</code>. <b>${opponent}</b>'s turn.`,
-			result: (winner: string, loser: string, level: number, ws: number, wt: string, ls: number, lt: string) =>
-				`✅ <b>Duel on level ${level} finished!</b>\n\n🏆 <b>${winner}</b> wins: ${ws}⭐ ${wt}\n   <b>${loser}</b>: ${ls}⭐ ${lt}`,
-			oneSided: (winner: string, level: number, ws: number, wt: string, loser: string) =>
-				`⏰ <b>Time\'s up.</b>\n\n🏆 On level ${level} <b>${winner}</b> wins ${ws}⭐ ${wt} — <b>${loser}</b> didn\'t play.`,
-			tie: (a: string, b: string, level: number) =>
-				`🤝 Tie on level ${level}: <b>${a}</b> and <b>${b}</b> — same score.`,
+				`👊 <b>${a}</b> challenges <b>${b}</b>!\n\n` +
+				`🎯 Level: <b>${level}</b> (random)\n` +
+				`⏳ <b>30 minutes</b> to accept. Once accepted — <b>1 hour</b> with unlimited attempts. Best run counts.`,
+			btnAccept: '✓ Accept',
+			btnDecline: '✕ Decline',
+			btnCancel: '⏎ Cancel',
+			notFound: 'Challenge not found.',
+			notForYou: 'Not your challenge.',
+			expired: 'Accept window expired.',
+			alreadyResolved: 'Challenge already resolved.',
+			accepted: '⚔️ Accepted! One hour, go.',
+			declinedToast: 'Declined.',
+			cancelledToast: 'Cancelled.',
 		},
 	},
 };

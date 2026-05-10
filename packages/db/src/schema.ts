@@ -270,11 +270,25 @@ export type NewGroupStreak = typeof groupStreaks.$inferInsert;
  * меньшее время) — победил. Бот апдейтит то же сообщение
  * `message_id` с итогом, чтобы не плодить флуд в чате.
  *
- * Статусы:
- *  - pending: ждём результаты
- *  - completed: оба сыграли, объявлен победитель
- *  - expired: 24ч прошли, объявлен победитель по доступным результатам
- *  - cancelled: отменено
+ * Жизненный цикл (state machine):
+ *  - pending_accept: инициатор создал, оппонент ещё не нажал «принять».
+ *    `expires_at` = created+30мин (окно принятия).
+ *  - active: оппонент принял, идёт час игры. `accepted_at` заполнен,
+ *    `expires_at` пересчитан = accepted+1ч. Оба могут играть много раз —
+ *    в зачёт идёт ЛУЧШИЙ заход (звёзды DESC, время ASC).
+ *  - completed: окно игры закрылось, есть итог (оба сыграли, или один
+ *    сыграл — победа по дефолту).
+ *  - declined: оппонент нажал «отказаться» до принятия.
+ *  - cancelled: инициатор нажал «отменить» до принятия.
+ *  - expired_no_accept: окно принятия закрылось (никто не нажал).
+ *  - expired_no_play: окно игры закрылось, никто из двух не играл.
+ *
+ * Уровень — рандом из тех, где оба имеют запись в group_progress_levels;
+ * обновлять стало нельзя — челлендж для конкретного уровня.
+ *
+ * Recording'и — challenger_recording / challengee_recording хранят ghost
+ * лучшего захода каждого. Пока оппонент не сыграл — ghost не показывается
+ * (это решение по дизайну, см. spec челленджей 2026-05-10).
  */
 export const groupChallenges = pgTable('group_challenges', {
 	id: text('id').primaryKey().default(sql`gen_random_uuid()::text`),
@@ -286,13 +300,20 @@ export const groupChallenges = pgTable('group_challenges', {
 	challengerTimeMs: integer('challenger_time_ms'),
 	challengeeStars: integer('challengee_stars'),
 	challengeeTimeMs: integer('challengee_time_ms'),
+	challengerRecording: jsonb('challenger_recording'),
+	challengeeRecording: jsonb('challengee_recording'),
 	messageId: integer('message_id'),
-	status: text('status').notNull().default('pending'),
+	status: text('status').notNull().default('pending_accept'),
 	createdAt: timestamp('created_at', {withTimezone: true}).notNull().defaultNow(),
+	acceptedAt: timestamp('accepted_at', {withTimezone: true}),
 	expiresAt: timestamp('expires_at', {withTimezone: true}).notNull(),
 	resolvedAt: timestamp('resolved_at', {withTimezone: true}),
 }, (table) => ({
 	pendingIdx: index('group_challenges_pending_idx').on(table.chatId, table.level, table.status),
+	// Для проверки «один активный челлендж на юзера» — частые запросы
+	// «есть ли у юзера X активный/pending челлендж в любом чате».
+	challengerStatusIdx: index('group_challenges_challenger_status_idx').on(table.challengerUserId, table.status),
+	challengeeStatusIdx: index('group_challenges_challengee_status_idx').on(table.challengeeUserId, table.status),
 }));
 
 

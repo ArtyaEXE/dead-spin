@@ -1,30 +1,31 @@
 import {type Context, InlineKeyboard} from 'grammy';
-import {and, eq, gt, sql} from 'drizzle-orm';
-import {LEVEL_COUNT} from '@dead-spin/shared';
+import {and, eq, lt, or, sql} from 'drizzle-orm';
 import {db, schema} from '../db';
-import {t, toLocale} from '../i18n';
+import {t, toLocale, type Locale} from '../i18n';
 import {findUserByTgId} from '../lib/user';
 
 
 /**
- * `/challenge @username N` — дуэль 1×1 на уровне N в этой беседе.
- * Single-attempt: **первое прохождение** каждого после вызова — это его
- * результат в дуэли (последующие улучшения не учитываются). Когда оба
- * сыграли — итог. Победитель: больше звёзд > меньше времени.
+ * `/challenge @username` — вызов оппонента на дуэль в этой беседе.
  *
- * @user определяется по username из БД (мы храним telegram username
- * в `users.username`). Если такого юзера нет — отказ.
+ * Уровень выбирается случайно из тех, где **оба** имеют запись в
+ * group_progress_levels. Жизненный цикл (см. также apps/api/src/lib/group-challenges.ts):
+ *   pending_accept (30 мин на принятие)
+ *     → active (1 час, неогранич. попыток, лучший заход в зачёт)
+ *     → completed | declined | cancelled | expired_no_accept | expired_no_play
  *
- * Создание дуэли НЕ требует подтверждения от вызываемого — он просто
- * играет уровень в обычном режиме, мы засчитаем результат автоматически.
+ * Один активный челлендж на юзера: если у инициатора или у вызываемого
+ * уже есть pending/active — отказ.
  *
- * Cleanup: pending-дуэли стоят 7 дней как safety-net (если кто-то так и
- * не сыграл — не висят вечно). По истечению одного-сыгравшего объявляем
- * победителем, никого-сыгравшего — тихо expired.
+ * Замечание про архитектуру: бизнес-логика дублируется с API частично —
+ * бот делает create/accept/decline/cancel сам через прямые drizzle-запросы
+ * (бот и API в разных пакетах). Финализация expired-челленджей и обработка
+ * level-complete живут только в API (apps/api/src/lib/group-challenges.ts) —
+ * туда триггерят запросы из Mini App.
  */
 
 
-const DUEL_CLEANUP_MS = 7 * 24 * 60 * 60 * 1000;
+const ACCEPT_WINDOW_MS = 30 * 60 * 1000;
 
 
 function isGroupChat(ctx: Context): boolean {
@@ -37,17 +38,78 @@ function escapeHtml(s: string): string {
 }
 
 
-/**
- * Парсим `/challenge[@bot] @username N` либо `/challenge[@bot] @username  N`.
- * Возвращает {username, level} или null если формат не подходит.
- */
-function parseArgs(text: string | undefined): {username: string; level: number} | null {
+function parseUsername(text: string | undefined): string | null {
 	if (!text) return null;
-	const m = /^\/challenge(?:@\w+)?\s+@(\w+)\s+(\d+)/.exec(text);
-	if (!m) return null;
-	const level = Number(m[2]);
-	if (!Number.isInteger(level) || level < 1 || level > LEVEL_COUNT) return null;
-	return {username: m[1]!, level};
+	const m = /^\/challenge(?:@\w+)?\s+@(\w+)/.exec(text);
+	return m ? m[1]! : null;
+}
+
+
+function pickRandom<T>(arr: T[]): T | null {
+	if (arr.length === 0) return null;
+	return arr[Math.floor(Math.random() * arr.length)] ?? null;
+}
+
+
+function makeInviteKeyboard(challengeId: string, locale: Locale): InlineKeyboard {
+	const L = t(locale);
+	return new InlineKeyboard()
+		.text(L.group.challenge.btnAccept, `ch:accept:${challengeId}`)
+		.text(L.group.challenge.btnDecline, `ch:decline:${challengeId}`).row()
+		.text(L.group.challenge.btnCancel, `ch:cancel:${challengeId}`);
+}
+
+
+/** Уровни, где **оба** юзера имеют запись в этой беседе. */
+async function commonLevels(chatId: number, userA: string, userB: string): Promise<number[]> {
+	const rows = await db.execute<{level: number}>(sql`
+		select a.level
+		from group_progress_levels a
+		inner join group_progress_levels b
+		  on a.chat_id = b.chat_id and a.level = b.level
+		where a.chat_id = ${chatId}
+		  and a.user_id = ${userA}
+		  and b.user_id = ${userB}
+		group by a.level
+		order by a.level
+	`);
+	return rows.map(r => r.level);
+}
+
+
+async function findActiveOrPending(userId: string): Promise<typeof schema.groupChallenges.$inferSelect | null> {
+	const [row] = await db.select()
+		.from(schema.groupChallenges)
+		.where(and(
+			or(
+				eq(schema.groupChallenges.challengerUserId, userId),
+				eq(schema.groupChallenges.challengeeUserId, userId),
+			),
+			or(
+				eq(schema.groupChallenges.status, 'pending_accept'),
+				eq(schema.groupChallenges.status, 'active'),
+			),
+		))
+		.limit(1);
+	return row ?? null;
+}
+
+
+/**
+ * Локальная подметалка: помечает истёкшие pending_accept как expired_no_accept.
+ * Полная финализация active+expired живёт в API (нужны recording'и + edit
+ * message с TG API). Здесь — только освобождение слота под «1 active per user»,
+ * чтобы юзер мог сразу создать новый челлендж после истечения окна принятия.
+ */
+async function sweepExpiredAccepts(chatId: number): Promise<void> {
+	await db.update(schema.groupChallenges)
+		.set({status: 'expired_no_accept', resolvedAt: sql`now()`})
+		.where(and(
+			eq(schema.groupChallenges.chatId, chatId),
+			eq(schema.groupChallenges.status, 'pending_accept'),
+			lt(schema.groupChallenges.expiresAt, sql`now()`),
+		))
+		.catch(() => {/* best-effort */});
 }
 
 
@@ -56,9 +118,12 @@ export async function handleChallenge(ctx: Context): Promise<void> {
 
 	const locale = toLocale(ctx.from.language_code ?? 'en');
 	const L = t(locale);
+	const chatId = ctx.chat.id;
 
-	const args = parseArgs(ctx.message?.text);
-	if (!args) {
+	void sweepExpiredAccepts(chatId);
+
+	const username = parseUsername(ctx.message?.text);
+	if (!username) {
 		await ctx.reply(L.group.challenge.usage, {parse_mode: 'HTML'}).catch(() => {});
 		return;
 	}
@@ -69,13 +134,12 @@ export async function handleChallenge(ctx: Context): Promise<void> {
 		return;
 	}
 
-	// Резолвим вызываемого по username (case-insensitive).
 	const [challengee] = await db.select()
 		.from(schema.users)
-		.where(sql`lower(${schema.users.username}) = lower(${args.username})`)
+		.where(sql`lower(${schema.users.username}) = lower(${username})`)
 		.limit(1);
 	if (!challengee) {
-		await ctx.reply(L.group.challenge.userNotFound(args.username), {parse_mode: 'HTML'}).catch(() => {});
+		await ctx.reply(L.group.challenge.userNotFound(username), {parse_mode: 'HTML'}).catch(() => {});
 		return;
 	}
 	if (challengee.id === challenger.id) {
@@ -83,41 +147,233 @@ export async function handleChallenge(ctx: Context): Promise<void> {
 		return;
 	}
 
-	// Уже есть pending-дуэль между этими двумя на том же уровне? Не плодим.
-	const [existing] = await db.select()
-		.from(schema.groupChallenges)
-		.where(and(
-			eq(schema.groupChallenges.chatId, ctx.chat.id),
-			eq(schema.groupChallenges.level, args.level),
-			eq(schema.groupChallenges.status, 'pending'),
-			gt(schema.groupChallenges.expiresAt, sql`now()`),
-			sql`(
-				(${schema.groupChallenges.challengerUserId} = ${challenger.id} and ${schema.groupChallenges.challengeeUserId} = ${challengee.id})
-				or
-				(${schema.groupChallenges.challengerUserId} = ${challengee.id} and ${schema.groupChallenges.challengeeUserId} = ${challenger.id})
-			)`,
-		))
-		.limit(1);
-	if (existing) {
-		await ctx.reply(L.group.challenge.alreadyPending, {parse_mode: 'HTML'}).catch(() => {});
+	if (await findActiveOrPending(challenger.id)) {
+		await ctx.reply(L.group.challenge.youHaveActive, {parse_mode: 'HTML'}).catch(() => {});
+		return;
+	}
+	if (await findActiveOrPending(challengee.id)) {
+		await ctx.reply(L.group.challenge.opponentHasActive(escapeHtml(challengee.username)), {parse_mode: 'HTML'}).catch(() => {});
 		return;
 	}
 
-	const expiresAt = new Date(Date.now() + DUEL_CLEANUP_MS);
+	const common = await commonLevels(chatId, challenger.id, challengee.id);
+	const level = pickRandom(common);
+	if (level === null) {
+		await ctx.reply(L.group.challenge.noCommonLevels(escapeHtml(challengee.username)), {parse_mode: 'HTML'}).catch(() => {});
+		return;
+	}
+
+	const expiresAt = new Date(Date.now() + ACCEPT_WINDOW_MS);
+	const [created] = await db.insert(schema.groupChallenges)
+		.values({
+			chatId,
+			level,
+			challengerUserId: challenger.id,
+			challengeeUserId: challengee.id,
+			status: 'pending_accept',
+			expiresAt,
+		})
+		.returning({id: schema.groupChallenges.id});
+	if (!created) {
+		console.warn('createChallenge: insert returned nothing');
+		return;
+	}
+
 	const text = L.group.challenge.posted(
 		escapeHtml(challenger.username),
 		escapeHtml(challengee.username),
-		args.level,
+		level,
 	);
 
-	const sent = await ctx.reply(text, {parse_mode: 'HTML'});
+	try {
+		const sent = await ctx.reply(text, {parse_mode: 'HTML', reply_markup: makeInviteKeyboard(created.id, locale)});
+		await db.update(schema.groupChallenges)
+			.set({messageId: sent.message_id})
+			.where(eq(schema.groupChallenges.id, created.id));
+	} catch (e) {
+		console.warn('challenge reply failed:', e instanceof Error ? e.message : e);
+	}
+}
 
-	await db.insert(schema.groupChallenges).values({
-		chatId: ctx.chat.id,
-		level: args.level,
-		challengerUserId: challenger.id,
-		challengeeUserId: challengee.id,
-		messageId: sent.message_id,
-		expiresAt,
-	});
+
+// ─── Callback handlers (`ch:accept|decline|cancel:<id>`) ─────────────
+
+
+async function answerToast(ctx: Context, text: string, alert = false): Promise<void> {
+	if (!ctx.callbackQuery) return;
+	await ctx.answerCallbackQuery({text, show_alert: alert}).catch(() => {});
+}
+
+
+async function getRow(id: string): Promise<typeof schema.groupChallenges.$inferSelect | null> {
+	const [row] = await db.select().from(schema.groupChallenges).where(eq(schema.groupChallenges.id, id)).limit(1);
+	return row ?? null;
+}
+
+
+function txtActive(challenger: string, challengee: string, level: number, locale: Locale): string {
+	if (locale === 'ru') {
+		return `⚔️ <b>Дуэль активна!</b>\n\n` +
+			`<b>${challenger}</b> vs <b>${challengee}</b>\n` +
+			`🎯 Уровень: <b>${level}</b>\n` +
+			`⏳ Час на любое количество попыток. Лучший заход — в зачёт.`;
+	}
+	return `⚔️ <b>Duel is on!</b>\n\n` +
+		`<b>${challenger}</b> vs <b>${challengee}</b>\n` +
+		`🎯 Level: <b>${level}</b>\n` +
+		`⏳ One hour, unlimited attempts. Best run counts.`;
+}
+
+
+function txtDeclined(challenger: string, challengee: string, level: number, locale: Locale): string {
+	if (locale === 'ru') {
+		return `✕ <b>${challengee}</b> отклонил вызов от <b>${challenger}</b> (уровень ${level}).`;
+	}
+	return `✕ <b>${challengee}</b> declined the duel from <b>${challenger}</b> (level ${level}).`;
+}
+
+
+function txtCancelled(challenger: string, challengee: string, level: number, locale: Locale): string {
+	if (locale === 'ru') {
+		return `⏎ <b>${challenger}</b> отменил дуэль с <b>${challengee}</b> (уровень ${level}).`;
+	}
+	return `⏎ <b>${challenger}</b> cancelled the duel with <b>${challengee}</b> (level ${level}).`;
+}
+
+
+export async function handleAcceptCallback(ctx: Context, challengeId: string): Promise<void> {
+	const locale = toLocale(ctx.from?.language_code ?? 'en');
+	const L = t(locale);
+	if (!ctx.from) return;
+	const me = await findUserByTgId(String(ctx.from.id));
+	if (!me) {
+		await answerToast(ctx, L.group.stats.notRegistered.replace(/<[^>]+>/g, ''));
+		return;
+	}
+
+	const ch = await getRow(challengeId);
+	if (!ch) {
+		await answerToast(ctx, L.group.challenge.notFound, true);
+		return;
+	}
+	if (ch.challengeeUserId !== me.id) {
+		await answerToast(ctx, L.group.challenge.notForYou, true);
+		return;
+	}
+	if (ch.status !== 'pending_accept') {
+		await answerToast(ctx, L.group.challenge.alreadyResolved, true);
+		return;
+	}
+	if (ch.expiresAt.getTime() < Date.now()) {
+		await answerToast(ctx, L.group.challenge.expired, true);
+		// Обновим запись, чтобы освободить слот.
+		await db.update(schema.groupChallenges)
+			.set({status: 'expired_no_accept', resolvedAt: sql`now()`})
+			.where(eq(schema.groupChallenges.id, challengeId));
+		return;
+	}
+
+	const acceptedAt = new Date();
+	const newExpiresAt = new Date(acceptedAt.getTime() + 60 * 60 * 1000);
+	await db.update(schema.groupChallenges)
+		.set({status: 'active', acceptedAt, expiresAt: newExpiresAt})
+		.where(eq(schema.groupChallenges.id, challengeId));
+
+	const [challengerUser] = await db.select({username: schema.users.username})
+		.from(schema.users).where(eq(schema.users.id, ch.challengerUserId)).limit(1);
+	const [challengeeUser] = await db.select({username: schema.users.username})
+		.from(schema.users).where(eq(schema.users.id, ch.challengeeUserId)).limit(1);
+	const challengerName = escapeHtml(challengerUser?.username ?? 'unknown');
+	const challengeeName = escapeHtml(challengeeUser?.username ?? 'unknown');
+
+	if (ch.messageId !== null && ctx.chat) {
+		const text = txtActive(challengerName, challengeeName, ch.level, locale);
+		await ctx.api.editMessageText(ctx.chat.id, ch.messageId, text, {
+			parse_mode: 'HTML',
+		}).catch(() => {});
+		await ctx.api.setMessageReaction(ctx.chat.id, ch.messageId, [{type: 'emoji', emoji: '⚡'}]).catch(() => {});
+	}
+	await answerToast(ctx, L.group.challenge.accepted);
+}
+
+
+export async function handleDeclineCallback(ctx: Context, challengeId: string): Promise<void> {
+	const locale = toLocale(ctx.from?.language_code ?? 'en');
+	const L = t(locale);
+	if (!ctx.from) return;
+	const me = await findUserByTgId(String(ctx.from.id));
+	if (!me) return;
+
+	const ch = await getRow(challengeId);
+	if (!ch) {
+		await answerToast(ctx, L.group.challenge.notFound, true);
+		return;
+	}
+	if (ch.challengeeUserId !== me.id) {
+		await answerToast(ctx, L.group.challenge.notForYou, true);
+		return;
+	}
+	if (ch.status !== 'pending_accept') {
+		await answerToast(ctx, L.group.challenge.alreadyResolved, true);
+		return;
+	}
+
+	await db.update(schema.groupChallenges)
+		.set({status: 'declined', resolvedAt: sql`now()`})
+		.where(eq(schema.groupChallenges.id, challengeId));
+
+	const [challengerUser] = await db.select({username: schema.users.username})
+		.from(schema.users).where(eq(schema.users.id, ch.challengerUserId)).limit(1);
+	const [challengeeUser] = await db.select({username: schema.users.username})
+		.from(schema.users).where(eq(schema.users.id, ch.challengeeUserId)).limit(1);
+	const challengerName = escapeHtml(challengerUser?.username ?? 'unknown');
+	const challengeeName = escapeHtml(challengeeUser?.username ?? 'unknown');
+
+	if (ch.messageId !== null && ctx.chat) {
+		await ctx.api.editMessageText(ctx.chat.id, ch.messageId, txtDeclined(challengerName, challengeeName, ch.level, locale), {
+			parse_mode: 'HTML',
+		}).catch(() => {});
+	}
+	await answerToast(ctx, L.group.challenge.declinedToast);
+}
+
+
+export async function handleCancelCallback(ctx: Context, challengeId: string): Promise<void> {
+	const locale = toLocale(ctx.from?.language_code ?? 'en');
+	const L = t(locale);
+	if (!ctx.from) return;
+	const me = await findUserByTgId(String(ctx.from.id));
+	if (!me) return;
+
+	const ch = await getRow(challengeId);
+	if (!ch) {
+		await answerToast(ctx, L.group.challenge.notFound, true);
+		return;
+	}
+	if (ch.challengerUserId !== me.id) {
+		await answerToast(ctx, L.group.challenge.notForYou, true);
+		return;
+	}
+	if (ch.status !== 'pending_accept') {
+		await answerToast(ctx, L.group.challenge.alreadyResolved, true);
+		return;
+	}
+
+	await db.update(schema.groupChallenges)
+		.set({status: 'cancelled', resolvedAt: sql`now()`})
+		.where(eq(schema.groupChallenges.id, challengeId));
+
+	const [challengerUser] = await db.select({username: schema.users.username})
+		.from(schema.users).where(eq(schema.users.id, ch.challengerUserId)).limit(1);
+	const [challengeeUser] = await db.select({username: schema.users.username})
+		.from(schema.users).where(eq(schema.users.id, ch.challengeeUserId)).limit(1);
+	const challengerName = escapeHtml(challengerUser?.username ?? 'unknown');
+	const challengeeName = escapeHtml(challengeeUser?.username ?? 'unknown');
+
+	if (ch.messageId !== null && ctx.chat) {
+		await ctx.api.editMessageText(ctx.chat.id, ch.messageId, txtCancelled(challengerName, challengeeName, ch.level, locale), {
+			parse_mode: 'HTML',
+		}).catch(() => {});
+	}
+	await answerToast(ctx, L.group.challenge.cancelledToast);
 }

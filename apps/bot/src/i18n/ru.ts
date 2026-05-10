@@ -142,20 +142,26 @@ export const ru = {
 			emojiSaved: (e: string) => `✅ Эмодзи команды: ${e}`,
 		},
 		challenge: {
-			usage: 'Использование: <code>/challenge @username 5</code>',
+			usage: 'Использование: <code>/challenge @username</code> — уровень выберется случайно из ваших общих.',
 			userNotFound: (u: string) => `<i>Не нашёл @${u} среди игроков. Возможно, он ещё ни разу не открывал бот через /start.</i>`,
 			selfChallenge: '<i>Себя вызвать нельзя.</i>',
-			alreadyPending: '<i>У вас уже есть активная дуэль на этом уровне с этим игроком.</i>',
+			youHaveActive: '<i>У тебя уже есть активный челлендж. Дождись резолва — потом можно создать новый.</i>',
+			opponentHasActive: (u: string) => `<i>У <b>${u}</b> уже есть активный челлендж. Подожди, пока он завершится.</i>`,
+			noCommonLevels: (u: string) => `<i>У вас с <b>${u}</b> ещё нет общих пройденных уровней в этой беседе. Сыграйте хотя бы один общий уровень и попробуйте снова.</i>`,
 			posted: (a: string, b: string, level: number) =>
-				`👊 <b>${a}</b> вызывает <b>${b}</b> на уровень ${level}!\n\nКаждый играет один раз — какой результат у первого прохождения, тот и зачтётся. Больше звёзд > меньше времени.`,
-			waitingFor: (who: string, otherStars: number, otherTime: string, opponent: string, level: number) =>
-				`⏳ <b>${who}</b> сыграл уровень ${level}: ${otherStars}⭐ <code>${otherTime}</code>. Ход за <b>${opponent}</b>.`,
-			result: (winner: string, loser: string, level: number, ws: number, wt: string, ls: number, lt: string) =>
-				`✅ <b>Дуэль на уровне ${level} завершена!</b>\n\n🏆 Победил <b>${winner}</b>: ${ws}⭐ ${wt}\n   <b>${loser}</b>: ${ls}⭐ ${lt}`,
-			oneSided: (winner: string, level: number, ws: number, wt: string, loser: string) =>
-				`⏰ <b>Время вышло.</b>\n\n🏆 На уровне ${level} победил <b>${winner}</b> ${ws}⭐ ${wt} — <b>${loser}</b> так и не сыграл.`,
-			tie: (a: string, b: string, level: number) =>
-				`🤝 Ничья на уровне ${level}: <b>${a}</b> и <b>${b}</b> — одинаковый счёт.`,
+				`👊 <b>${a}</b> вызывает <b>${b}</b> на дуэль!\n\n` +
+				`🎯 Уровень: <b>${level}</b> (выбран случайно)\n` +
+				`⏳ На принятие — <b>30 минут</b>. После принятия — <b>1 час</b> на любое количество попыток. Лучший заход — в зачёт.`,
+			btnAccept: '✓ Принять',
+			btnDecline: '✕ Отказаться',
+			btnCancel: '⏎ Отменить',
+			notFound: 'Челлендж не найден.',
+			notForYou: 'Это не твой челлендж.',
+			expired: 'Время на принятие истекло.',
+			alreadyResolved: 'Челлендж уже завершён.',
+			accepted: '⚔️ Принято! У вас час, погнали.',
+			declinedToast: 'Отказался от вызова.',
+			cancelledToast: 'Челлендж отменён.',
 		},
 	},
 };
