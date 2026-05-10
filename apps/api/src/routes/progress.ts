@@ -152,6 +152,13 @@ progressRoutes.post('/level-complete', requireAuth, async (c) => {
 
 	const {level, stars, timeMs, fuelSpent, groupChatId, groupHmac, recording} = parsed.data;
 
+	// Уровень должен реально существовать в `@dead-spin/levels`. Без этой
+	// проверки клиент мог бы отправить level=42 (несуществующий) и в БД
+	// прилетал бы ghost-row, ломающий summary и UI. Это уже случилось с
+	// бывшими L4-L15 — см. миграцию 0014_cleanup_ghost_levels.sql.
+	if (!getLevelByNumber(level)) throw badRequest('unknownLevel');
+
+
 	const newStars = await db.transaction(async (tx) => {
 		const [existing] = await tx
 			.select()
