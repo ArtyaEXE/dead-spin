@@ -22,6 +22,41 @@ type GetChatMemberResponse = {
 };
 
 
+type GetChatResponse = {
+	ok: boolean;
+	result?: {
+		id: number;
+		type: 'private' | 'group' | 'supergroup' | 'channel';
+		title?: string;
+	};
+};
+
+
+/**
+ * `getChat` — нужен для ленивой регистрации беседы в `group_chats`.
+ * Когда бот в чате есть, но в БД записи нет (например, после wipe или
+ * если my_chat_member пропустили), мы дёргаем getChat: если бот реально
+ * в чате — Telegram вернёт meta, восстановим запись. Если нет — вернёт
+ * ошибку, не делаем ничего.
+ */
+export async function tgGetChat(chatId: number): Promise<{type: 'group' | 'supergroup'; title: string} | null> {
+	if (!env.TELEGRAM_BOT_TOKEN) return null;
+	const url = `${BOT_API}/bot${env.TELEGRAM_BOT_TOKEN}/getChat?chat_id=${chatId}`;
+	try {
+		const r = await fetch(url);
+		if (!r.ok) return null;
+		const data = await r.json() as GetChatResponse;
+		if (!data.ok || !data.result) return null;
+		const t = data.result.type;
+		if (t !== 'group' && t !== 'supergroup') return null;
+		return {type: t, title: data.result.title ?? '(без названия)'};
+	} catch (e) {
+		console.warn('tgGetChat failed:', e instanceof Error ? e.message : e);
+		return null;
+	}
+}
+
+
 /** `getChatMember` — для верификации, что юзер реально в беседе. */
 export async function tgGetChatMemberStatus(chatId: number, tgUserId: string): Promise<string | null> {
 	if (!env.TELEGRAM_BOT_TOKEN) return null;

@@ -20,6 +20,7 @@ import {requireAuth, type AuthedEnv} from '../middleware/auth';
 import {badRequest, forbidden} from '../lib/errors';
 import {env} from '../config';
 import {isGroupMember} from '../lib/group-membership';
+import {tgGetChat} from '../lib/telegram-bot';
 import {sendGroupNotification, type GroupDiff} from '../lib/group-notifications';
 import {ensurePinnedLeaderboard} from '../lib/group-pinned';
 import {updateStreak, sendStreakNotification} from '../lib/group-streaks';
@@ -256,13 +257,27 @@ async function processGroupResult(args: {
 	}
 
 	// Беседа должна быть зарегистрирована и активна (бот в ней).
+	// Если записи нет — пытаемся ленивую регистрацию через getChat:
+	// бывает, что бот в чате реально есть, но my_chat_member не пришёл
+	// (например, после очистки БД или при первой раскладке бота). В таких
+	// случаях getChat вернёт chat info → INSERT'им и продолжаем.
 	const [chat] = await db.select()
 		.from(groupChats)
 		.where(and(eq(groupChats.chatId, chatId), isNull(groupChats.leftAt)))
 		.limit(1);
 	if (!chat) {
-		console.warn(`group chat ${chatId} not registered or bot left`);
-		return;
+		const info = await tgGetChat(chatId);
+		if (!info) {
+			console.warn(`group chat ${chatId} not registered and getChat failed (bot likely not in chat)`);
+			return;
+		}
+		await db.insert(groupChats)
+			.values({chatId, title: info.title, type: info.type, leftAt: null})
+			.onConflictDoUpdate({
+				target: groupChats.chatId,
+				set: {title: info.title, type: info.type, leftAt: null, updatedAt: sql`now()`},
+			});
+		console.log(`group chat ${chatId} lazy-registered: "${info.title}" (${info.type})`);
 	}
 
 	if (!await isGroupMember(chatId, tgId)) {
