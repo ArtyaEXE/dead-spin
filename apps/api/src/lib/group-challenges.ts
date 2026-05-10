@@ -2,6 +2,7 @@ import {and, eq, gt, lt, or, sql} from 'drizzle-orm';
 import {db} from '../db/client';
 import {groupChallenges, users} from '../db/schema';
 import {tgEditMessageText, tgSendMessage, tgSetMessageReaction} from './telegram-bot';
+import {unlockAchievement} from './achievements';
 
 
 /**
@@ -55,6 +56,21 @@ async function getUsername(userId: string): Promise<string> {
 
 
 /**
+ * tgId/locale победителя — нужны для DM-нотификации об ачивке. Тащим
+ * отдельным запросом, чтобы не утолщать getUsername (она используется
+ * для рендера всех сторон, не только победителя).
+ */
+async function getUserDmMeta(userId: string): Promise<{tgId: string; locale: string} | null> {
+	const [u] = await db.select({tgId: users.tgId, locale: users.locale})
+		.from(users)
+		.where(eq(users.id, userId))
+		.limit(1);
+	if (!u) return null;
+	return {tgId: u.tgId, locale: u.locale};
+}
+
+
+/**
  * Финализирует дуэль: edit сообщения с итогом, статус='completed'/'expired'.
  * `expired` — когда хотя бы один не сыграл (oneSided / nobody played).
  */
@@ -67,6 +83,10 @@ async function finalize(ch: ChallengeRow, locale: 'ru' | 'en'): Promise<void> {
 
 	let html: string | null = null;
 	let isExpired = false;
+	// Победитель completed-дуэли (нужен для ачивки `first_duel_win`).
+	// На ничьей и one-sided expired не выдаётся — это про честную победу
+	// в очной встрече, а не "оппонент не явился".
+	let winnerUserId: string | null = null;
 
 	if (aPlayed && bPlayed) {
 		const cmp = compareResults(
@@ -81,12 +101,14 @@ async function finalize(ch: ChallengeRow, locale: 'ru' | 'en'): Promise<void> {
 				ch.challengeeStars!, ch.challengeeTimeMs!,
 				locale,
 			);
+			winnerUserId = ch.challengerUserId;
 		} else {
 			html = textResult(challengeeName, challengerName, ch.level,
 				ch.challengeeStars!, ch.challengeeTimeMs!,
 				ch.challengerStars!, ch.challengerTimeMs!,
 				locale,
 			);
+			winnerUserId = ch.challengeeUserId;
 		}
 	} else if (aPlayed) {
 		html = textOneSided(challengerName, challengeeName, ch.level,
@@ -112,6 +134,21 @@ async function finalize(ch: ChallengeRow, locale: 'ru' | 'en'): Promise<void> {
 			resolvedAt: sql`now()`,
 		})
 		.where(eq(groupChallenges.id, ch.id));
+
+	// Ачивка `first_duel_win` — только за победу в completed-дуэли.
+	// Best-effort: не валим финализацию, если нотификация не дошла.
+	if (winnerUserId !== null) {
+		const meta = await getUserDmMeta(winnerUserId);
+		if (meta) {
+			void unlockAchievement({
+				userId: winnerUserId,
+				key: 'first_duel_win',
+				notify: true,
+				tgId: meta.tgId,
+				locale: meta.locale,
+			});
+		}
+	}
 }
 
 

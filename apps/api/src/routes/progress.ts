@@ -391,7 +391,7 @@ async function processGroupResult(args: {
 	// Поэтому всё ниже — fire-and-forget внутри процесса. Логируем,
 	// если что-то рухнуло.
 	void runGroupSideEffects({
-		chatId, userId, username, locale,
+		chatId, userId, tgId, username, locale,
 		level, stars, timeMs, recording, diff,
 	}).catch((e) => console.warn('group side-effects failed:', e instanceof Error ? e.message : e));
 }
@@ -400,6 +400,7 @@ async function processGroupResult(args: {
 async function runGroupSideEffects(args: {
 	chatId: number;
 	userId: string;
+	tgId: string;
 	username: string;
 	locale: string;
 	level: number;
@@ -408,7 +409,7 @@ async function runGroupSideEffects(args: {
 	recording?: GhostRecording;
 	diff: GroupDiff;
 }): Promise<void> {
-	const {chatId, userId, username, locale, level, stars, timeMs, recording, diff} = args;
+	const {chatId, userId, tgId, username, locale, level, stars, timeMs, recording, diff} = args;
 
 	// Ghost: если этот результат сделал юзера лидером per (chat, level) —
 	// перезаписываем сохранённую запись на новую (лучшую). Sanity-проверки
@@ -439,10 +440,16 @@ async function runGroupSideEffects(args: {
 
 	// Streak: считаем по календарным дням UTC. На новом milestone (3/7/14/30
 	// и т.п.) шлём отдельное «🔥 N дней подряд». Best-effort.
+	// Заодно: ачивка `week_streak` выдаётся при пересечении 7-дневного
+	// порога (и любого выше — на случай, если игрок проскочил 7 без
+	// нашей нотификации, что в текущей логике невозможно, но защищаемся).
 	try {
 		const {milestone} = await updateStreak({chatId, userId});
 		if (milestone !== null) {
 			await sendStreakNotification({chatId, username, days: milestone});
+			if (milestone >= 7) {
+				void unlockAchievement({userId, key: 'week_streak', notify: true, tgId, locale});
+			}
 		}
 	} catch (e) {
 		console.warn('streak update failed:', e instanceof Error ? e.message : e);

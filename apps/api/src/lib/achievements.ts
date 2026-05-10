@@ -153,12 +153,19 @@ export async function evaluateAchievementsAfterLevelComplete(args: {
 		void unlockAchievement({userId, key: 'fuel_efficient', ...ctx});
 	}
 
-	// all_levels / all_3stars — после каждого level-complete пересчитываем
-	// агрегаты. Дешёвый JOIN.
-	const [agg] = await db.execute<{cleared: number; perfect: number}>(sql`
+	// all_levels / all_3stars / all_skins — после каждого level-complete
+	// пересчитываем агрегаты. Дешёвый запрос без JOIN'а.
+	//
+	// `total_stars` нужен для all_skins: последний скин (asteroid-king)
+	// открывается на 45⭐ — это и есть условие «коллекционер всех скинов».
+	// Хардкод порога: пороги скинов живут в apps/game/src/stores/skin.ts
+	// (game-data, не shared); если будем добавлять новые скины — синхро
+	// надо сделать руками. Всего 5 скинов с порогами 0/8/20/35/45.
+	const [agg] = await db.execute<{cleared: number; perfect: number; total_stars: number}>(sql`
 		select
 			count(*)::int as cleared,
-			count(*) filter (where stars = 3)::int as perfect
+			count(*) filter (where stars = 3)::int as perfect,
+			coalesce(sum(stars), 0)::int as total_stars
 		from progress_levels
 		where user_id = ${userId}
 	`);
@@ -168,6 +175,9 @@ export async function evaluateAchievementsAfterLevelComplete(args: {
 		}
 		if (agg.perfect >= LEVEL_COUNT) {
 			void unlockAchievement({userId, key: 'all_3stars', ...ctx});
+		}
+		if (agg.total_stars >= 45) {
+			void unlockAchievement({userId, key: 'all_skins', ...ctx});
 		}
 	}
 }
