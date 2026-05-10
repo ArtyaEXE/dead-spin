@@ -107,34 +107,33 @@ export function MainMenu(props: {onPlay: () => void; onSettings: () => void; onS
 
 			<img class="mm-logo" src="/dead-spin-logo-shadow.png" alt="Dead Spin" />
 
-			<Show when={challenge()}>
-				{(c) => (
-					<div
-						class="challenge-banner pressable"
-						classList={{
-							'challenge-banner--pending': c().status === 'pending_accept',
-							'challenge-banner--active': c().status === 'active',
-							'challenge-banner--remote': !challengeInThisChat(),
-						}}
-					>
-						<div class="challenge-banner__bg" />
-						<div class="challenge-banner__content">
-							<div class="challenge-banner__title">
-								{c().status === 'pending_accept' ? '⏳ Ждём ответа' : '⚡ Активный челлендж'}
+			<Show when={challenge() && challengeInThisChat()}>
+				{(_) => {
+					const c = () => challenge()!;
+					return (
+						<div
+							class="challenge-banner pressable"
+							classList={{
+								'challenge-banner--pending': c().status === 'pending_accept',
+								'challenge-banner--active': c().status === 'active',
+							}}
+						>
+							<div class="challenge-banner__bg" />
+							<div class="challenge-banner__content">
+								<div class="challenge-banner__title">
+									{c().status === 'pending_accept' ? '⏳ Ждём ответа' : '⚡ Активный челлендж'}
+								</div>
+								<div class="challenge-banner__row">
+									<span class="challenge-banner__opponent">vs <b>{c().opponentUsername}</b></span>
+									<span class="challenge-banner__level">уровень {c().level}</span>
+								</div>
+								<Show when={timeLeft()}>
+									{(tl) => <div class="challenge-banner__timer">{tl()} осталось</div>}
+								</Show>
 							</div>
-							<div class="challenge-banner__row">
-								<span class="challenge-banner__opponent">vs <b>{c().opponentUsername}</b></span>
-								<span class="challenge-banner__level">уровень {c().level}</span>
-							</div>
-							<Show when={timeLeft()}>
-								{(tl) => <div class="challenge-banner__timer">{tl()} осталось</div>}
-							</Show>
-							<Show when={!challengeInThisChat()}>
-								<div class="challenge-banner__hint">в чате <i>{c().chatTitle ?? '...'}</i></div>
-							</Show>
 						</div>
-					</div>
-				)}
+					);
+				}}
 			</Show>
 
 			<Show when={daily()?.canClaim}>

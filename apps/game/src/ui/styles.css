@@ -431,7 +431,6 @@ html, body, #root {
 	border-color: rgba(255, 90, 90, 0.5);
 	animation: challenge-pulse 2.4s ease-in-out infinite;
 }
-.challenge-banner--remote { opacity: 0.78; }
 @keyframes challenge-pulse {
 	0%, 100% { box-shadow: 0 6px 18px rgba(255, 90, 90, 0.5); }
 	50% { box-shadow: 0 8px 24px rgba(255, 90, 90, 0.75); }
