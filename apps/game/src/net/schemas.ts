@@ -38,6 +38,9 @@ export type ProgressLevel = z.infer<typeof ProgressLevelSchema>;
 export const ProgressResponseSchema = z.object({
 	summaryStars: z.number().int(),
 	levels: z.array(ProgressLevelSchema),
+	// Только в group-контексте: выбранный скин юзера в этой беседе. NULL =
+	// выбора не было, клиент рисует prospector. В DM-варианте поле отсутствует.
+	selectedSkin: z.string().nullable().optional(),
 });
 export type ProgressResponse = z.infer<typeof ProgressResponseSchema>;
 
@@ -70,6 +73,14 @@ export const LeaderboardResponseSchema = z.object({
 
 
 export const MeResponseSchema = z.object({user: UserSchema});
+
+
+/** POST /me/skin — DM-вариант возвращает user, group-вариант возвращает только groupSelectedSkin. */
+export const SetSkinResponseSchema = z.union([
+	z.object({user: UserSchema}),
+	z.object({groupSelectedSkin: z.string()}),
+]);
+export type SetSkinResponse = z.infer<typeof SetSkinResponseSchema>;
 
 
 export const DailyRewardSchema = z.object({fuel: z.number().int(), coins: z.number().int()});

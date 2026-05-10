@@ -1,6 +1,7 @@
-import {createSignal, createEffect, For, Show} from 'solid-js';
+import {createEffect, For, Show} from 'solid-js';
 import {progressStore, useProgress} from '../stores/progress';
 import {useAuth} from '../stores/auth';
+import {useGroup} from '../stores/group';
 import {useLiveFuel} from '../stores/fuel';
 import {
 	SKINS, getActiveSkinId, setSelectedSkinId, isSkinUnlocked,
@@ -15,17 +16,18 @@ import {
  */
 export function Shop(props: {onBack: () => void}) {
 	const auth = useAuth();
+	const group = useGroup();
 	const progress = useProgress();
 	const liveFuel = useLiveFuel();
 	const fuelK = () => (liveFuel() / 1000).toFixed(2);
 
-	// `active` — фактически применяющийся скин в текущем контексте: выбор
-	// из БД (через authStore.user.selectedSkin), но если в этом контексте
-	// он залочен (например, выбрал в DM, зашёл в свежую беседу с 0★) —
-	// fallback на prospector. Реактивно пересчитывается, когда меняется
-	// либо user (через setSkin), либо progress (звёзды).
+	// `active` — фактически применяющийся скин в текущем контексте.
+	// В DM читает из user.selectedSkin, в группе из group.selectedSkin.
+	// Если в контексте звёзд не хватает — fallback на prospector (см.
+	// stores/skin.ts:getActiveSkinId).
 	const active = (): SkinId => {
-		auth(); // dependency на user.selectedSkin
+		auth();   // dependency на user.selectedSkin
+		group();  // dependency на group.selectedSkin
 		return getActiveSkinId(progress().summaryStars);
 	};
 

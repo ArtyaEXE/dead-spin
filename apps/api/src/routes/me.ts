@@ -2,12 +2,17 @@ import {Hono} from 'hono';
 import {z} from 'zod';
 import {eq, sql} from 'drizzle-orm';
 import {db} from '../db/client';
-import {progresses, progressLevels, groupProgressLevels, users} from '../db/schema';
-import {badRequest} from '../lib/errors';
+import {progresses, progressLevels, groupProgressLevels, users, userGroupSkins, groupChats} from '../db/schema';
+import {badRequest, forbidden} from '../lib/errors';
 import {requireAuth, type AuthedEnv} from '../middleware/auth';
 import {getDailyState, claimDaily} from '../lib/daily-rewards';
 import {track} from '../lib/analytics';
 import {ACHIEVEMENTS, listUserAchievements, type AchievementKey} from '../lib/achievements';
+import {GROUP_HMAC_LEN} from '@dead-spin/shared';
+import {verifyGroupContext} from '@dead-spin/shared/group-hmac';
+import {env} from '../config';
+import {isGroupMember} from '../lib/group-membership';
+import {and, isNull} from 'drizzle-orm';
 
 
 export const meRoutes = new Hono<AuthedEnv>();
@@ -107,26 +112,53 @@ meRoutes.post('/spend-coins', requireAuth, async (c) => {
 
 
 /**
- * POST /me/skin — сохранить выбранный скин в БД (вместо localStorage).
- * Применяется глобально; в контекстах где звёзд не хватает, клиент сам
- * рисует prospector (см. stores/skin.ts:getActiveSkinId).
+ * POST /me/skin — сохранить выбранный скин.
  *
- * Валидация: id должен быть из известного списка скинов. Не проверяем
- * «разблокирован ли» — гейтинг per-context, фолбэк на стороне клиента.
+ * Без groupChatId+groupHmac → DM-выбор, апдейт `users.selected_skin`.
+ * С группой → per-chat выбор, upsert в `user_group_skins (user_id, chat_id)`.
+ *
+ * DM- и group-выборы независимы. Клиент при рендере проверяет контекст
+ * (groupStore.chatId !== null → читает groupSelectedSkin, иначе user.selectedSkin),
+ * и применяет fallback на prospector если в этом контексте звёзд не хватает.
  */
 const SKIN_IDS = ['prospector', 'wanderer', 'engineer', 'veteran', 'asteroid-king'] as const;
-const SetSkinSchema = z.object({skin: z.enum(SKIN_IDS)});
+const SetSkinSchema = z.object({
+	skin: z.enum(SKIN_IDS),
+	groupChatId: z.number().int().optional(),
+	groupHmac: z.string().regex(new RegExp(`^[0-9a-f]{${GROUP_HMAC_LEN}}$`)).optional(),
+});
 
 meRoutes.post('/skin', requireAuth, async (c) => {
 	const userId = c.var.user.id;
+	const tgId = c.var.user.tgId;
 	const raw = await c.req.json().catch(() => null);
 	const parsed = SetSkinSchema.safeParse(raw);
 	if (!parsed.success) throw badRequest('invalidBody');
+	const {skin, groupChatId, groupHmac} = parsed.data;
 
+	if (groupChatId !== undefined && groupHmac !== undefined) {
+		// Per-chat выбор. HMAC + членство в чате — как и в других group-роутах.
+		if (!verifyGroupContext(groupChatId, groupHmac, env.TELEGRAM_BOT_TOKEN)) throw forbidden('hmacMismatch');
+		const [chat] = await db.select()
+			.from(groupChats)
+			.where(and(eq(groupChats.chatId, groupChatId), isNull(groupChats.leftAt)))
+			.limit(1);
+		if (!chat) throw forbidden('groupInactive');
+		if (!await isGroupMember(groupChatId, tgId)) throw forbidden('notMember');
+
+		await db.insert(userGroupSkins)
+			.values({userId, chatId: groupChatId, selectedSkin: skin})
+			.onConflictDoUpdate({
+				target: [userGroupSkins.userId, userGroupSkins.chatId],
+				set: {selectedSkin: skin, updatedAt: sql`now()`},
+			});
+		return c.json({groupSelectedSkin: skin});
+	}
+
+	// DM-выбор.
 	await db.update(users)
-		.set({selectedSkin: parsed.data.skin, updatedAt: sql`now()`})
+		.set({selectedSkin: skin, updatedAt: sql`now()`})
 		.where(eq(users.id, userId));
-
 	const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
 	return c.json({user});
 });

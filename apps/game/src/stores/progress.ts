@@ -31,6 +31,13 @@ export const progressStore = createStore<ProgressState>((set, get) => ({
 		const map: Record<number, ProgressLevel> = {};
 		for (const row of res.levels) map[row.level] = row;
 		set({summaryStars: res.summaryStars, levels: map, loaded: true});
+
+		// В group-ответе сервер кладёт selectedSkin (или null если override
+		// для этого чата нет). Сохраняем в groupStore — getActiveSkinId
+		// возьмёт его в group-контексте.
+		if (g.chatId !== null && 'selectedSkin' in res) {
+			groupStore.getState().setSelectedSkin(res.selectedSkin ?? null);
+		}
 	},
 
 	recordLocal(level, stars, timeMs, fuelSpent) {

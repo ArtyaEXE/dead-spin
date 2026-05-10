@@ -11,9 +11,16 @@ type GroupState = {
 	title: string | null;
 	nickname: string | null;
 	emoji: string | null;
+	/**
+	 * Per-chat выбранный скин юзера. NULL = выбора в этой беседе ещё не
+	 * было — клиент покажет prospector. Загружается из ответа
+	 * `/progress/group/:chatId` (см. progressStore.refresh).
+	 */
+	selectedSkin: string | null;
 	hydrate: () => void;
 	loadInfo: () => Promise<void>;
 	setTitle: (title: string | null) => void;
+	setSelectedSkin: (skin: string | null) => void;
 	clear: () => void;
 };
 
@@ -38,6 +45,7 @@ export const groupStore = createStore<GroupState>((set, get) => ({
 	title: null,
 	nickname: null,
 	emoji: null,
+	selectedSkin: null,
 
 	hydrate() {
 		if (typeof window === 'undefined') return;
@@ -68,7 +76,9 @@ export const groupStore = createStore<GroupState>((set, get) => ({
 
 	setTitle(title) { set({title}); },
 
-	clear() { set({chatId: null, hmac: null, title: null, nickname: null, emoji: null}); },
+	setSelectedSkin(skin) { set({selectedSkin: skin}); },
+
+	clear() { set({chatId: null, hmac: null, title: null, nickname: null, emoji: null, selectedSkin: null}); },
 }));
 
 

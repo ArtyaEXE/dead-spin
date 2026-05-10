@@ -15,7 +15,7 @@ import {
 import {getLevelByNumber} from '@dead-spin/levels';
 import {verifyGroupContext} from '@dead-spin/shared/group-hmac';
 import {db} from '../db/client';
-import {progresses, progressLevels, groupChats, groupProgressLevels, groupGhosts, users} from '../db/schema';
+import {progresses, progressLevels, groupChats, groupProgressLevels, groupGhosts, users, userGroupSkins} from '../db/schema';
 import {requireAuth, type AuthedEnv} from '../middleware/auth';
 import {badRequest, forbidden} from '../lib/errors';
 import {env} from '../config';
@@ -102,7 +102,14 @@ progressRoutes.get('/group/:chatId', requireAuth, async (c) => {
 
 	const summaryStars = rows.reduce((acc, r) => acc + r.stars, 0);
 
-	return c.json({summaryStars, levels: rows});
+	// Выбранный скин в этой беседе (per-chat override). Если строки нет —
+	// клиент покажет prospector в этом чате (per-context дефолт).
+	const [skinRow] = await db.select({selectedSkin: userGroupSkins.selectedSkin})
+		.from(userGroupSkins)
+		.where(and(eq(userGroupSkins.userId, userId), eq(userGroupSkins.chatId, chatId)))
+		.limit(1);
+
+	return c.json({summaryStars, levels: rows, selectedSkin: skinRow?.selectedSkin ?? null});
 });
 
 

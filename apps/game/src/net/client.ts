@@ -8,7 +8,7 @@ import {
 	GhostResponseSchema, GroupInfoResponseSchema,
 	DailyStateResponseSchema, DailyClaimResponseSchema,
 	AchievementsResponseSchema, SpendCoinsResponseSchema,
-	ActiveChallengeResponseSchema,
+	ActiveChallengeResponseSchema, SetSkinResponseSchema,
 } from './schemas';
 
 
@@ -133,7 +133,17 @@ export const api = {
 	dailyState: () => request('GET', '/me/daily', DailyStateResponseSchema),
 	claimDaily: () => request('POST', '/me/daily', DailyClaimResponseSchema, {}),
 	achievements: () => request('GET', '/me/achievements', AchievementsResponseSchema),
-	setSkin: (skin: string) => request('POST', '/me/skin', MeResponseSchema, {skin}),
+	setSkin: (skin: string) => {
+		// В group-контексте отправляем groupChatId+hmac — сервер сохранит
+		// per-chat override в user_group_skins вместо DM-выбора.
+		const g = groupStore.getState();
+		const body = g.chatId !== null && g.hmac !== null
+			? {skin, groupChatId: g.chatId, groupHmac: g.hmac}
+			: {skin};
+		// Group-ответ возвращает {groupSelectedSkin}, DM — {user}. Парсим
+		// схемой union; на клиенте сами разруливаем какой случай.
+		return request('POST', '/me/skin', SetSkinResponseSchema, body);
+	},
 	activeChallenge: () => request('GET', '/challenges/active', ActiveChallengeResponseSchema),
 	spendCoins: (amount: number, reason: string) =>
 		request('POST', '/me/spend-coins', SpendCoinsResponseSchema, {amount, reason}),

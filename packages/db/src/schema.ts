@@ -167,6 +167,27 @@ export const groupChats = pgTable('group_chats', {
 
 
 /**
+ * user_group_skins — выбранный скин юзера В КОНКРЕТНОЙ беседе. PK
+ * (user_id, chat_id). Если строки нет — выбор не делался, клиент по
+ * умолчанию рисует prospector в этом чате. Это per-context override
+ * над `users.selected_skin` (который — DM-выбор).
+ *
+ * Идея: юзер может в DM играть VETERAN'ом (заработал 35★ глобально),
+ * а в группе с 0★ играть PROSPECTOR'ом — чистый старт «персоны»
+ * в каждом чате. Если в группе наберёт 8★ и тапнет WANDERER'а в магазине,
+ * запись сюда сохранит WANDERER именно для этого чата, не трогая DM-выбор.
+ */
+export const userGroupSkins = pgTable('user_group_skins', {
+	userId: text('user_id').notNull().references(() => users.id, {onDelete: 'cascade'}),
+	chatId: bigint('chat_id', {mode: 'number'}).notNull().references(() => groupChats.chatId, {onDelete: 'cascade'}),
+	selectedSkin: text('selected_skin').notNull().default('prospector'),
+	updatedAt: timestamp('updated_at', {withTimezone: true}).notNull().defaultNow(),
+}, (table) => ({
+	pk: primaryKey({columns: [table.userId, table.chatId]}),
+}));
+
+
+/**
  * group_progress_levels — рекорды per (chat, user, level). Отдельная таблица
  * от progress_levels — у одного игрока могут быть разные «лучшие» в DM
  * (глобальный лидерборд) и в каждой беседе. Индекс под scope-выборку

@@ -92,6 +92,13 @@
       "when": 1778422284199,
       "tag": "0012_user_selected_skin",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1778422530072,
+      "tag": "0013_user_group_skins",
+      "breakpoints": true
     }
   ]
 }
