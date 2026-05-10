@@ -330,21 +330,16 @@ INSERT с `onConflictDoNothing` — атомарная разблокировк�
 - Milestones: 3, 7, 14, 30, 60, 100 дней — нотификация **один раз** на milestone (`last_notified_milestone`).
 - Пропуск дня → streak = 1, milestone-counter обнуляется.
 
-### 11.6 Weekly Digest (cron)
-- `POST /cron/weekly-digest`, idempotent (≥6 дней между digest'ами на чат).
-- Содержание: пройдено уровней / уникальных игроков / лидер недели / top-3 рекорда.
-- Отправка + 📊 reaction.
-
-### 11.7 Identity-контекст
+### 11.6 Identity-контекст
 - **DM** = глобальный прогресс, глобальные звёзды для скинов.
 - **Group** = локальный per-chat прогресс и звёзды.
 - Это сделано осознанно: игрок не должен вламываться в свежую беседу с фул-прогрессом — нужно «заработать репутацию» в новом чате.
 
-### 11.8 Inline Mode
+### 11.7 Inline Mode
 - `@<bot> ...` в любом чате → 3 article-результата с топ-уровнями игрока + ref-payload.
 - Органический шеринг рекордов.
 
-### 11.9 Команды бота (`apps/bot/src/handlers/`)
+### 11.8 Команды бота (`apps/bot/src/handlers/`)
 `/start [ref_<id>]`, `/menu`, `/help`, `/shop`, `/me`, `/lb [N]`, `/best`, `/challenge`, `/play`, `/setname`, `/stats`, `/reset`, `/feedback <text>`.
 
 UI: HTML-форматирование, emoji-иерархия, inline-keyboards с editMessageText (одно сообщение, не флудит), expandable-blockquotes для FAQ, прогресс-бар топлива `█████░░░░░`, подсветка своего ника в LB.
@@ -374,13 +369,11 @@ UI: HTML-форматирование, emoji-иерархия, inline-keyboards 
 | Хук | Канал | Триггер | Cooldown |
 |---|---|---|---|
 | Daily check-in | Mini App | первый вход за UTC-день | 24h |
-| Full-fuel push | Telegram DM | fuel == FUEL_MAX, idle ≥ 12h, active < 30 дней | 24h |
 | Group streak milestone | Бот в группе | пересечение 3/7/14/30/60/100 дней | один раз на milestone |
 | Record notification | Бот в группе | новый рекорд на уровне в чате | по событию |
-| Weekly digest | Бот в группе | cron, ≥ 6 дней с прошлого | weekly |
 | Achievement overlay | Mini App + DM-реакция | условие достигнуто | один раз |
 
-**Fuel-push батчинг:** 25 юзеров / 1.1 сек (соблюдение Telegram 30 msg/sec rate limit).
+> **Cron-based hooks вырезаны.** Weekly digest и full-fuel push требовали внешнего планировщика (cron-job.org / GitHub Actions) — лишняя точка контроля для соло-разработчика на pre-alpha. Если retention потребует — вернём из git-истории.
 
 ---
 
@@ -411,12 +404,7 @@ UI: HTML-форматирование, emoji-иерархия, inline-keyboards 
 - **Sentry** — error tracking (env-driven, `VITE_SENTRY_DSN` / `SENTRY_DSN`).
 - **PostHog** — product analytics (env-driven, `VITE_POSTHOG_KEY`).
 
-### 14.3 Cron endpoints (требуют внешнего scheduler'а)
-- `POST /cron/weekly-digest` — 1× в неделю.
-- `POST /cron/full-fuel-push` — каждые 30–60 мин.
-- ⚠️ **Внешний cron не настроен** — endpoint'ы есть, никто не дёргает.
-
-### 14.4 API endpoints (Phase 2)
+### 14.3 API endpoints (Phase 2)
 | Метод | Путь | Назначение |
 |---|---|---|
 | POST | `/auth/telegram` | initData → JWT (7d) |
@@ -427,7 +415,7 @@ UI: HTML-форматирование, emoji-иерархия, inline-keyboards 
 | POST | `/fuel/spend` | списать топливо |
 | GET | `/leaderboard/:level` | топ + ранг текущего |
 
-### 14.5 Известные риски
+### 14.4 Известные риски
 - **Race condition в `processGroupResult`:** group-write должен awaited завершиться до возврата 200; side-effects (нотификации, ghosts, streaks, achievements, pinned LB) идут fire-and-forget после (см. коммит `00dad93`).
 - **Render free-tier sleep** — mitigated UptimeRobot'ом, но cold-start всё равно есть.
 
@@ -436,9 +424,11 @@ UI: HTML-форматирование, emoji-иерархия, inline-keyboards 
 ## 15. Что зашипано к 2026-05-10
 
 ✅ Single-player loop: 15 уровней (только CERES запольнен), скины, fuel, intro `c1`.
-✅ Group features: per-chat LB, `/challenge`, ghost replays, pinned LB, weekly digest cron, `/me /lb /best`, реакции на рекорды, welcome.
+✅ Group features: per-chat LB, `/challenge`, ghost replays, pinned LB, `/me /lb /best`, реакции на рекорды, welcome.
 ✅ Alpha-prep: версия в Settings (`__APP_VERSION__` из git sha), retry-UX в LoginScreen, `/reset`, privacy.html, `/feedback`, Sentry hooks, allowlist helper, SMOKE_TEST.md.
-✅ Retention pack: PostHog telemetry, daily check-in, full-fuel push cron, 10 achievements + UI overlay, coins-skip-fuel, реферал, inline mode.
+✅ Retention pack: PostHog telemetry, daily check-in, 10 achievements + UI overlay, coins-skip-fuel, реферал, inline mode.
+
+❌ **Вырезано к 2026-05-10**: weekly-digest cron, full-fuel-push cron — требовали внешнего планировщика, лишняя точка контроля для соло-разработчика. Endpoints + lib-код удалены, БД-колонки оставлены (на случай возврата).
 
 ---
 
@@ -447,7 +437,6 @@ UI: HTML-форматирование, emoji-иерархия, inline-keyboards 
 | Приоритет | Задача | Зачем |
 |---|---|---|
 | **P0** | Заполнить миры PALLAS/JUNO/VESTA/EUNOMIA (12 уровней) | главный bottleneck retention |
-| **P0** | Поднять внешний cron на `/cron/*` endpoint'ы | digest и push сейчас не работают |
 | **P1** | Полная coins-economy (расход на скрап / косметику) | coins пока почти бесцельны |
 | **P1** | Hard mode / Time Trial mode | контент-мультипликатор для core'а |
 | **P2** | Per-world outro/intro комиксы | усилить нарратив |

@@ -18,13 +18,6 @@ const EnvSchema = z.object({
 
 	CORS_ORIGINS: z.string().default('*'),
 
-	/**
-	 * Секрет для cron-эндпоинтов (POST /cron/*). Внешний планировщик
-	 * (cron-job.org / GitHub Actions / etc.) шлёт его в заголовке
-	 * `X-Cron-Secret`. Если пусто — cron-эндпоинты возвращают 503.
-	 */
-	CRON_SECRET: z.string().default(''),
-
 	/** Sentry DSN. Если пусто — Sentry не инициализируется (no-op). */
 	SENTRY_DSN: z.string().default(''),
 
@@ -35,13 +28,6 @@ const EnvSchema = z.object({
 	 */
 	POSTHOG_KEY: z.string().default(''),
 	POSTHOG_HOST: z.string().default('https://eu.i.posthog.com'),
-
-	/**
-	 * URL Mini App — для линков в push-нотификациях ("⛽ Полный бак").
-	 * Совпадает с WEB_APP_URL в боте. Если пусто — push не уйдёт
-	 * (бот пытается слать сообщение со ссылкой, ссылки не будет).
-	 */
-	WEB_APP_URL: z.string().default(''),
 });
 
 
