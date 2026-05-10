@@ -85,6 +85,13 @@
       "when": 1778418431953,
       "tag": "0011_challenges_v2",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1778422284199,
+      "tag": "0012_user_selected_skin",
+      "breakpoints": true
     }
   ]
 }

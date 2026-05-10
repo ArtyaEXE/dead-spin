@@ -20,13 +20,12 @@ export function Shop(props: {onBack: () => void}) {
 	const fuelK = () => (liveFuel() / 1000).toFixed(2);
 
 	// `active` — фактически применяющийся скин в текущем контексте: выбор
-	// игрока из localStorage, но если он залочен (например, выбрал в DM,
-	// зашёл в свежую беседу с 0★) — fallback на prospector. Через
-	// `skinTick` форсим пересчёт после ручного выбора (localStorage сам
-	// не реактивен).
-	const [skinTick, setSkinTick] = createSignal(0);
+	// из БД (через authStore.user.selectedSkin), но если в этом контексте
+	// он залочен (например, выбрал в DM, зашёл в свежую беседу с 0★) —
+	// fallback на prospector. Реактивно пересчитывается, когда меняется
+	// либо user (через setSkin), либо progress (звёзды).
 	const active = (): SkinId => {
-		skinTick();
+		auth(); // dependency на user.selectedSkin
 		return getActiveSkinId(progress().summaryStars);
 	};
 
@@ -38,10 +37,13 @@ export function Shop(props: {onBack: () => void}) {
 		}
 	});
 
-	const choose = (skin: SkinDef): void => {
+	const choose = async (skin: SkinDef): Promise<void> => {
 		if (!isSkinUnlocked(skin, progress().summaryStars)) return;
-		setSelectedSkinId(skin.id);
-		setSkinTick(v => v + 1);
+		try {
+			await setSelectedSkinId(skin.id);
+		} catch (e) {
+			console.warn('setSelectedSkinId failed:', e instanceof Error ? e.message : e);
+		}
 	};
 
 	return (
@@ -73,7 +75,7 @@ export function Shop(props: {onBack: () => void}) {
 									selected: isSelected(),
 									pressable: unlocked() && !isSelected(),
 								}}
-								onClick={() => choose(skin)}
+								onClick={() => void choose(skin)}
 							>
 								<div class="shop-card-imgwrap">
 									<img class="shop-card-img" src={skin.src} alt="" />

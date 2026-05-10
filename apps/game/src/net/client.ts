@@ -133,6 +133,7 @@ export const api = {
 	dailyState: () => request('GET', '/me/daily', DailyStateResponseSchema),
 	claimDaily: () => request('POST', '/me/daily', DailyClaimResponseSchema, {}),
 	achievements: () => request('GET', '/me/achievements', AchievementsResponseSchema),
+	setSkin: (skin: string) => request('POST', '/me/skin', MeResponseSchema, {skin}),
 	activeChallenge: () => request('GET', '/challenges/active', ActiveChallengeResponseSchema),
 	spendCoins: (amount: number, reason: string) =>
 		request('POST', '/me/spend-coins', SpendCoinsResponseSchema, {amount, reason}),

@@ -36,6 +36,14 @@ export const users = pgTable('users', {
 	lastFullFuelPushAt: timestamp('last_full_fuel_push_at', {withTimezone: true}),
 	/** Telegram-id юзера, который пригласил этого юзера. NULL если регистрация органическая. */
 	referrerId: text('referrer_id'),
+	/**
+	 * Выбранный скин ракеты — id из stores/skin.ts SKINS. Применяется
+	 * глобально, но если в текущем контексте (DM или конкретной беседе)
+	 * звёзд не хватает на этот скин, клиент рисует prospector. До этого
+	 * выбор хранился в localStorage и терялся между девайсами/чисткой;
+	 * теперь — навсегда per-user.
+	 */
+	selectedSkin: text('selected_skin').notNull().default('prospector'),
 
 	createdAt: timestamp('created_at', {withTimezone: true}).notNull().defaultNow(),
 	updatedAt: timestamp('updated_at', {withTimezone: true}).notNull().defaultNow(),

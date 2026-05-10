@@ -10,6 +10,7 @@ export const UserSchema = z.object({
 	fuelUpdatedAt: z.string(),
 	coins: z.number().int(),
 	details: z.number().int(),
+	selectedSkin: z.string().default('prospector'),
 	createdAt: z.string(),
 	updatedAt: z.string(),
 });

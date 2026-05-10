@@ -107,6 +107,32 @@ meRoutes.post('/spend-coins', requireAuth, async (c) => {
 
 
 /**
+ * POST /me/skin — сохранить выбранный скин в БД (вместо localStorage).
+ * Применяется глобально; в контекстах где звёзд не хватает, клиент сам
+ * рисует prospector (см. stores/skin.ts:getActiveSkinId).
+ *
+ * Валидация: id должен быть из известного списка скинов. Не проверяем
+ * «разблокирован ли» — гейтинг per-context, фолбэк на стороне клиента.
+ */
+const SKIN_IDS = ['prospector', 'wanderer', 'engineer', 'veteran', 'asteroid-king'] as const;
+const SetSkinSchema = z.object({skin: z.enum(SKIN_IDS)});
+
+meRoutes.post('/skin', requireAuth, async (c) => {
+	const userId = c.var.user.id;
+	const raw = await c.req.json().catch(() => null);
+	const parsed = SetSkinSchema.safeParse(raw);
+	if (!parsed.success) throw badRequest('invalidBody');
+
+	await db.update(users)
+		.set({selectedSkin: parsed.data.skin, updatedAt: sql`now()`})
+		.where(eq(users.id, userId));
+
+	const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+	return c.json({user});
+});
+
+
+/**
  * GET /me/achievements — список ключей разблокированных ачивок + meta
  * (emoji + локализованные названия) для UI-плашки.
  */
