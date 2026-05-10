@@ -144,7 +144,7 @@ export async function handleStart(ctx: Context): Promise<void> {
 	}
 
 	const UL = t(result.user.locale);
-	const text = [
+	const caption = [
 		UL.welcome.title,
 		'',
 		UL.welcome.greeting(result.user.username),
@@ -160,5 +160,25 @@ export async function handleStart(ctx: Context): Promise<void> {
 		.webApp(UL.menu.play, env.WEB_APP_URL).row()
 		.text(UL.menu.help, 'help:open').text(UL.menu.home, 'nav:home');
 
-	await ctx.reply(text, {parse_mode: 'HTML', reply_markup: kb});
+	// Hero-фото с лого игры. Ссылку берём с Cloudflare Pages (тот же
+	// origin, что у Mini App — статика всегда доступна). Если photo
+	// упадёт (например, не настроен WEB_APP_URL) — фолбэк на текст,
+	// чтобы первый /start не пропал.
+	const heroUrl = env.WEB_APP_URL
+		? `${env.WEB_APP_URL.replace(/\/$/, '')}/dead-spin-logo-shadow.png`
+		: null;
+
+	if (heroUrl) {
+		try {
+			await ctx.replyWithPhoto(heroUrl, {
+				caption,
+				parse_mode: 'HTML',
+				reply_markup: kb,
+			});
+			return;
+		} catch (e) {
+			console.warn('hero photo failed, falling back to text:', e instanceof Error ? e.message : e);
+		}
+	}
+	await ctx.reply(caption, {parse_mode: 'HTML', reply_markup: kb});
 }

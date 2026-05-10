@@ -51,16 +51,22 @@ export function statsCard(params: {
 	summaryStars: number;
 	coins: number;
 	levelsCleared: number;
+	labels: {
+		fuel: string;
+		stars: string;
+		coins: string;
+		levels: string;
+	};
 }): string {
 	const fuelBar = progressBar(params.fuel, FUEL_MAX);
 	const maxStars = LEVEL_COUNT * 3;
 	return [
-		`⛽ <b>Fuel</b>   <code>${fmtNum(params.fuel)} / ${fmtNum(FUEL_MAX)}</code>`,
+		`${params.labels.fuel}   <code>${fmtNum(params.fuel)} / ${fmtNum(FUEL_MAX)}</code>`,
 		`   <code>${fuelBar}</code>`,
 		``,
-		statRow('⭐ Stars  ', `${fmtNum(params.summaryStars)} / ${maxStars}`),
-		statRow('💰 Coins  ', params.coins),
-		statRow('🏁 Levels ', `${params.levelsCleared} / ${LEVEL_COUNT}`),
+		statRow(params.labels.stars, `${fmtNum(params.summaryStars)} / ${maxStars}`),
+		statRow(params.labels.coins, params.coins),
+		statRow(params.labels.levels, `${params.levelsCleared} / ${LEVEL_COUNT}`),
 	].join('\n');
 }
 

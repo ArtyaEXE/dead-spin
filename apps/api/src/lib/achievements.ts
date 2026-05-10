@@ -1,5 +1,5 @@
 import {eq, sql} from 'drizzle-orm';
-import {LEVEL_COUNT} from '@dead-spin/shared';
+import {LEVEL_COUNT, ACHIEVEMENTS, type AchievementKey} from '@dead-spin/shared';
 import {db} from '../db/client';
 import {achievements} from '../db/schema';
 import {tgSendMessage, tgSetMessageReaction} from './telegram-bot';
@@ -7,72 +7,18 @@ import {track} from './analytics';
 
 
 /**
- * 10 базовых ачивок. Названия и иконки — пара русско-английских строк
- * для нотификации, плюс ключ для БД.
+ * Логика выдачи ачивок. Метаданные (emoji + локализованные названия)
+ * лежат в `@dead-spin/shared/achievements` — общие для бота и API.
  *
  * Detection-логика встраивается в level-complete (шесть из этих десяти),
- * в shop (one — all skins), и в group-streaks (one — week_streak).
- *
- * Получить можно только один раз каждую — повторное unlockAchievement
- * с тем же ключом тихо no-op'нется (PK constraint).
+ * в group-streaks (week_streak), в group-challenges (first_duel_win),
+ * в processGroupResult (bot_in_group). Получить можно только один раз
+ * каждую — повторное unlockAchievement с тем же ключом тихо no-op'нется
+ * (PK constraint).
  */
 
 
-export const ACHIEVEMENTS = {
-	first_clear: {
-		emoji: '🚀',
-		ru: 'Первая победа',
-		en: 'First clear',
-	},
-	first_3stars: {
-		emoji: '⭐',
-		ru: 'Идеальный заход',
-		en: 'Perfect run',
-	},
-	all_levels: {
-		emoji: '🏁',
-		ru: 'Картограф',
-		en: 'Cartographer',
-	},
-	all_3stars: {
-		emoji: '🏆',
-		ru: 'Звёздный картограф',
-		en: 'Star cartographer',
-	},
-	speedrunner: {
-		emoji: '⚡',
-		ru: 'Спидраннер',
-		en: 'Speedrunner',
-	},
-	fuel_efficient: {
-		emoji: '💨',
-		ru: 'Экономист',
-		en: 'Fuel-efficient',
-	},
-	all_skins: {
-		emoji: '👨‍🚀',
-		ru: 'Коллекционер',
-		en: 'Collector',
-	},
-	week_streak: {
-		emoji: '🔥',
-		ru: 'Неделя в строю',
-		en: 'Week strong',
-	},
-	first_duel_win: {
-		emoji: '👊',
-		ru: 'Первый победный поединок',
-		en: 'First duel win',
-	},
-	bot_in_group: {
-		emoji: '👥',
-		ru: 'Социальный гонщик',
-		en: 'Social racer',
-	},
-} as const;
-
-
-export type AchievementKey = keyof typeof ACHIEVEMENTS;
+export {ACHIEVEMENTS, type AchievementKey};
 
 
 /**

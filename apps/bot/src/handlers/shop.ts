@@ -7,10 +7,11 @@ import {LINE, fmtNum} from '../lib/format';
 
 
 function lotLine(lot: Lot, locale: 'ru' | 'en'): string {
+	// Одна строка-заголовок (с ценой) + одна строка-описание под ней.
+	// Цена ⭐ выделена моноширинно — глаз цепляется за число, не за слова.
 	return [
-		`${lot.emoji} <b>${lot.title[locale]}</b>`,
-		`<i>${lot.description[locale]}</i>`,
-		`⭐ <code>${fmtNum(lot.price)}</code>`,
+		`${lot.emoji} <b>${lot.title[locale]}</b>  ·  ⭐ <code>${fmtNum(lot.price)}</code>`,
+		`   <i>${lot.description[locale]}</i>`,
 	].join('\n');
 }
 
@@ -23,7 +24,9 @@ export async function showShop(ctx: Context): Promise<void> {
 	const L = t(user.locale);
 	const loc = toLocale(user.locale);
 
-	const body = Object.values(LOTS).map(lot => lotLine(lot, loc)).join(`\n\n${LINE}\n\n`);
+	// Лоты идут плотно, разделённые пустой строкой — не «забор» из LINE.
+	// Так список читается как меню, а не как простыня карточек.
+	const body = Object.values(LOTS).map(lot => lotLine(lot, loc)).join('\n\n');
 
 	const text = [
 		L.shop.title,

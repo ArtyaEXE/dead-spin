@@ -31,6 +31,19 @@ export const ru = {
 		levels: '🏁 Уровни пройдено',
 		since: '📅 С нами с',
 		tip: '<i>Прокачай корабль в магазине.</i>',
+		achievementsTitle: '🎖 <b>Достижения</b>',
+		achievementsCount: (got: number, total: number) => `<i>${got} из ${total}</i>`,
+		achievementsEmpty: '<i>Пока пусто. Пройди первый уровень — получишь 🚀 Первую победу.</i>',
+	},
+	card: {
+		fuel: '⛽ <b>Топливо</b>',
+		stars: '⭐ Звёзды  ',
+		coins: '💰 Монеты  ',
+		levels: '🏁 Уровни  ',
+	},
+	meta: {
+		shortDescription: 'Физическая аркада в Telegram. Проведи корабль через лабиринт астероидов.',
+		description: 'Dead Spin — соревновательная физическая аркада.\n\nПроведи вращающийся корабль через узкие пещеры, собери звёзды, не разбейся.\n\nЛидерборд внутри каждой беседы, дуэли 1v1, ghost-replays лидеров. Жми /start.',
 	},
 	shop: {
 		title: '💎 <b>Магазин</b>',

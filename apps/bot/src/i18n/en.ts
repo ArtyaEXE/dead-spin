@@ -31,6 +31,19 @@ export const en = {
 		levels: '🏁 Levels cleared',
 		since: '📅 Member since',
 		tip: '<i>Upgrade your ship in the shop.</i>',
+		achievementsTitle: '🎖 <b>Achievements</b>',
+		achievementsCount: (got: number, total: number) => `<i>${got} of ${total}</i>`,
+		achievementsEmpty: '<i>Empty so far. Clear your first level to earn 🚀 First clear.</i>',
+	},
+	card: {
+		fuel: '⛽ <b>Fuel</b>',
+		stars: '⭐ Stars  ',
+		coins: '💰 Coins  ',
+		levels: '🏁 Levels ',
+	},
+	meta: {
+		shortDescription: 'A physics arcade in Telegram. Steer a ship through an asteroid maze.',
+		description: 'Dead Spin — a competitive physics arcade.\n\nSteer a constantly-rotating ship through narrow caves, grab the stars, stay alive.\n\nPer-chat leaderboards, 1v1 duels, leader ghost-replays. Hit /start.',
 	},
 	shop: {
 		title: '💎 <b>Shop</b>',

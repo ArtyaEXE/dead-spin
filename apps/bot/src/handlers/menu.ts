@@ -44,6 +44,7 @@ export async function showMainMenu(ctx: Context): Promise<void> {
 			summaryStars: stats.summaryStars,
 			coins: user.coins,
 			levelsCleared: stats.levelsCleared,
+			labels: L.card,
 		}),
 		'',
 		LINE,

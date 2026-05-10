@@ -52,8 +52,12 @@ describe('format helpers', () => {
 	});
 
 	it('statsCard has expected labels and numbers', () => {
-		const card = statsCard({fuel: 11_500, summaryStars: 12, coins: 500, levelsCleared: 5});
+		const card = statsCard({
+			fuel: 11_500, summaryStars: 12, coins: 500, levelsCleared: 5,
+			labels: {fuel: '⛽ Топливо', stars: '⭐ Звёзды', coins: '💰 Монеты', levels: '🏁 Уровни'},
+		});
 		expect(card).toContain('⛽');
+		expect(card).toContain('Топливо');
 		expect(card).toContain('11 500');
 		expect(card).toContain('30 000');
 		expect(card).toContain('5 / 15');

@@ -2,7 +2,7 @@ import {createServer} from 'node:http';
 import {webhookCallback} from 'grammy';
 import {env, isDev} from './config';
 import {createBot} from './bot';
-import {registerCommandsScopes} from './lib/commands';
+import {registerBotMeta} from './lib/commands';
 
 
 async function main(): Promise<void> {
@@ -10,8 +10,9 @@ async function main(): Promise<void> {
 	await bot.init();
 	console.log(`Bot @${bot.botInfo.username} is ready (${isDev ? 'dev' : 'prod'})`);
 
-	// /-меню в Telegram-клиенте: разные списки команд для DM и для групп.
-	await registerCommandsScopes(bot);
+	// /-меню + описание бота в Telegram-клиенте: разные списки команд
+	// для DM и для групп, ru/en варианты, плюс short/long description.
+	await registerBotMeta(bot);
 
 	// Глобальный catch для всех ошибок в хендлерах — иначе падающий update
 	// убивает поллинг и сервис уходит в Exit 1.
