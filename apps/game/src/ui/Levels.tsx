@@ -1,5 +1,6 @@
 import {For, Show, createEffect, createMemo, createSignal} from 'solid-js';
 import {FUEL_CONSUMPTION_PER_BOOST, LEVEL_COUNT} from '@dead-spin/shared';
+import {getLevelByNumber, getPreviousLevelNumber} from '@dead-spin/levels';
 import {useAuth, authStore} from '../stores/auth';
 import {useProgress, progressStore} from '../stores/progress';
 import {useLiveFuel} from '../stores/fuel';
@@ -18,7 +19,7 @@ const WORLD_BG: Record<number, string | undefined> = {
 };
 
 
-type LevelCell = {number: number; stars: number; available: boolean} | null;
+type LevelCell = {number: number; stars: number; available: boolean; exists: boolean} | null;
 
 
 export function Levels(props: {onBack: () => void; onPlay: (levelNumber: number) => void}) {
@@ -44,20 +45,26 @@ export function Levels(props: {onBack: () => void; onPlay: (levelNumber: number)
 		const from = worldIndex() * 15;
 		const levelsMap = progress().levels;
 
-		let highestCleared = 0;
-		for (let i = 1; i <= LEVEL_COUNT; i++) if (levelsMap[i]) highestCleared = i;
-
-		// Как в оригинале: каждый мир показывает 15 кнопок (number = 16..30, 31..45, …).
-		// Уровни сверх LEVEL_COUNT отображаются, но заблокированы — контент добавится
-		// вместе с ростом LEVEL_COUNT.
+		// `available` теперь резолвится через предыдущий-существующий-уровень,
+		// чтобы дырка между мирами (CERES 1-3 → PALLAS 16-30) не делала
+		// все PALLAS-карточки навсегда заблокированными.
+		// Карточка для несуществующего уровня (нет в data/) — навсегда locked
+		// с пометкой `exists=false`.
 		for (let i = 0; i < 15; i++) {
 			const rowIndex = Math.floor(i / 3);
 			const number = from + i + 1;
 			const rec = levelsMap[number];
+			const exists = getLevelByNumber(number) !== undefined;
+			let available = false;
+			if (exists) {
+				const prevNum = getPreviousLevelNumber(number);
+				available = prevNum === null || (levelsMap[prevNum] !== undefined);
+			}
 			rows[rowIndex]!.push({
 				number,
 				stars: rec?.stars ?? 0,
-				available: number <= LEVEL_COUNT && number <= highestCleared + 1,
+				available,
+				exists,
 			});
 		}
 		return rows;

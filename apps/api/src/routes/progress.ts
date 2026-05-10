@@ -12,7 +12,7 @@ import {
 	isPlausibleRecording,
 	type GhostRecording,
 } from '@dead-spin/shared';
-import {getLevelByNumber} from '@dead-spin/levels';
+import {getLevelByNumber, getPreviousLevelNumber} from '@dead-spin/levels';
 import {verifyGroupContext} from '@dead-spin/shared/group-hmac';
 import {db} from '../db/client';
 import {progresses, progressLevels, groupChats, groupProgressLevels, groupGhosts, users, userGroupSkins} from '../db/schema';
@@ -175,11 +175,17 @@ progressRoutes.post('/level-complete', requireAuth, async (c) => {
 		}
 
 		// Нет рекорда по этому уровню — проверяем, что предыдущий пройден.
-		if (level > 1) {
+		// «Предыдущий» — ближайший СУЩЕСТВУЮЩИЙ уровень с меньшим номером
+		// (миры разделены дыркой 4-15: после L3 идёт сразу L16, см.
+		// packages/levels/src/index.ts). Без `getPreviousLevelNumber()`
+		// gate ломался бы для PALLAS-уровней, потому что искал бы L15
+		// в progressLevels, а такого уровня в data/ нет.
+		const prevNum = getPreviousLevelNumber(level);
+		if (prevNum !== null) {
 			const [prev] = await tx
 				.select({level: progressLevels.level})
 				.from(progressLevels)
-				.where(and(eq(progressLevels.userId, userId), eq(progressLevels.level, level - 1)))
+				.where(and(eq(progressLevels.userId, userId), eq(progressLevels.level, prevNum)))
 				.limit(1);
 			if (!prev) throw badRequest('previousLevelIncomplete');
 		}
@@ -296,20 +302,22 @@ async function processGroupResult(args: {
 		// Прогресс в беседе — отдельный от глобального. Чтобы лидерборд
 		// per chat начинался "с чистого листа", ставим тот же gate, что и
 		// в глобальном пути: уровень N доступен только когда есть запись
-		// о N-1 в этой беседе. На нарушении тихо выходим — глобальная
-		// запись уже успешно сделана выше.
-		if (level > 1) {
+		// о ближайшем СУЩЕСТВУЮЩЕМ предыдущем уровне в этой беседе.
+		// `getPreviousLevelNumber` уважает дыру между мирами (CERES 1-3
+		// → PALLAS 16+).
+		const prevNum = getPreviousLevelNumber(level);
+		if (prevNum !== null) {
 			const [prev] = await tx
 				.select({level: groupProgressLevels.level})
 				.from(groupProgressLevels)
 				.where(and(
 					eq(groupProgressLevels.chatId, chatId),
 					eq(groupProgressLevels.userId, userId),
-					eq(groupProgressLevels.level, level - 1),
+					eq(groupProgressLevels.level, prevNum),
 				))
 				.limit(1);
 			if (!prev) {
-				console.warn(`group prev-level gate: user ${userId} chat ${chatId} level ${level} skipped (no level ${level - 1})`);
+				console.warn(`group prev-level gate: user ${userId} chat ${chatId} level ${level} skipped (no level ${prevNum})`);
 				return null;
 			}
 		}
