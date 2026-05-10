@@ -1,12 +1,14 @@
 export const en = {
 	welcome: {
 		title: '🚀 <b>Dead Spin</b>',
-		greeting: (name: string) => `Hi, <b>${name}</b>!`,
-		tagline: 'A physics arcade — steer the ship through the maze, grab the stars, stay alive.',
+		greeting: (name: string) => `Hey, <b>${name}</b>!`,
+		subtitle: "You're in.",
+		tagline: 'A one-tap arcade: the ship spins on its own — your job is timing the boost. Grab three stars, reach the finish.',
+		cta: '🎮 Tap <b>"Play"</b> below — starting fuel\'s on the house.',
+		social: '🤝 When you want to race friends, add me to a group chat. Leaderboard stays scoped to you.',
 		onboardingPaused: 'The game is on a technical pause. Try later.',
 		notAllowed: 'Sorry, access is closed at the moment. Contact the admin.',
 		needUsername: 'You need a Telegram username to play. Go to <b>Settings → Username</b>, set one, then hit <b>/start</b>.',
-		registered: "You're in. Welcome aboard!",
 		referralBonus: (inviter: string, fuel: number) =>
 			`🎁 You were invited by <b>${inviter}</b> — enjoy <b>+${fuel}</b> fuel to start!`,
 		referralReward: (newUser: string, coins: number) =>
@@ -42,8 +44,8 @@ export const en = {
 		levels: '🏁 Levels ',
 	},
 	meta: {
-		shortDescription: 'A physics arcade in Telegram. Steer a ship through an asteroid maze.',
-		description: 'Dead Spin — a competitive physics arcade.\n\nSteer a constantly-rotating ship through narrow caves, grab the stars, stay alive.\n\nPer-chat leaderboards, 1v1 duels, leader ghost-replays. Hit /start.',
+		shortDescription: 'One-tap physics arcade. The ship spins itself — pick the moment. Per-chat leaderboards.',
+		description: 'Dead Spin — a one-tap competitive physics arcade.\n\nThe ship spins on its own — your job is timing the boost. Narrow caves, mines, worms, gravity. One mistake — explosion.\n\nThe catch: add me to a group chat and race your friends. Per-chat leaderboard, 1v1 duels, leader\'s ghost replays in your run.\n\nHit /start to launch.',
 	},
 	shop: {
 		title: '💎 <b>Shop</b>',
@@ -109,7 +111,7 @@ export const en = {
 		notConfigured: '<i>Feedback channel not configured yet.</i>',
 	},
 	group: {
-		playInvite: '🚀 <b>Dead Spin</b> is here.\nWho clears levels faster? Tap below — the leaderboard is scoped to this chat only.',
+		playInvite: '🚀 <b>Dead Spin</b> is here.\nLeaderboard is scoped to this chat only. Who\'s fastest? Tap below.',
 		addedToGroup: '➕ Add to a group',
 		welcome: (name: string) => `👋 Hey <b>${name}</b>! We play Dead Spin here — hit <b>/play</b> to join this chat\'s leaderboard.`,
 		notify: {

@@ -147,13 +147,15 @@ export async function handleStart(ctx: Context): Promise<void> {
 	const caption = [
 		UL.welcome.title,
 		'',
-		UL.welcome.greeting(result.user.username),
+		`${UL.welcome.greeting(result.user.username)} ${UL.welcome.subtitle}`,
 		'',
 		UL.welcome.tagline,
 		'',
 		LINE,
 		'',
-		UL.welcome.registered + referralNote,
+		UL.welcome.cta,
+		'',
+		UL.welcome.social + referralNote,
 	].join('\n');
 
 	const kb = new InlineKeyboard()
