@@ -9,51 +9,61 @@
 export const ACHIEVEMENTS = {
 	first_clear: {
 		emoji: '🚀',
+		icon: '/icons/ach-first-clear.png',
 		ru: 'Первая победа',
 		en: 'First clear',
 	},
 	first_3stars: {
 		emoji: '⭐',
+		icon: '/icons/ach-first-3stars.png',
 		ru: 'Идеальный заход',
 		en: 'Perfect run',
 	},
 	all_levels: {
 		emoji: '🏁',
+		icon: '/icons/ach-all-levels.png',
 		ru: 'Картограф',
 		en: 'Cartographer',
 	},
 	all_3stars: {
 		emoji: '🏆',
+		icon: '/icons/ach-all-3stars.png',
 		ru: 'Звёздный картограф',
 		en: 'Star cartographer',
 	},
 	speedrunner: {
 		emoji: '⚡',
+		icon: '/icons/ach-speedrunner.png',
 		ru: 'Спидраннер',
 		en: 'Speedrunner',
 	},
 	fuel_efficient: {
 		emoji: '💨',
+		icon: '/icons/ach-fuel-efficient.png',
 		ru: 'Экономист',
 		en: 'Fuel-efficient',
 	},
 	all_skins: {
 		emoji: '👨‍🚀',
+		icon: '/icons/ach-all-skins.png',
 		ru: 'Коллекционер',
 		en: 'Collector',
 	},
 	week_streak: {
 		emoji: '🔥',
+		icon: '/icons/ach-week-streak.png',
 		ru: 'Неделя в строю',
 		en: 'Week strong',
 	},
 	first_duel_win: {
 		emoji: '👊',
+		icon: '/icons/ach-first-duel-win.png',
 		ru: 'Первый победный поединок',
 		en: 'First duel win',
 	},
 	bot_in_group: {
 		emoji: '👥',
+		icon: '/icons/ach-bot-in-group.png',
 		ru: 'Социальный гонщик',
 		en: 'Social racer',
 	},

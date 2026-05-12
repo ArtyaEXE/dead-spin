@@ -107,6 +107,7 @@ export type DailyClaimResponse = z.infer<typeof DailyClaimResponseSchema>;
 export const AchievementSchema = z.object({
 	key: z.string(),
 	emoji: z.string(),
+	icon: z.string().optional(),
 	ru: z.string(),
 	en: z.string(),
 	unlocked: z.boolean(),

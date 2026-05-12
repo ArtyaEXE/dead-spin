@@ -174,6 +174,7 @@ meRoutes.get('/achievements', requireAuth, async (c) => {
 	const list = (Object.keys(ACHIEVEMENTS) as AchievementKey[]).map((key) => ({
 		key,
 		emoji: ACHIEVEMENTS[key].emoji,
+		icon: ACHIEVEMENTS[key].icon,
 		ru: ACHIEVEMENTS[key].ru,
 		en: ACHIEVEMENTS[key].en,
 		unlocked: unlockedKeys.has(key),

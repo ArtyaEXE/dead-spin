@@ -50,7 +50,9 @@ export function AchievementsOverlay(props: {onClose: () => void}) {
 							{(a) => (
 								<div class="ach-item" classList={{locked: !a.unlocked}}>
 									<div class="ach-emoji">
-									{a.unlocked ? a.emoji : <img src="/icons/lock-icon.png" alt="locked" />}
+									{a.unlocked
+										? (a.icon ? <img src={a.icon} alt="" /> : a.emoji)
+										: <img src="/icons/lock-icon.png" alt="locked" />}
 								</div>
 									<div class="ach-name">
 										{locale() === 'ru' ? a.ru : a.en}
