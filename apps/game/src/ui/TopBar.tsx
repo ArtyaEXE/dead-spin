@@ -17,13 +17,13 @@ export function TopBar(props: {fuel: number; time: number; stars: number}) {
 		<div class="topbar">
 			<div class="panel">
 				<span classList={{'low-fuel': props.fuel < 2000}}>
-					<i class="fa fa-tint" style={{'margin-right': '6px'}}></i>
+					<img class="icon-inline" src="/icons/fuel-icon.png" alt="" />
 					{(props.fuel / 1000).toFixed(2)}
 				</span>
 			</div>
 
 			<div class="panel">
-				<i class="fa fa-clock-o" style={{'margin-right': '6px'}}></i>
+				<img class="icon-inline" src="/icons/clock-icon.png" alt="" />
 				{printTimer(Math.floor(props.time / 1000) * 1000)}
 			</div>
 

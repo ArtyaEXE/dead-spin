@@ -132,7 +132,7 @@ export function Levels(props: {onBack: () => void; onPlay: (levelNumber: number)
 				<div class="world-title">{WORLD_NAMES[worldIndex()]}</div>
 
 				<div class="panel">
-					<i class="fa fa-tint" style={{'margin-right': '6px'}}></i>
+					<img class="icon-inline" src="/icons/fuel-icon.png" alt="" />
 					{fuelK()}
 				</div>
 			</div>
@@ -160,7 +160,7 @@ export function Levels(props: {onBack: () => void; onPlay: (levelNumber: number)
 													onClick={() => c().available && tryPlay(c().number)}
 												>
 													<Show when={challengeLevel() === c().number}>
-														<div class="lvl-btn__challenge-badge">⚡</div>
+														<img class="lvl-btn__challenge-badge" src="/icons/challenge-icon.png" alt="" />
 													</Show>
 													<div>{c().number}</div>
 													<div class="lvl-stars">
@@ -205,7 +205,7 @@ export function Levels(props: {onBack: () => void; onPlay: (levelNumber: number)
 			<Show when={showLowFuel()}>
 				<div class="lowfuel-overlay" onClick={() => { setShowLowFuel(false); setPendingLevel(null); }}>
 					<div class="lowfuel-card" onClick={(e) => e.stopPropagation()}>
-						<i class="fa fa-tint lowfuel-icon" />
+						<img class="lowfuel-icon" src="/icons/fuel-icon.png" alt="" />
 						<div class="lowfuel-text">{liveFuel()} / {MIN_FUEL_TO_START}</div>
 						<div class="lowfuel-hint">WAIT</div>
 						<button
@@ -213,7 +213,7 @@ export function Levels(props: {onBack: () => void; onPlay: (levelNumber: number)
 							classList={{disabled: !canSkip()}}
 							onClick={() => { if (canSkip()) void skipFuelGate(); }}
 						>
-							💰 {SKIP_LOW_FUEL_COST} → играть
+							<img class="icon-inline" src="/icons/coins-icon.png" alt="" /> {SKIP_LOW_FUEL_COST} → играть
 							<span class="lowfuel-skip-balance">{userCoins()} имеется</span>
 						</button>
 						<img class="pressable lowfuel-close" src="/btn-close.png" alt="" onClick={() => { setShowLowFuel(false); setPendingLevel(null); }} />

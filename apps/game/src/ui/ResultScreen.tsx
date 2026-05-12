@@ -51,11 +51,11 @@ export function ResultScreen(props: {
 			<div class="result-body">
 				<div class="result-stats">
 					<div class="panel large">
-						<i class="fa fa-tint" style={{'margin-right': '6px'}}></i>
+						<img class="icon-inline" src="/icons/fuel-icon.png" alt="" />
 						-{(props.fuelSpent / 1000).toFixed(2)}
 					</div>
 					<div class="panel large">
-						<i class="fa fa-clock-o" style={{'margin-right': '6px'}}></i>
+						<img class="icon-inline" src="/icons/clock-icon.png" alt="" />
 						{printTimer(props.timeMs, true)}
 					</div>
 				</div>

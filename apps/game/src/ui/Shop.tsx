@@ -58,7 +58,7 @@ export function Shop(props: {onBack: () => void}) {
 						{progress().summaryStars}
 					</div>
 					<div class="panel">
-						<i class="fa fa-tint" style={{'margin-right': '6px'}}></i>
+						<img class="icon-inline" src="/icons/fuel-icon.png" alt="" />
 						{fuelK()}
 					</div>
 				</div>
@@ -83,7 +83,7 @@ export function Shop(props: {onBack: () => void}) {
 									<img class="shop-card-img" src={skin.src} alt="" />
 									<Show when={!unlocked()}>
 										<div class="shop-card-lock">
-											<i class="fa fa-lock" />
+											<img src="/icons/lock-icon.png" alt="locked" />
 										</div>
 									</Show>
 								</div>

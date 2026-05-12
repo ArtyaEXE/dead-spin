@@ -99,7 +99,7 @@ export function MainMenu(props: {onPlay: () => void; onSettings: () => void; onS
 			<div class="mm-top">
 				<img class="mm-shop pressable" src={shipSrc()} alt="Shop" onClick={props.onShop} />
 				<div class="panel">
-					<i class="fa fa-tint" style={{'margin-right': '6px'}}></i>
+					<img class="icon-inline" src="/icons/fuel-icon.png" alt="" />
 					{fuelK()}
 				</div>
 				<img class="mm-cog pressable" src="/btn-cog.png" alt="Settings" onClick={props.onSettings} />
@@ -121,7 +121,8 @@ export function MainMenu(props: {onPlay: () => void; onSettings: () => void; onS
 							<div class="challenge-banner__bg" />
 							<div class="challenge-banner__content">
 								<div class="challenge-banner__title">
-									{c().status === 'pending_accept' ? '⏳ Ждём ответа' : '⚡ Активный челлендж'}
+									<img class="icon-inline" src={c().status === 'pending_accept' ? '/icons/clock-icon.png' : '/icons/challenge-icon.png'} alt="" />
+									{c().status === 'pending_accept' ? 'Ждём ответа' : 'Активный челлендж'}
 								</div>
 								<div class="challenge-banner__row">
 									<span class="challenge-banner__opponent">vs <b>{c().opponentUsername}</b></span>
@@ -139,7 +140,8 @@ export function MainMenu(props: {onPlay: () => void; onSettings: () => void; onS
 			<Show when={daily()?.canClaim}>
 				{(_) => (
 					<div class="daily-banner pressable" onClick={() => void claim()}>
-						🎁 Забрать бонус: {fmtReward(daily()!.nextReward)}
+						<img class="icon-inline" src="/icons/daily-gift-icon.png" alt="" />
+						Забрать бонус: {fmtReward(daily()!.nextReward)}
 						<span class="daily-streak">день {(daily()!.streakDays) + 1}</span>
 					</div>
 				)}
@@ -159,7 +161,7 @@ export function MainMenu(props: {onPlay: () => void; onSettings: () => void; onS
 
 			<div class="mm-footer">
 				<button class="mm-trophy pressable" onClick={() => setShowAchievements(true)}>
-					🏆
+					<img src="/icons/trophy-icon.png" alt="achievements" />
 				</button>
 			</div>
 

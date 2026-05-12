@@ -34,7 +34,10 @@ export function AchievementsOverlay(props: {onClose: () => void}) {
 		<div class="ach-overlay" onClick={props.onClose}>
 			<div class="ach-card" onClick={(e) => e.stopPropagation()}>
 				<div class="ach-header">
-					<div class="ach-title">🏆 Достижения</div>
+					<div class="ach-title">
+						<img class="icon-inline" src="/icons/trophy-icon.png" alt="" />
+						Достижения
+					</div>
 					<div class="ach-count">
 						{unlockedCount()} / {items().length || 10}
 					</div>
@@ -46,7 +49,9 @@ export function AchievementsOverlay(props: {onClose: () => void}) {
 						<For each={items()}>
 							{(a) => (
 								<div class="ach-item" classList={{locked: !a.unlocked}}>
-									<div class="ach-emoji">{a.unlocked ? a.emoji : '🔒'}</div>
+									<div class="ach-emoji">
+									{a.unlocked ? a.emoji : <img src="/icons/lock-icon.png" alt="locked" />}
+								</div>
 									<div class="ach-name">
 										{locale() === 'ru' ? a.ru : a.en}
 									</div>

@@ -269,7 +269,10 @@ export function GameScreen(props: {
 					<div class="challenge-ingame">
 						<div class="challenge-ingame__bg" />
 						<div class="challenge-ingame__content">
-							<div class="challenge-ingame__title">⚡ Челлендж vs <b>{c().opponentUsername}</b></div>
+							<div class="challenge-ingame__title">
+								<img class="icon-inline" src="/icons/challenge-icon.png" alt="" />
+								Челлендж vs <b>{c().opponentUsername}</b>
+							</div>
 							<Show when={timeLeft()}>
 								{(tl) => <div class="challenge-ingame__timer">{tl()}</div>}
 							</Show>
