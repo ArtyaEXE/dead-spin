@@ -15,7 +15,7 @@ import {
 import {getLevelByNumber, getPreviousLevelNumber} from '@dead-spin/levels';
 import {verifyGroupContext} from '@dead-spin/shared/group-hmac';
 import {db} from '../db/client';
-import {progresses, progressLevels, groupChats, groupProgressLevels, groupGhosts, users, userGroupSkins} from '../db/schema';
+import {progresses, progressLevels, groupChats, groupProgressLevels, groupGhosts, users, userGroupSkins, userGroupTutorials} from '../db/schema';
 import {requireAuth, type AuthedEnv} from '../middleware/auth';
 import {badRequest, forbidden} from '../lib/errors';
 import {env} from '../config';
@@ -109,7 +109,18 @@ progressRoutes.get('/group/:chatId', requireAuth, async (c) => {
 		.where(and(eq(userGroupSkins.userId, userId), eq(userGroupSkins.chatId, chatId)))
 		.limit(1);
 
-	return c.json({summaryStars, levels: rows, selectedSkin: skinRow?.selectedSkin ?? null});
+	// Просмотренные туториалы в этой беседе.
+	const [tutorialsRow] = await db.select({seenTutorials: userGroupTutorials.seenTutorials})
+		.from(userGroupTutorials)
+		.where(and(eq(userGroupTutorials.userId, userId), eq(userGroupTutorials.chatId, chatId)))
+		.limit(1);
+
+	return c.json({
+		summaryStars,
+		levels: rows,
+		selectedSkin: skinRow?.selectedSkin ?? null,
+		seenTutorials: tutorialsRow?.seenTutorials ?? [],
+	});
 });
 
 

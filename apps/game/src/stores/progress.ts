@@ -38,6 +38,10 @@ export const progressStore = createStore<ProgressState>((set, get) => ({
 		if (g.chatId !== null && 'selectedSkin' in res) {
 			groupStore.getState().setSelectedSkin(res.selectedSkin ?? null);
 		}
+		// Per-chat просмотренные туториалы — тоже из group-ответа.
+		if (g.chatId !== null && 'seenTutorials' in res) {
+			groupStore.getState().setSeenTutorials(res.seenTutorials ?? []);
+		}
 	},
 
 	recordLocal(level, stars, timeMs, fuelSpent) {

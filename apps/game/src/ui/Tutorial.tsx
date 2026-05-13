@@ -1,15 +1,24 @@
 
 
 import {getLevelByNumber} from '@dead-spin/levels';
+import {authStore} from '../stores/auth';
+import {groupStore} from '../stores/group';
+import {api} from '../net/client';
 
 
 /**
  * Однократные туториал-карточки: знакомят игрока с управлением на L1 и с
- * каждым новым типом врага при первой встрече. Состояние хранится в
- * localStorage — сервер не нужен.
+ * каждым новым типом врага при первой встрече.
  *
- * Минимум текста: каждая карточка — одна большая иконка + маленький пульсирующий
- * tap-хинт. "controls" показывает две иконки подряд (тап → буст).
+ * Состояние хранится в БД per-context:
+ *  - DM-сессия → `users.seen_tutorials` (через authStore.user)
+ *  - Group-сессия → `user_group_tutorials` (через groupStore.seenTutorials)
+ *
+ * Раньше всё лежало в localStorage и не выживало между девайсами / чистками.
+ * См. миграцию 0015_seen_tutorials.
+ *
+ * Минимум текста: каждая карточка — одна большая иконка + маленький
+ * пульсирующий tap-хинт. "controls" показывает две иконки подряд (тап → буст).
  */
 
 
@@ -17,9 +26,7 @@ type TutorialKey = 'controls' | 'mine' | 'stone' | 'worm';
 
 
 type TutorialContent = {
-	/** Одна большая иконка. */
 	primary: string;
-	/** Опциональная вторая иконка (для controls — "tap → boost"). */
 	secondary?: string;
 };
 
@@ -32,34 +39,39 @@ const TUTORIALS: Record<TutorialKey, TutorialContent> = {
 };
 
 
-// Бумп версии (v3) принудительно сбрасывает seen-состояние у всех —
-// туториалы покажутся заново, потому что localStorage-ключ другой.
-// Прежний v2 жил после wipe прода, и юзеры с long-living устройством
-// больше не видели подсказок при встрече mine/stone/worm.
-const SEEN_KEY = 'dead-spin.tutorials.seen.v3';
-
-
-function getSeen(): Set<string> {
-	try {
-		const raw = localStorage.getItem(SEEN_KEY);
-		return new Set(raw ? (JSON.parse(raw) as string[]) : []);
-	} catch {
-		return new Set();
-	}
+function getSeenSet(): Set<string> {
+	const g = groupStore.getState();
+	if (g.chatId !== null) return new Set(g.seenTutorials);
+	const u = authStore.getState().user;
+	return new Set(u?.seenTutorials ?? []);
 }
 
 
+/**
+ * Помечает туториал как viewed: оптимистично обновляет local store
+ * (чтобы повторный заход в очередь не показал его снова) + параллельно
+ * пишет в БД. Если сетевая запись упадёт — local-update останется и
+ * пользователь не увидит туториал повторно в текущей сессии. На следующем
+ * /me-refresh настоящий source-of-truth подтянется с сервера.
+ */
 export function markSeen(key: TutorialKey): void {
-	const set = getSeen();
-	set.add(key);
-	try {
-		localStorage.setItem(SEEN_KEY, JSON.stringify([...set]));
-	} catch {/* noop */}
+	const g = groupStore.getState();
+	if (g.chatId !== null) {
+		g.addSeenTutorial(key);
+	} else {
+		const u = authStore.getState().user;
+		if (u && !(u.seenTutorials ?? []).includes(key)) {
+			authStore.getState().setUser({...u, seenTutorials: [...(u.seenTutorials ?? []), key]});
+		}
+	}
+	void api.markTutorialSeen(key).catch((e) => {
+		console.warn('markTutorialSeen failed:', e instanceof Error ? e.message : e);
+	});
 }
 
 
 export function computeTutorialQueue(levelNumber: number): TutorialKey[] {
-	const seen = getSeen();
+	const seen = getSeenSet();
 	const queue: TutorialKey[] = [];
 
 	if (levelNumber === 1 && !seen.has('controls')) queue.push('controls');

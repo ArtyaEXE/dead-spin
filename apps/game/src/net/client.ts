@@ -8,7 +8,7 @@ import {
 	GhostResponseSchema, GroupInfoResponseSchema,
 	DailyStateResponseSchema, DailyClaimResponseSchema,
 	AchievementsResponseSchema, SpendCoinsResponseSchema,
-	ActiveChallengeResponseSchema, SetSkinResponseSchema,
+	ActiveChallengeResponseSchema, SetSkinResponseSchema, SimpleOkSchema,
 } from './schemas';
 
 
@@ -133,6 +133,14 @@ export const api = {
 	dailyState: () => request('GET', '/me/daily', DailyStateResponseSchema),
 	claimDaily: () => request('POST', '/me/daily', DailyClaimResponseSchema, {}),
 	achievements: () => request('GET', '/me/achievements', AchievementsResponseSchema),
+	markTutorialSeen: (key: string) => {
+		const g = groupStore.getState();
+		const body = g.chatId !== null && g.hmac !== null
+			? {key, groupChatId: g.chatId, groupHmac: g.hmac}
+			: {key};
+		// Сервер возвращает {ok: true}; нам ответ не нужен — это write-only.
+		return request('POST', '/me/tutorial-seen', SimpleOkSchema, body);
+	},
 	setSkin: (skin: string) => {
 		// В group-контексте отправляем groupChatId+hmac — сервер сохранит
 		// per-chat override в user_group_skins вместо DM-выбора.

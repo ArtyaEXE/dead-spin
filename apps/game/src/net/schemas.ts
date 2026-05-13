@@ -11,6 +11,7 @@ export const UserSchema = z.object({
 	coins: z.number().int(),
 	details: z.number().int(),
 	selectedSkin: z.string().default('prospector'),
+	seenTutorials: z.array(z.string()).default([]),
 	createdAt: z.string(),
 	updatedAt: z.string(),
 });
@@ -41,6 +42,8 @@ export const ProgressResponseSchema = z.object({
 	// Только в group-контексте: выбранный скин юзера в этой беседе. NULL =
 	// выбора не было, клиент рисует prospector. В DM-варианте поле отсутствует.
 	selectedSkin: z.string().nullable().optional(),
+	// Только в group-контексте: просмотренные туториалы в этой беседе.
+	seenTutorials: z.array(z.string()).optional(),
 });
 export type ProgressResponse = z.infer<typeof ProgressResponseSchema>;
 
@@ -73,6 +76,9 @@ export const LeaderboardResponseSchema = z.object({
 
 
 export const MeResponseSchema = z.object({user: UserSchema});
+
+
+export const SimpleOkSchema = z.object({ok: z.literal(true)});
 
 
 /** POST /me/skin — DM-вариант возвращает user, group-вариант возвращает только groupSelectedSkin. */

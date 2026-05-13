@@ -44,6 +44,13 @@ export const users = pgTable('users', {
 	 * теперь — навсегда per-user.
 	 */
 	selectedSkin: text('selected_skin').notNull().default('prospector'),
+	/**
+	 * Просмотренные туториал-карточки в DM-контексте. Раньше в
+	 * localStorage (`dead-spin.tutorials.seen.v3`), но терялось между
+	 * устройствами/чистками. Per-group аналог — `user_group_tutorials`.
+	 * Ключи: 'controls' | 'mine' | 'stone' | 'worm' (см. ui/Tutorial.tsx).
+	 */
+	seenTutorials: text('seen_tutorials').array().notNull().default(sql`'{}'::text[]`),
 
 	createdAt: timestamp('created_at', {withTimezone: true}).notNull().defaultNow(),
 	updatedAt: timestamp('updated_at', {withTimezone: true}).notNull().defaultNow(),
@@ -181,6 +188,24 @@ export const userGroupSkins = pgTable('user_group_skins', {
 	userId: text('user_id').notNull().references(() => users.id, {onDelete: 'cascade'}),
 	chatId: bigint('chat_id', {mode: 'number'}).notNull().references(() => groupChats.chatId, {onDelete: 'cascade'}),
 	selectedSkin: text('selected_skin').notNull().default('prospector'),
+	updatedAt: timestamp('updated_at', {withTimezone: true}).notNull().defaultNow(),
+}, (table) => ({
+	pk: primaryKey({columns: [table.userId, table.chatId]}),
+}));
+
+
+/**
+ * user_group_tutorials — просмотренные туториал-карточки в КОНКРЕТНОЙ
+ * беседе. Per-group аналог `users.seen_tutorials`. PK (user_id, chat_id).
+ *
+ * Идея: в каждой беседе игрок проходит онбординг с нуля — controls,
+ * mine, stone, worm заново. Это согласуется с тем что прогресс и
+ * скины тоже per-chat: новая беседа = новая «персона», по-новой.
+ */
+export const userGroupTutorials = pgTable('user_group_tutorials', {
+	userId: text('user_id').notNull().references(() => users.id, {onDelete: 'cascade'}),
+	chatId: bigint('chat_id', {mode: 'number'}).notNull().references(() => groupChats.chatId, {onDelete: 'cascade'}),
+	seenTutorials: text('seen_tutorials').array().notNull().default(sql`'{}'::text[]`),
 	updatedAt: timestamp('updated_at', {withTimezone: true}).notNull().defaultNow(),
 }, (table) => ({
 	pk: primaryKey({columns: [table.userId, table.chatId]}),

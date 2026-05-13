@@ -17,10 +17,14 @@ type GroupState = {
 	 * `/progress/group/:chatId` (см. progressStore.refresh).
 	 */
 	selectedSkin: string | null;
+	/** Per-chat просмотренные туториалы. Загружается оттуда же. */
+	seenTutorials: string[];
 	hydrate: () => void;
 	loadInfo: () => Promise<void>;
 	setTitle: (title: string | null) => void;
 	setSelectedSkin: (skin: string | null) => void;
+	setSeenTutorials: (list: string[]) => void;
+	addSeenTutorial: (key: string) => void;
 	clear: () => void;
 };
 
@@ -46,6 +50,7 @@ export const groupStore = createStore<GroupState>((set, get) => ({
 	nickname: null,
 	emoji: null,
 	selectedSkin: null,
+	seenTutorials: [],
 
 	hydrate() {
 		if (typeof window === 'undefined') return;
@@ -78,7 +83,17 @@ export const groupStore = createStore<GroupState>((set, get) => ({
 
 	setSelectedSkin(skin) { set({selectedSkin: skin}); },
 
-	clear() { set({chatId: null, hmac: null, title: null, nickname: null, emoji: null, selectedSkin: null}); },
+	setSeenTutorials(list) { set({seenTutorials: list}); },
+
+	addSeenTutorial(key) {
+		const cur = get().seenTutorials;
+		if (cur.includes(key)) return;
+		set({seenTutorials: [...cur, key]});
+	},
+
+	clear() {
+		set({chatId: null, hmac: null, title: null, nickname: null, emoji: null, selectedSkin: null, seenTutorials: []});
+	},
 }));
 
 

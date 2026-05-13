@@ -2,7 +2,7 @@ import {Hono} from 'hono';
 import {z} from 'zod';
 import {eq, sql} from 'drizzle-orm';
 import {db} from '../db/client';
-import {progresses, progressLevels, groupProgressLevels, users, userGroupSkins, groupChats} from '../db/schema';
+import {progresses, progressLevels, groupProgressLevels, users, userGroupSkins, userGroupTutorials, groupChats} from '../db/schema';
 import {badRequest, forbidden} from '../lib/errors';
 import {requireAuth, type AuthedEnv} from '../middleware/auth';
 import {getDailyState, claimDaily} from '../lib/daily-rewards';
@@ -161,6 +161,65 @@ meRoutes.post('/skin', requireAuth, async (c) => {
 		.where(eq(users.id, userId));
 	const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
 	return c.json({user});
+});
+
+
+/**
+ * POST /me/tutorial-seen — отметить просмотренный туториал.
+ * Без groupChatId+groupHmac — пишем в DM-копию (users.seen_tutorials).
+ * С группой — в per-chat (user_group_tutorials). Дубликаты не плодим:
+ * если ключ уже в массиве — операция no-op.
+ */
+const TUTORIAL_KEYS = ['controls', 'mine', 'stone', 'worm'] as const;
+const TutorialSeenSchema = z.object({
+	key: z.enum(TUTORIAL_KEYS),
+	groupChatId: z.number().int().optional(),
+	groupHmac: z.string().regex(new RegExp(`^[0-9a-f]{${GROUP_HMAC_LEN}}$`)).optional(),
+});
+
+meRoutes.post('/tutorial-seen', requireAuth, async (c) => {
+	const userId = c.var.user.id;
+	const tgId = c.var.user.tgId;
+	const raw = await c.req.json().catch(() => null);
+	const parsed = TutorialSeenSchema.safeParse(raw);
+	if (!parsed.success) throw badRequest('invalidBody');
+	const {key, groupChatId, groupHmac} = parsed.data;
+
+	if (groupChatId !== undefined && groupHmac !== undefined) {
+		if (!verifyGroupContext(groupChatId, groupHmac, env.TELEGRAM_BOT_TOKEN)) throw forbidden('hmacMismatch');
+		const [chat] = await db.select()
+			.from(groupChats)
+			.where(and(eq(groupChats.chatId, groupChatId), isNull(groupChats.leftAt)))
+			.limit(1);
+		if (!chat) throw forbidden('groupInactive');
+		if (!await isGroupMember(groupChatId, tgId)) throw forbidden('notMember');
+
+		// Upsert с дедупом массива: если key уже в seen_tutorials — no-op,
+		// иначе append.
+		await db.execute(sql`
+			insert into user_group_tutorials (user_id, chat_id, seen_tutorials)
+			values (${userId}, ${groupChatId}, array[${key}]::text[])
+			on conflict (user_id, chat_id) do update
+			set seen_tutorials = case
+				when ${key} = any(user_group_tutorials.seen_tutorials) then user_group_tutorials.seen_tutorials
+				else array_append(user_group_tutorials.seen_tutorials, ${key})
+			end,
+			updated_at = now()
+		`);
+		return c.json({ok: true});
+	}
+
+	// DM-выбор: апдейтим users.seen_tutorials с дедупом.
+	await db.execute(sql`
+		update users
+		set seen_tutorials = case
+			when ${key} = any(seen_tutorials) then seen_tutorials
+			else array_append(seen_tutorials, ${key})
+		end,
+		updated_at = now()
+		where id = ${userId}
+	`);
+	return c.json({ok: true});
 });
 
 
