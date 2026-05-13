@@ -32,9 +32,11 @@ const TUTORIALS: Record<TutorialKey, TutorialContent> = {
 };
 
 
-// Бумп версии (v2) принудительно сбрасывает seen-состояние у всех — туториалы
-// покажутся заново, потому что localStorage-ключ другой.
-const SEEN_KEY = 'dead-spin.tutorials.seen.v2';
+// Бумп версии (v3) принудительно сбрасывает seen-состояние у всех —
+// туториалы покажутся заново, потому что localStorage-ключ другой.
+// Прежний v2 жил после wipe прода, и юзеры с long-living устройством
+// больше не видели подсказок при встрече mine/stone/worm.
+const SEEN_KEY = 'dead-spin.tutorials.seen.v3';
 
 
 function getSeen(): Set<string> {

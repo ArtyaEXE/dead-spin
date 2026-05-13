@@ -31,6 +31,14 @@
   "referenceUrl": "",
   "decorations": [
     {
+      "name": "gravity",
+      "x": 250,
+      "y": 389,
+      "r": 0,
+      "s": 0.9,
+      "type": "down"
+    },
+    {
       "name": "static",
       "x": 433,
       "y": 339,
