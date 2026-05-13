@@ -30,7 +30,14 @@ fuelRoutes.post('/spend', requireAuth, async (c) => {
 	if (next === user.fuel) return c.json({fuel: next});
 
 	await db.update(users)
-		.set({fuel: next, updatedAt: sql`now()`})
+		.set({
+			fuel: next,
+			// Расход обнуляет «уже слали push о полном баке» — следующий fill
+			// до FUEL_MAX снова станет валидным триггером. Если push не слали
+			// (NULL → NULL), сравнение `is distinct from` делает no-op.
+			lastFullFuelPushAt: null,
+			updatedAt: sql`now()`,
+		})
 		.where(eq(users.id, user.id));
 
 	return c.json({fuel: next});

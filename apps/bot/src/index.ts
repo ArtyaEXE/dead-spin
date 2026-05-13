@@ -3,6 +3,7 @@ import {webhookCallback} from 'grammy';
 import {env, isDev} from './config';
 import {createBot} from './bot';
 import {registerBotMeta} from './lib/commands';
+import {startSweepers} from './lib/sweepers';
 
 
 async function main(): Promise<void> {
@@ -26,11 +27,14 @@ async function main(): Promise<void> {
 	// шлёт SIGKILL → процесс умирает с ненулевым exit-кодом → летит алерт
 	// «Exited with status 1». bot.stop() корректно закрывает соединение
 	// с Telegram getUpdates, и процесс уходит с exit(0).
+	const stopSweepers = startSweepers(bot);
+
 	let stopping = false;
 	const shutdown = async (signal: string): Promise<void> => {
 		if (stopping) return;
 		stopping = true;
 		console.log(`Received ${signal}, stopping bot gracefully...`);
+		stopSweepers();
 		try {
 			await bot.stop();
 		} catch (e) {

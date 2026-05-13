@@ -34,6 +34,12 @@ export const users = pgTable('users', {
 
 	/** Когда последний раз шлали "⛽ полный бак" пуш — чтобы не спамить чаще раза в сутки. */
 	lastFullFuelPushAt: timestamp('last_full_fuel_push_at', {withTimezone: true}),
+	/**
+	 * Когда отправили one-time DM «Понравилась игра? — оставь отзыв». NULL —
+	 * не слали. После отправки заполняется навсегда; больше не дёргаем
+	 * этого юзера сами. Триггер — sweepReviewPrompt() в боте.
+	 */
+	reviewPromptSentAt: timestamp('review_prompt_sent_at', {withTimezone: true}),
 	/** Telegram-id юзера, который пригласил этого юзера. NULL если регистрация органическая. */
 	referrerId: text('referrer_id'),
 	/**

@@ -75,3 +75,17 @@ services:
         value: "0"
       - key: FEEDBACK_URL          # e.g. "https://t.me/dead_spin_testers" — куда тестеры пишут о багах
         sync: false
+      - key: COMMUNITY_URL         # публичная группа — куда зовём в review-prompt
+        value: "https://t.me/dead_spin_chat"
+      - key: SWEEPERS_ENABLED      # 1 — фоновые DM-пуши (full-fuel, review-prompt) крутятся. 0 — выкл.
+        value: "1"
+      - key: SWEEPERS_INTERVAL_MS  # как часто sweep'ы тикают, мс. Дефолт 300000 (5 мин)
+        value: "300000"
+      - key: PUSH_QUIET_HOURS_UTC  # окно тишины UTC, "HH-HH". Дефолт "22-7"
+        value: "22-7"
+      - key: REVIEW_PROMPT_MIN_STARS # порог звёзд для one-time review-prompt
+        value: "5"
+      - key: REVIEW_PROMPT_IDLE_MIN  # минут тишины перед review-prompt
+        value: "60"
+      - key: PUSH_MAX_AGE_DAYS     # не шлём push'и юзерам, не заходившим > N дней
+        value: "14"

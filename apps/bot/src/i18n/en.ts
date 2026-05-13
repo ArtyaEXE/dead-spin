@@ -110,6 +110,18 @@ export const en = {
 		button: 'Open',
 		notConfigured: '<i>Feedback channel not configured yet.</i>',
 	},
+	push: {
+		fullFuel: {
+			title: '⛽ <b>Tank full.</b>',
+			body: 'Enough fuel for a solid run — couple of levels at least.',
+			cta: '🚀 Play',
+		},
+		review: {
+			title: '👀 <b>How\'s the game?</b>',
+			body: 'If you\'re enjoying it — drop by our chat, players share tips and talk about new levels. If not — tell us what\'s missing, we read everything.',
+			cta: '💬 Open chat',
+		},
+	},
 	group: {
 		playInvite: '🚀 <b>Dead Spin</b> is here.\nLeaderboard is scoped to this chat only. Who\'s fastest? Tap below.',
 		addedToGroup: '➕ Add to a group',
