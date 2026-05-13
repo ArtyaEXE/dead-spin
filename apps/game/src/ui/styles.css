@@ -378,6 +378,8 @@ html, body, #root {
 	margin-right: 6px;
 	image-rendering: -webkit-optimize-contrast;
 	flex-shrink: 0;
+	/* Лёгкая тень — иконка не сливается с тёмно-серым screen-bold задником. */
+	filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55));
 }
 
 
@@ -480,7 +482,15 @@ html, body, #root {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	padding: 20px;
+	/* Учитываем Telegram safe-area: на устройствах с notch/нижней панелью
+	   overlay должен прижиматься внутрь безопасной зоны, иначе card
+	   уезжает за header и обрезается. */
+	padding:
+		calc(20px + var(--sa-top, 0px))
+		calc(20px + var(--sa-right, 0px))
+		calc(20px + var(--sa-bottom, 0px))
+		calc(20px + var(--sa-left, 0px));
+	box-sizing: border-box;
 }
 .ach-card {
 	position: relative;
@@ -490,8 +500,12 @@ html, body, #root {
 	padding: 20px;
 	max-width: 480px;
 	width: 100%;
-	max-height: 80vh;
+	/* maxHeight относительно overlay, который уже учитывает safe-area
+	   через padding. Используем 100% вместо vh — это даст card высоту
+	   доступной области, без переезда за пределы safe-area. */
+	max-height: 100%;
 	overflow-y: auto;
+	box-sizing: border-box;
 }
 .ach-header {
 	display: flex;
@@ -543,11 +557,25 @@ html, body, #root {
 	justify-content: center;
 	min-height: 62px;
 }
-.ach-emoji img { width: 56px; height: 56px; object-fit: contain; }
+.ach-emoji img {
+	width: 56px;
+	height: 56px;
+	object-fit: contain;
+	filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
+}
 .ach-name {
 	font-size: 12px;
 	color: rgba(255, 255, 255, 0.85);
-	line-height: 1.3;
+	line-height: 1.25;
+	/* Длинные названия в узких ячейках раньше выезжали за бэйк.
+	   Word-break + hyphens переносит, max 2 строки. */
+	overflow-wrap: anywhere;
+	word-break: break-word;
+	hyphens: auto;
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
 }
 
 /* Toast после успешного claim'а — короткий popup. */
@@ -1201,7 +1229,8 @@ html, body, #root {
 	width: 130px;
 	height: 130px;
 	object-fit: contain;
-	opacity: 0.85;
+	opacity: 0.92;
+	filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.75));
 }
 .result-buttons {
 	display: flex;

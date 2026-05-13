@@ -266,6 +266,8 @@ export class GameWorld {
 		// Световой слой — repeat-тайл light.png поверх всей сцены. Он в world,
 		// значит движется вместе с миром (как в Game.svelte:418-428, где
 		// light.png был внутри scene-div через background-repeat).
+		// tileScale 3.5 — каждый «лепесток» света заметно крупнее, не дробится
+		// частой решёткой по экрану.
 		const pad = 500;
 		this.lightLayer = new TilingSprite({
 			texture: this.textures.light,
@@ -273,6 +275,7 @@ export class GameWorld {
 			height: this.level.res.y + pad * 2,
 		});
 		this.lightLayer.position.set(-pad, -pad);
+		this.lightLayer.tileScale.set(3.5, 3.5);
 		this.lightLayer.alpha = 0.5;
 		this.world.addChild(this.lightLayer);
 	}
@@ -621,12 +624,15 @@ export class GameWorld {
 		this.camera.follow({x: this.player.x, y: this.player.y}, this.zoom);
 
 		if (this.walls) {
-			// Параллакс задней стены: коэффициент = насколько фон ОТСТАЁТ от мира.
-			// 0.93 → задник двигается на 7% медленнее переднего, читается как
-			// "близкая стенка пещеры", без эффекта далёкого горизонта.
+			// Параллакс задней стены. tilePosition применяет ОБРАТНЫЙ сдвиг
+			// внутри TilingSprite, который сам едет с миром. Итоговая скорость
+			// на экране = world_speed × (1 − k). Хочется чтобы фон двигался
+			// чуть медленнее foreground'а — k=0.07 даёт ~93% скорости (легкий
+			// parallax). Прежнее 0.93 давало 7% скорости и казалось «прибитым».
+			const k = 0.07;
 			this.walls.innerCave.tilePosition.set(
-				this.player.x * 0.93,
-				this.player.y * 0.93,
+				this.player.x * k,
+				this.player.y * k,
 			);
 		}
 	}
