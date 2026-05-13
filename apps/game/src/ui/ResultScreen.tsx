@@ -1,5 +1,5 @@
 import {For, Show, createEffect, onCleanup} from 'solid-js';
-import {LEVEL_COUNT} from '@dead-spin/shared';
+import {getNextLevelNumber} from '@dead-spin/levels';
 import {useProgress} from '../stores/progress';
 import {audio} from '../game/audio';
 
@@ -29,7 +29,7 @@ export function ResultScreen(props: {
 }) {
 	const progress = useProgress();
 	const record = () => progress().levels[props.levelNumber];
-	const nextNumber = () => props.levelNumber + 1 <= LEVEL_COUNT ? props.levelNumber + 1 : null;
+	const nextNumber = () => getNextLevelNumber(props.levelNumber);
 	const starsArr = () => [1, 2, 3];
 
 	// На win-экране звёзды появляются с задержкой 500 × N мс. На каждый
@@ -63,10 +63,10 @@ export function ResultScreen(props: {
 				<Show when={record()}>
 					{(r) => (
 						<div class="panel wide" style={{gap: '8px'}}>
-							<i class="fa fa-trophy" style={{'margin-right': 'auto'}}></i>
-							<span><i class="fa fa-star"></i> {r().stars}</span>
+							<img class="icon-inline" src="/icons/trophy-icon.png" alt="" style={{'margin-right': 'auto'}} />
+							<span><img class="icon-inline" src="/star.png" alt="" /> {r().stars}</span>
 							<span style={{'margin-left': '12px'}}>
-								<i class="fa fa-clock-o"></i> {printTimer(r().timeMs, true)}
+								<img class="icon-inline" src="/icons/clock-icon.png" alt="" /> {printTimer(r().timeMs, true)}
 							</span>
 						</div>
 					)}

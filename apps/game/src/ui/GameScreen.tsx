@@ -1,6 +1,5 @@
 import {createEffect, createSignal, onCleanup, onMount, Show} from 'solid-js';
-import {getLevelByNumber} from '@dead-spin/levels';
-import {LEVEL_COUNT} from '@dead-spin/shared';
+import {getLevelByNumber, getNextLevelNumber} from '@dead-spin/levels';
 import {api} from '../net/client';
 import {authStore} from '../stores/auth';
 import {progressStore} from '../stores/progress';
@@ -259,7 +258,7 @@ export function GameScreen(props: {
 			<Show when={ghost().current}>
 				{(g) => (
 					<div class="ghost-badge">
-						👻 <b>{g().username}</b> — {g().stars}⭐ <code>{fmtTime(g().timeMs)}</code>
+						👻 <b>{g().username}</b> — {g().stars}<img class="icon-inline" src="/star.png" alt="" style={{height: '1em'}} /> <code>{fmtTime(g().timeMs)}</code>
 					</div>
 				)}
 			</Show>
@@ -314,8 +313,8 @@ export function GameScreen(props: {
 					onRetry={retry}
 					onResume={togglePause}
 					onNext={() => {
-						const n = props.levelNumber + 1;
-						if (n <= LEVEL_COUNT) props.onSwitchLevel(n);
+						const n = getNextLevelNumber(props.levelNumber);
+						if (n !== null) props.onSwitchLevel(n);
 					}}
 				/>
 			</Show>

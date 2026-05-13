@@ -75,3 +75,17 @@ export function getPreviousLevelNumber(n: number): number | null {
 	}
 	return best;
 }
+
+
+/**
+ * Наименьший существующий уровень > n. Используется UI-кнопкой «Next»
+ * на ResultScreen — после L3 следующий не L4 (его нет), а L16 (PALLAS).
+ * Возвращает null если n — последний из существующих.
+ */
+export function getNextLevelNumber(n: number): number | null {
+	let best: number | null = null;
+	for (const k of byNumber.keys()) {
+		if (k > n && (best === null || k < best)) best = k;
+	}
+	return best;
+}
