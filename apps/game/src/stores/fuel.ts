@@ -16,7 +16,8 @@ import {authStore, useAuth} from './auth';
 
 
 function computeRegenerated(currentFuel: number, fuelUpdatedAtMs: number, nowMs: number): number {
-	if (currentFuel >= FUEL_MAX) return FUEL_MAX;
+	// Над-cap (от daily/Stars/реферала) — не срезаем, регенерация не работает.
+	if (currentFuel >= FUEL_MAX) return currentFuel;
 	const elapsed = nowMs - fuelUpdatedAtMs;
 	if (elapsed < FUEL_TICK_MS) return currentFuel;
 	const ticks = Math.floor(elapsed / FUEL_TICK_MS);

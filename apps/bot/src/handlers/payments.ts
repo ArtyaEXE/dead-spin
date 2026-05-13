@@ -1,6 +1,5 @@
 import {eq, sql} from 'drizzle-orm';
 import type {Context} from 'grammy';
-import {FUEL_MAX} from '@dead-spin/shared';
 import {db, schema} from '../db';
 import {LOTS} from '../lots';
 import {t, toLocale} from '../i18n';
@@ -70,10 +69,13 @@ export async function handleSuccessfulPayment(ctx: Context): Promise<void> {
 			});
 
 			if (lot.effect.type === 'fuel') {
-				// Clamp к FUEL_MAX и не сбиваем `fuel_updated_at` — регенерация живёт своим темпом.
+				// Внешний источник — не клампим к FUEL_MAX. Stars-покупка
+				// может выкатить юзера сверх потолка; авторегенерация
+				// дальше работает только до FUEL_MAX, над-cap копится.
+				// `fuel_updated_at` не трогаем — регенерация живёт своим темпом.
 				await tx.update(schema.users)
 					.set({
-						fuel: sql`least(${schema.users.fuel} + ${lot.effect.amount}, ${FUEL_MAX})`,
+						fuel: sql`${schema.users.fuel} + ${lot.effect.amount}`,
 						updatedAt: sql`now()`,
 					})
 					.where(eq(schema.users.id, userId));

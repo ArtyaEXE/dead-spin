@@ -60,8 +60,14 @@ export function statsCard(params: {
 }): string {
 	const fuelBar = progressBar(params.fuel, FUEL_MAX);
 	const maxStars = LEVEL_COUNT * 3;
+	// Над-cap (от внешних источников: daily/Stars/реферал) — рисуем
+	// только число без `/ FUEL_MAX`, чтобы юзер не путался от
+	// «35 000 / 30 000». Бар при этом полный.
+	const fuelLine = params.fuel > FUEL_MAX
+		? `<code>${fmtNum(params.fuel)}</code>`
+		: `<code>${fmtNum(params.fuel)} / ${fmtNum(FUEL_MAX)}</code>`;
 	return [
-		`${params.labels.fuel}   <code>${fmtNum(params.fuel)} / ${fmtNum(FUEL_MAX)}</code>`,
+		`${params.labels.fuel}   ${fuelLine}`,
 		`   <code>${fuelBar}</code>`,
 		``,
 		statRow(params.labels.stars, `${fmtNum(params.summaryStars)} / ${maxStars}`),

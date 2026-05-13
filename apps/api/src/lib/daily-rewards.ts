@@ -101,12 +101,14 @@ export async function claimDaily(userId: string): Promise<ClaimResult> {
 
 	const reward = rewardForStreak(streakDays);
 
-	// Зачисляем награду на user.fuel/coins. Fuel клампим к 30000 — чтобы
-	// прокачанный игрок не получал сверх-бак (это бы сломало fuel-economy).
+	// Зачисляем награду на user.fuel/coins. Внешние источники (daily-claim,
+	// referral, Stars-покупка) НЕ клампятся к FUEL_MAX — это «премиум»
+	// топливо сверх потолка. Авторегенерация остановится на FUEL_MAX,
+	// над-cap пополнения копятся отдельно.
 	if (reward.fuel > 0) {
 		await db.update(users)
 			.set({
-				fuel: sql`least(fuel + ${reward.fuel}, 30000)`,
+				fuel: sql`fuel + ${reward.fuel}`,
 				fuelUpdatedAt: sql`now()`,
 				updatedAt: sql`now()`,
 			})

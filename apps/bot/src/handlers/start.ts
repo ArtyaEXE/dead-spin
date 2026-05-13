@@ -58,7 +58,8 @@ async function applyReferral(args: {
 		await tx.update(schema.users)
 			.set({
 				referrerId: referrerTgId,
-				fuel: sql`least(fuel + ${REFERRAL_BONUS_NEW}, 30000)`,
+				// Внешний источник — не клампим к FUEL_MAX (см. daily-rewards.ts).
+				fuel: sql`fuel + ${REFERRAL_BONUS_NEW}`,
 				fuelUpdatedAt: sql`now()`,
 				updatedAt: sql`now()`,
 			})

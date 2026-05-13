@@ -22,7 +22,10 @@ export function computeRegenerated(
 	nowMs: number,
 ): {fuel: number; fuelUpdatedAtMs: number} {
 	if (currentFuel >= FUEL_MAX) {
-		return {fuel: FUEL_MAX, fuelUpdatedAtMs: nowMs};
+		// Уже на потолке или сверх (от внешних источников — daily, Stars,
+		// реферал). Регенерация дальше не идёт, но и НЕ срезаем — иначе
+		// съели бы over-cap бонус. Возвращаем как есть.
+		return {fuel: currentFuel, fuelUpdatedAtMs: nowMs};
 	}
 
 	const elapsed = nowMs - fuelUpdatedAtMs;
