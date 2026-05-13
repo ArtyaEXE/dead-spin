@@ -522,7 +522,10 @@ html, body, #root {
 	gap: 12px;
 }
 .ach-item {
-	background: rgba(255, 255, 255, 0.05);
+	position: relative;
+	background:
+		linear-gradient(rgba(20, 14, 6, 0.35), rgba(20, 14, 6, 0.35)),
+		url('/screen-bold.png') center / cover no-repeat;
 	border: 1px solid rgba(255, 255, 255, 0.08);
 	border-radius: 12px;
 	padding: 14px 10px;
