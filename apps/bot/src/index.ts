@@ -21,6 +21,26 @@ async function main(): Promise<void> {
 		console.error('Update:', err.ctx.update);
 	});
 
+	// Graceful shutdown: Render шлёт SIGTERM перед сменой контейнера. Без
+	// обработчика grammy продолжает long-polling, Render через 30 сек
+	// шлёт SIGKILL → процесс умирает с ненулевым exit-кодом → летит алерт
+	// «Exited with status 1». bot.stop() корректно закрывает соединение
+	// с Telegram getUpdates, и процесс уходит с exit(0).
+	let stopping = false;
+	const shutdown = async (signal: string): Promise<void> => {
+		if (stopping) return;
+		stopping = true;
+		console.log(`Received ${signal}, stopping bot gracefully...`);
+		try {
+			await bot.stop();
+		} catch (e) {
+			console.warn('bot.stop() failed:', e instanceof Error ? e.message : e);
+		}
+		process.exit(0);
+	};
+	process.on('SIGTERM', () => void shutdown('SIGTERM'));
+	process.on('SIGINT', () => void shutdown('SIGINT'));
+
 	if (env.BOT_MODE === 'polling') {
 		// КРИТИЧНО: если до этого деплой был в webhook-режиме, у Telegram
 		// зарегистрирован URL, и getUpdates вернёт 409 Conflict. Сбрасываем
