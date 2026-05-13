@@ -2,6 +2,7 @@ import {and, eq, sql} from 'drizzle-orm';
 import {db} from '../db/client';
 import {groupStreaks} from '../db/schema';
 import {tgSendMessage, tgSetMessageReaction} from './telegram-bot';
+import {getPlayThreadId} from './group-thread';
 
 
 /**
@@ -108,7 +109,8 @@ export async function sendStreakNotification(args: {
 }): Promise<void> {
 	const {chatId, username, days} = args;
 	const html = `🔥 <b>${escapeHtml(username)}</b> играет ${days} ${pluralizeDays(days)} подряд!`;
-	const messageId = await tgSendMessage(chatId, html);
+	const threadId = await getPlayThreadId(chatId);
+	const messageId = await tgSendMessage(chatId, html, threadId);
 	if (messageId !== null) await tgSetMessageReaction(chatId, messageId, '🔥');
 }
 

@@ -71,6 +71,40 @@ export async function handleSetName(ctx: Context): Promise<void> {
 }
 
 
+/**
+ * `/setplay` — без аргументов. Привязывает все API-инициированные
+ * нотификации (level-clear, streak-milestone, pinned LB) к теме, в
+ * которой вызвана команда. Если вызвать в General — сбрасываем привязку
+ * (поле `play_thread_id = NULL`) и всё возвращается в General.
+ *
+ * Команды юзеров (`/play`, `/lb`, `/me`, `/best` и т.п.) на эту настройку
+ * не смотрят — Grammy сам отвечает в той теме, откуда команду прислали.
+ */
+export async function handleSetPlay(ctx: Context): Promise<void> {
+	if (!isGroupChat(ctx) || !ctx.chat) return;
+	const locale = toLocale(ctx.from?.language_code ?? 'en');
+	const L = t(locale);
+
+	if (!await isAdmin(ctx)) {
+		await ctx.reply(L.group.identity.adminOnly, {parse_mode: 'HTML'}).catch(() => {});
+		return;
+	}
+
+	// `message_thread_id` отсутствует если сообщение в General. У forum-сообщений
+	// он есть всегда. Сохраняем как есть (или NULL для General).
+	const threadId = ctx.message?.message_thread_id ?? null;
+
+	await db.update(schema.groupChats)
+		.set({playThreadId: threadId, updatedAt: sql`now()`})
+		.where(eq(schema.groupChats.chatId, ctx.chat.id));
+
+	const text = threadId === null
+		? L.group.identity.playThreadCleared
+		: L.group.identity.playThreadSet;
+	await ctx.reply(text, {parse_mode: 'HTML'}).catch(() => {});
+}
+
+
 export async function handleSetEmoji(ctx: Context): Promise<void> {
 	if (!isGroupChat(ctx) || !ctx.chat) return;
 	const locale = toLocale(ctx.from?.language_code ?? 'en');

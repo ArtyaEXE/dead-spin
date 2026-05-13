@@ -1,4 +1,5 @@
 import {tgSendMessage, tgSetMessageReaction} from './telegram-bot';
+import {getPlayThreadId} from './group-thread';
 
 
 /**
@@ -134,7 +135,8 @@ export async function sendGroupNotification(args: {
 }): Promise<void> {
 	const html = buildNotificationHtml(args);
 	if (!html) return;
-	const messageId = await tgSendMessage(args.chatId, html);
+	const threadId = await getPlayThreadId(args.chatId);
+	const messageId = await tgSendMessage(args.chatId, html, threadId);
 	if (messageId === null) return;
 	const emoji = pickReactionEmoji(args.diff);
 	if (emoji) await tgSetMessageReaction(args.chatId, messageId, emoji);

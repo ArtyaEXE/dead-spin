@@ -112,12 +112,14 @@ export async function ensurePinnedLeaderboard(chatId: number): Promise<void> {
 			.where(eq(groupChats.chatId, chatId));
 	}
 
-	// Создаём заново.
-	const messageId = await tgSendMessage(chatId, html);
+	// Создаём заново — в нужной теме форума, если задана.
+	const messageId = await tgSendMessage(chatId, html, chat.playThreadId);
 	if (messageId === null) return;
 
 	// Пин — best-effort. Если без прав — сообщение останется отправленным,
-	// будем его edit'ить дальше, просто не закрепляя.
+	// будем его edit'ить дальше, просто не закрепляя. В forum-группе Telegram
+	// сам закрепит сообщение в его теме (по message_id), отдельного параметра
+	// для thread'а у pinChatMessage нет.
 	await tgPinChatMessage(chatId, messageId);
 
 	await db.update(groupChats)

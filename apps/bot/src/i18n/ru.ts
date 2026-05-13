@@ -152,6 +152,8 @@ export const ru = {
 			oneEmoji: '<i>Нужен ровно один эмодзи.</i>',
 			nameSaved: (name: string) => `✅ Команда теперь называется <b>${name}</b>.`,
 			emojiSaved: (e: string) => `✅ Эмодзи команды: ${e}`,
+			playThreadSet: '✅ Готово. Объявления о прохождениях и таблица лидеров теперь летят в эту тему.',
+			playThreadCleared: '✅ Тема сброшена. Объявления вернутся в General.',
 		},
 		challenge: {
 			usage: 'Использование: <code>/challenge @username</code> — уровень выберется случайно из ваших общих.',

@@ -10,7 +10,7 @@ import {showSettings, setLocale} from './handlers/settings';
 import {handlePreCheckout, handleSuccessfulPayment} from './handlers/payments';
 import {handleMyChatMember, handlePlayInGroup, handleNewChatMembers} from './handlers/groups';
 import {handleGroupLeaderboard, handleGroupMe, handleGroupBest} from './handlers/group-stats';
-import {handleSetName, handleSetEmoji} from './handlers/group-identity';
+import {handleSetName, handleSetEmoji, handleSetPlay} from './handlers/group-identity';
 import {handleChallenge, handleAcceptCallback, handleDeclineCallback, handleCancelCallback} from './handlers/challenge';
 import {handleResetCommand, handleResetConfirm, handleResetCancel} from './handlers/reset';
 import {handleFeedback} from './handlers/feedback';
@@ -46,6 +46,7 @@ export function createBot(): Bot {
 	bot.command('best', handleGroupBest);
 	bot.command('setname', handleSetName);
 	bot.command('setemoji', handleSetEmoji);
+	bot.command('setplay', handleSetPlay);
 	bot.command('challenge', handleChallenge);
 	bot.command('reset', handleResetCommand);
 	bot.command('feedback', handleFeedback);

@@ -152,6 +152,8 @@ export const en = {
 			oneEmoji: '<i>Need exactly one emoji.</i>',
 			nameSaved: (name: string) => `✅ Team is now <b>${name}</b>.`,
 			emojiSaved: (e: string) => `✅ Team emoji: ${e}`,
+			playThreadSet: '✅ Done. Level-clear announcements and pinned leaderboard will now post in this topic.',
+			playThreadCleared: '✅ Topic cleared. Announcements will return to General.',
 		},
 		challenge: {
 			usage: 'Usage: <code>/challenge @username</code> — level is picked randomly from your common ones.',

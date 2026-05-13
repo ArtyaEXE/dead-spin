@@ -76,10 +76,14 @@ export async function tgGetChatMemberStatus(chatId: number, tgUserId: string): P
 
 /**
  * `sendMessage` — нотификация в беседу. parse_mode HTML, без всплывашки.
+ * Если задан `messageThreadId` — отправка в конкретную тему форума
+ * (поведение forum-групп: без id всё уезжает в General).
  * Возвращает `message_id` для последующего `setMessageReaction`, или null
  * при любой ошибке (нотификация best-effort, не критична).
  */
-export async function tgSendMessage(chatId: number, html: string): Promise<number | null> {
+export async function tgSendMessage(
+	chatId: number, html: string, messageThreadId?: number | null,
+): Promise<number | null> {
 	if (!env.TELEGRAM_BOT_TOKEN) return null;
 	if (!html) return null;
 	const url = `${BOT_API}/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`;
@@ -92,6 +96,7 @@ export async function tgSendMessage(chatId: number, html: string): Promise<numbe
 				text: html,
 				parse_mode: 'HTML',
 				disable_notification: true,
+				...(messageThreadId ? {message_thread_id: messageThreadId} : {}),
 			}),
 		});
 		if (!r.ok) {

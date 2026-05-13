@@ -167,6 +167,14 @@ export const groupChats = pgTable('group_chats', {
 	type: text('type').notNull(),
 	/** ID закреплённого сообщения с live-таблицей лидеров. NULL — ещё не создавали. */
 	pinnedMessageId: integer('pinned_message_id'),
+	/**
+	 * `message_thread_id` темы форума, куда бот шлёт нотификации level-clear,
+	 * streak-milestones и закрепляет лидерборд. Задаётся админом командой
+	 * `/setplay` из нужной темы. NULL — группа без тем, либо админ решил
+	 * слать в General. На ответы команд (`ctx.reply`) не влияет: Grammy
+	 * сам наследует тему из исходного сообщения.
+	 */
+	playThreadId: integer('play_thread_id'),
 	/** Кастомное имя «команды» беседы — задаётся /setname админом. */
 	nickname: text('nickname'),
 	/** Эмодзи-аватар команды (1 графема) — задаётся /setemoji. */

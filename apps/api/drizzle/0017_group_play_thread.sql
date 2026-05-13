@@ -1,0 +1,1 @@
+ALTER TABLE "group_chats" ADD COLUMN "play_thread_id" integer;
