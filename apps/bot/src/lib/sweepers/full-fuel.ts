@@ -1,5 +1,5 @@
 import {InlineKeyboard, type Bot} from 'grammy';
-import {and, eq, isNull, lte, gte, sql} from 'drizzle-orm';
+import {and, eq, isNull, gte, sql} from 'drizzle-orm';
 import {FUEL_MAX, FUEL_REGEN_PER_TICK, FUEL_TICK_MS} from '@dead-spin/shared';
 import {db, schema} from '../../db';
 import {env} from '../../config';
@@ -42,9 +42,12 @@ export async function sweepFullFuelPush(bot: Bot, now: Date = new Date()): Promi
 	}
 
 	// Полные секунды до бака. CAST на numeric — иначе integer-деление
-	// съест дробь у быстро регенерящих маленьких остатков.
+	// съест дробь у быстро регенерящих маленьких остатков. Сравнение и
+	// `now()` целиком на стороне БД: подставлять Date через drizzle-`lte`
+	// в sql-chunk предикате не работает (postgres.js не знает тип bind'а
+	// и роняет client в node-stream'е).
 	const tickSeconds = FUEL_TICK_MS / 1000;
-	const willBeFullAt = sql<Date>`${schema.users.fuelUpdatedAt} + (CEIL((${FUEL_MAX} - ${schema.users.fuel})::numeric / ${FUEL_REGEN_PER_TICK}) * ${tickSeconds}) * INTERVAL '1 second'`;
+	const fullCondition = sql`${schema.users.fuelUpdatedAt} + (CEIL((${FUEL_MAX} - ${schema.users.fuel})::numeric / ${FUEL_REGEN_PER_TICK}) * ${tickSeconds}) * INTERVAL '1 second' <= now()`;
 
 	const maxAgeCutoff = new Date(now.getTime() - env.PUSH_MAX_AGE_DAYS * 24 * 60 * 60 * 1000);
 
@@ -57,7 +60,7 @@ export async function sweepFullFuelPush(bot: Bot, now: Date = new Date()): Promi
 		.from(schema.users)
 		.where(and(
 			isNull(schema.users.lastFullFuelPushAt),
-			lte(willBeFullAt, now),
+			fullCondition,
 			gte(schema.users.updatedAt, maxAgeCutoff),
 		))
 		.limit(BATCH_LIMIT);
