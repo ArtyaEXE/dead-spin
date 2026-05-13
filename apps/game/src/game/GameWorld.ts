@@ -255,7 +255,7 @@ export class GameWorld {
 		this.world.addChild(this.smokes.container);
 
 		// Огонь — поверх дыма (яркий язык пламени ближе к камере).
-		this.fires = createFireSystem(this.textures.explosion);
+		this.fires = createFireSystem(this.textures.flame);
 		this.world.addChild(this.fires.container);
 
 		this.stars = [
@@ -370,13 +370,20 @@ export class GameWorld {
 		const cosR = -Math.cos(rad);
 
 		if (this.fires) {
-			const fox = 22 * sinR;
-			const foy = 22 * cosR;
+			// Точка «корня» пламени — на самом сопле (12px за центром).
+			// rotation = rad (направление тяги). Текстура нарисована
+			// пламенем вверх; anchor=(0.5, 1) держит «корень» в точке,
+			// flame расходится оттуда наружу. Pixi rotation: 0 = up в
+			// мире = -Y. Если нос корабля смотрит вверх (player.r=0),
+			// rad = (player.r + 180) * π/180 = π → пламя смотрит вниз. ✓
+			const fox = 12 * sinR;
+			const foy = 12 * cosR;
 			this.fires.add(
 				{x: this.player.x + fox, y: this.player.y + foy},
+				rad,
 				55,
 				500,
-				{x: fox * 0.6, y: foy * 0.6},
+				{x: fox * 0.4, y: foy * 0.4},
 			);
 		}
 

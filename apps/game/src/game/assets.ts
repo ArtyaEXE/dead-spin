@@ -11,6 +11,7 @@ export type GameTextures = {
 	cave2: Texture;
 	cave2_1: Texture;  // PALLAS outer rock
 	cave2_2: Texture;  // PALLAS inner parallax
+	flame: Texture[];  // 3 кадра пламени бустера (calm / sway-left / split-right)
 	hole: Texture;
 	ship: Texture;
 	booster: Texture;
@@ -44,6 +45,7 @@ const SIMPLE_PATHS = {
 
 
 const EXPLOSION_FRAMES = Array.from({length: 13}, (_, i) => `/effects/explosion/${i + 1}.png`);
+const FLAME_FRAMES = Array.from({length: 3}, (_, i) => `/effects/flame/${i + 1}.png`);
 
 
 let cached: Promise<GameTextures> | null = null;
@@ -90,9 +92,12 @@ export function loadGameTextures(): Promise<GameTextures> {
 		const explosionFrames = await Promise.all(
 			EXPLOSION_FRAMES.map(path => Assets.load<Texture>(path)),
 		);
+		const flameFrames = await Promise.all(
+			FLAME_FRAMES.map(path => Assets.load<Texture>(path)),
+		);
 
 		const simple = Object.fromEntries(simpleLoaded) as Record<keyof typeof SIMPLE_PATHS, Texture>;
-		return {...simple, explosion: explosionFrames};
+		return {...simple, explosion: explosionFrames, flame: flameFrames};
 	})();
 	return cached;
 }
