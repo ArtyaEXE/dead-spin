@@ -32,19 +32,11 @@
   "decorations": [
     {
       "name": "gravity",
-      "x": 200,
-      "y": 310,
-      "r": 0,
+      "x": 300,
+      "y": 350,
+      "r": 33.69,
       "s": 0.9,
       "type": "down"
-    },
-    {
-      "name": "gravity",
-      "x": 310,
-      "y": 200,
-      "r": 0,
-      "s": 0.8,
-      "type": "right"
     },
     {
       "name": "static",

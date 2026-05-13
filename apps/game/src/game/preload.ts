@@ -31,8 +31,7 @@ const UI_IMAGES = [
 	'/icons/icon-mine-warning.png', '/icons/icon-stone-warning.png', '/icons/icon-worm-warning.png',
 	'/icons/icon-finish.png', '/icons/icon-star-collect.png', '/icons/icon-loading.png',
 	'/icons/deco-stop.png',
-	'/icons/deco-gravity-up.png', '/icons/deco-gravity-down.png',
-	'/icons/deco-gravity-left.png', '/icons/deco-gravity-right.png',
+	'/icons/deco-gravity-down.png', // одна текстура; renderer крутит её по углу гравитации
 	// Batch 1 — UI-иконки в текстах/панелях (заменили FA).
 	'/icons/fuel-icon.png', '/icons/coins-icon.png', '/icons/clock-icon.png',
 	'/icons/trophy-icon.png', '/icons/lock-icon.png', '/icons/challenge-icon.png',

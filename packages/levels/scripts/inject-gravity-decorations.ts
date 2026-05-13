@@ -1,11 +1,18 @@
 /**
- * Одноразовый скрипт — добавляет gravity-decoration'ы в level JSON где
- * есть глобальная гравитация (≠ {0,0}). Спрайт `deco-gravity-{type}.png`
- * рендерится в `apps/game/src/game/renderers/decorations.ts` — без
- * этих данных в level-JSON стрелки не появляются вовсе.
+ * Одноразовый скрипт — гарантирует ровно ОДНУ gravity-decoration в каждом
+ * level JSON где есть глобальная гравитация (≠ {0,0}).
  *
- * Идемпотентно: если в decorations уже есть entry с name='gravity' —
- * level пропускается, чтобы не плодить дубли.
+ * История: первая версия добавляла 2 стрелки для диагональной гравитации
+ * (down + right для (8,12)). Сейчас рендерер поддерживает один спрайт с
+ * произвольным углом (см. renderers/decorations.ts), поэтому достаточно
+ * одной стрелки направленной по вектору гравитации.
+ *
+ * Также стрелка отодвинута от startPoint на 180px (раньше было 110, что
+ * прижимало её слишком близко к кораблю).
+ *
+ * Идемпотентно: на каждом запуске СНАЧАЛА выбрасывает все name='gravity'
+ * decorations, затем добавляет одну свежую — так чисто, без зависимости
+ * от состояния файла.
  *
  *   pnpm --filter @dead-spin/levels exec tsx scripts/inject-gravity-decorations.ts
  */
@@ -32,28 +39,30 @@ type Decoration = {
 };
 
 
-function primaryDirection(g: Vec): 'up' | 'down' | 'left' | 'right' | null {
-	if (Math.abs(g.x) < 0.5 && Math.abs(g.y) < 0.5) return null;
-	if (Math.abs(g.y) >= Math.abs(g.x)) return g.y > 0 ? 'down' : 'up';
-	return g.x > 0 ? 'right' : 'left';
+/**
+ * Угол вектора (gx, gy) В ГРАДУСАХ так, чтобы текстура «стрелка вниз»
+ * указывала туда. Текстура нарисована стрелкой по +Y оси (вниз) при r=0.
+ * Нужный rotation: atan2(gx, gy) — потому что (sin r, cos r) должно
+ * совпасть с нормализованным (gx, gy)/|g|.
+ */
+function angleDegFromGravity(g: Vec): number {
+	if (Math.abs(g.x) < 0.5 && Math.abs(g.y) < 0.5) return 0;
+	return (Math.atan2(g.x, g.y) * 180) / Math.PI;
 }
 
 
-function secondaryDirection(g: Vec, primary: 'up' | 'down' | 'left' | 'right'): 'up' | 'down' | 'left' | 'right' | null {
-	// Если другая компонента тоже значимая (> 30% от primary) — даём вторую стрелку.
-	const isVertical = primary === 'up' || primary === 'down';
-	const other = isVertical ? Math.abs(g.x) : Math.abs(g.y);
-	const main = isVertical ? Math.abs(g.y) : Math.abs(g.x);
-	if (other < 0.5 || other / main < 0.3) return null;
-	if (isVertical) return g.x > 0 ? 'right' : 'left';
-	return g.y > 0 ? 'down' : 'up';
-}
+const OFFSET_FROM_START = 180;
 
 
-function placeArrow(start: Vec, dir: 'up' | 'down' | 'left' | 'right', offset: number): Vec {
-	const dx = dir === 'right' ? offset : dir === 'left' ? -offset : 0;
-	const dy = dir === 'down' ? offset : dir === 'up' ? -offset : 0;
-	return {x: Math.round(start.x + dx), y: Math.round(start.y + dy)};
+function placeArrow(start: Vec, g: Vec): Vec {
+	const mag = Math.hypot(g.x, g.y);
+	if (mag < 0.5) return {x: start.x, y: start.y};
+	const nx = g.x / mag;
+	const ny = g.y / mag;
+	return {
+		x: Math.round(start.x + nx * OFFSET_FROM_START),
+		y: Math.round(start.y + ny * OFFSET_FROM_START),
+	};
 }
 
 
@@ -62,7 +71,7 @@ const files = readdirSync(dataDir)
 	.sort((a, b) => Number(a.replace(/\.json$/, '')) - Number(b.replace(/\.json$/, '')));
 
 let touched = 0;
-let skipped = 0;
+let cleared = 0;
 
 for (const file of files) {
 	const path = join(dataDir, file);
@@ -73,46 +82,48 @@ for (const file of files) {
 		[k: string]: unknown;
 	};
 
-	const primary = primaryDirection(raw.gravity);
-	if (!primary) { skipped++; continue; }
+	// 1) Чистим все прежние gravity-decorations (могло быть 1 или 2 после
+	//    предыдущего скрипта). Хвосты `type` остаются неиспользуемыми —
+	//    renderer их игнорирует, но повторное накопление мусора нам не нужно.
+	const filtered = raw.decorations.filter(d => d.name !== 'gravity');
+	const removed = raw.decorations.length - filtered.length;
 
-	const hasGravityDeco = raw.decorations.some(d => d.name === 'gravity');
-	if (hasGravityDeco) { skipped++; continue; }
+	// 2) Если гравитации нет — просто сохраняем (если что-то выкинули).
+	const angleDeg = angleDegFromGravity(raw.gravity);
+	const hasGravity = Math.abs(raw.gravity.x) >= 0.5 || Math.abs(raw.gravity.y) >= 0.5;
 
-	const newDecos: Decoration[] = [];
-	newDecos.push({
-		name: 'gravity',
-		x: placeArrow(raw.startPoint, primary, 110).x,
-		y: placeArrow(raw.startPoint, primary, 110).y,
-		r: 0,
-		s: 0.9,
-		type: primary,
-	});
-
-	const secondary = secondaryDirection(raw.gravity, primary);
-	if (secondary) {
-		newDecos.push({
-			name: 'gravity',
-			x: placeArrow(raw.startPoint, secondary, 110).x,
-			y: placeArrow(raw.startPoint, secondary, 110).y,
-			r: 0,
-			s: 0.8,
-			type: secondary,
-		});
+	if (!hasGravity) {
+		if (removed > 0) {
+			raw.decorations = filtered;
+			writeFileSync(path, JSON.stringify(raw, null, 2));
+			cleared++;
+			console.log(`L${file.padEnd(9)} no gravity — removed ${removed} stale arrow(s)`);
+		}
+		continue;
 	}
 
-	raw.decorations = [...newDecos, ...raw.decorations];
+	// 3) Кладём одну свежую стрелку.
+	const pos = placeArrow(raw.startPoint, raw.gravity);
+	const arrow: Decoration = {
+		name: 'gravity',
+		x: pos.x,
+		y: pos.y,
+		r: Math.round(angleDeg * 100) / 100, // 2 знака после запятой — стабильно
+		s: 0.9,
+		type: 'down', // renderer игнорирует, нужен для Zod schema validation
+	};
+	raw.decorations = [arrow, ...filtered];
 
 	const parsed = LevelSchema.safeParse(raw);
 	if (!parsed.success) {
-		console.error(`L${file}: validation FAILED after injection:`);
+		console.error(`L${file}: validation FAILED:`);
 		for (const i of parsed.error.issues) console.error(`  ${i.path.join('.')}: ${i.message}`);
 		continue;
 	}
 
 	writeFileSync(path, JSON.stringify(raw, null, 2));
-	console.log(`L${file.padEnd(8)} gravity=(${raw.gravity.x},${raw.gravity.y}) → +${newDecos.length} arrow(s) [${newDecos.map(d => d.type).join(', ')}]`);
+	console.log(`L${file.padEnd(9)} gravity=(${raw.gravity.x},${raw.gravity.y}) angle=${angleDeg.toFixed(1)}° offset=${OFFSET_FROM_START}px (removed ${removed} old)`);
 	touched++;
 }
 
-console.log(`\n${touched} files updated, ${skipped} skipped (no gravity or already has arrow).`);
+console.log(`\n${touched} arrows refreshed, ${cleared} cleaned of stale arrows.`);
