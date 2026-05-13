@@ -479,7 +479,10 @@ html, body, #root {
 	padding: 20px;
 }
 .ach-card {
-	background: #1a1611;
+	position: relative;
+	background:
+		linear-gradient(rgba(20, 14, 6, 0.55), rgba(20, 14, 6, 0.55)),
+		url('/result-screen-bg.png') center / cover no-repeat;
 	border: 1px solid rgba(255, 255, 255, 0.1);
 	border-radius: 16px;
 	padding: 20px;
