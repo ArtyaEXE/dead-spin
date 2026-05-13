@@ -626,10 +626,9 @@ export class GameWorld {
 		if (this.walls) {
 			// Параллакс задней стены. tilePosition применяет ОБРАТНЫЙ сдвиг
 			// внутри TilingSprite, который сам едет с миром. Итоговая скорость
-			// на экране = world_speed × (1 − k). Хочется чтобы фон двигался
-			// чуть медленнее foreground'а — k=0.07 даёт ~93% скорости (легкий
-			// parallax). Прежнее 0.93 давало 7% скорости и казалось «прибитым».
-			const k = 0.07;
+			// на экране = world_speed × (1 − k). k=0.15 даёт ~85% скорости —
+			// чуть заметнее разрыв между задником и стенами пещеры чем при 0.07.
+			const k = 0.15;
 			this.walls.innerCave.tilePosition.set(
 				this.player.x * k,
 				this.player.y * k,
