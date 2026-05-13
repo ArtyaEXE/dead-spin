@@ -14,7 +14,7 @@ export const TELEGRAM_ID_REGEX = /^[0-9]{2,32}$/;
  * При добавлении нового мира поднимаем здесь — иначе `Levels`-экран
  * не покажет ачиев "all levels", а ачивка `all_levels` не выдастся.
  */
-export const LEVEL_COUNT = 18;
+export const LEVEL_COUNT = 30;
 export const MAX_LEVEL_NUMBER = 1000;
 
 export const PLAYER_RADIUS = 30;

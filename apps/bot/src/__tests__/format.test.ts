@@ -60,6 +60,6 @@ describe('format helpers', () => {
 		expect(card).toContain('Топливо');
 		expect(card).toContain('11 500');
 		expect(card).toContain('30 000');
-		expect(card).toContain('5 / 18');
+		expect(card).toContain('5 / 30');
 	});
 });

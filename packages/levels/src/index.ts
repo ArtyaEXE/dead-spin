@@ -1,13 +1,23 @@
 import {LevelSchema, type Level} from '@dead-spin/shared';
 
-// CERES (мир 1) — настоящий контент.
+// CERES (мир 1) — L1-L15.
 import l1 from './data/1.json' with {type: 'json'};
 import l2 from './data/2.json' with {type: 'json'};
 import l3 from './data/3.json' with {type: 'json'};
+import l4 from './data/4.json' with {type: 'json'};
+import l5 from './data/5.json' with {type: 'json'};
+import l6 from './data/6.json' with {type: 'json'};
+import l7 from './data/7.json' with {type: 'json'};
+import l8 from './data/8.json' with {type: 'json'};
+import l9 from './data/9.json' with {type: 'json'};
+import l10 from './data/10.json' with {type: 'json'};
+import l11 from './data/11.json' with {type: 'json'};
+import l12 from './data/12.json' with {type: 'json'};
+import l13 from './data/13.json' with {type: 'json'};
+import l14 from './data/14.json' with {type: 'json'};
+import l15 from './data/15.json' with {type: 'json'};
 
-// PALLAS (мир 2) — слоты L16-L30. Между CERES (3) и PALLAS (16) дыра
-// 4-15 — это намеренно: нумерация уровней привязана к мирам по 15 слотов
-// (см. apps/game/src/game/worlds.ts:worldLabel).
+// PALLAS (мир 2) — L16-L30.
 import l16 from './data/16.json' with {type: 'json'};
 import l17 from './data/17.json' with {type: 'json'};
 import l18 from './data/18.json' with {type: 'json'};
@@ -25,7 +35,10 @@ import l29 from './data/29.json' with {type: 'json'};
 import l30 from './data/30.json' with {type: 'json'};
 
 
-const raw = [l1, l2, l3, l16, l17, l18, l19, l20, l21, l22, l23, l24, l25, l26, l27, l28, l29, l30];
+const raw = [
+	l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15,
+	l16, l17, l18, l19, l20, l21, l22, l23, l24, l25, l26, l27, l28, l29, l30,
+];
 
 
 export const levels: readonly Level[] = raw.map((data, idx) => {
