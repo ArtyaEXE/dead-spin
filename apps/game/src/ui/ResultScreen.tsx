@@ -73,7 +73,11 @@ export function ResultScreen(props: {
 				</Show>
 
 				<Show when={props.result === 'win'} fallback={
-					<i class={`fa ${props.result === 'loose' ? 'fa-frown-o' : 'fa-pause'} result-mood`}></i>
+					<img
+						class="result-mood"
+						src={props.result === 'loose' ? '/icons/crash-icon.png' : '/icons/pause-icon.png'}
+						alt=""
+					/>
 				}>
 					<div class="result-stars">
 						<For each={starsArr()}>

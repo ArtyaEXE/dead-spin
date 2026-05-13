@@ -1189,9 +1189,10 @@ html, body, #root {
 	100% { transform: scale(1);   opacity: 1; }
 }
 .result-mood {
-	font-size: 110px;
-	color: #2E1F0088;
-	line-height: 1;
+	width: 130px;
+	height: 130px;
+	object-fit: contain;
+	opacity: 0.85;
 }
 .result-buttons {
 	display: flex;

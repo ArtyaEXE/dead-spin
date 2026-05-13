@@ -258,7 +258,8 @@ export function GameScreen(props: {
 			<Show when={ghost().current}>
 				{(g) => (
 					<div class="ghost-badge">
-						👻 <b>{g().username}</b> — {g().stars}<img class="icon-inline" src="/star.png" alt="" style={{height: '1em'}} /> <code>{fmtTime(g().timeMs)}</code>
+						<img class="icon-inline" src="/icons/ghost-icon.png" alt="" />
+						<b>{g().username}</b> — {g().stars}<img class="icon-inline" src="/star.png" alt="" style={{height: '1em'}} /> <code>{fmtTime(g().timeMs)}</code>
 					</div>
 				)}
 			</Show>

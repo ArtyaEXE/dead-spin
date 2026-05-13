@@ -23,7 +23,7 @@ export function Settings(props: {onBack: () => void}) {
 
 					<div class="setting-row">
 						<div class="setting-display">
-							<i class="fa fa-music" style={{'margin-right': '6px'}}></i>
+							<img class="icon-inline" src="/icons/music-icon.png" alt="" />
 							Music
 						</div>
 						<input
@@ -37,7 +37,7 @@ export function Settings(props: {onBack: () => void}) {
 
 					<div class="setting-row">
 						<div class="setting-display">
-							<i class="fa fa-volume-up" style={{'margin-right': '6px'}}></i>
+							<img class="icon-inline" src="/icons/sound-icon.png" alt="" />
 							Effects
 						</div>
 						<input
