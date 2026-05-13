@@ -1,5 +1,8 @@
 import {Bot} from 'grammy';
+import {eq} from 'drizzle-orm';
 import {env} from './config';
+import {db, schema} from './db';
+import {isThreadAllowed, parseCommandName} from './lib/restrict-thread';
 import {handleStart} from './handlers/start';
 import {showMainMenu} from './handlers/menu';
 import {showProfile} from './handlers/profile';
@@ -32,6 +35,40 @@ export function createBot(): Bot {
 		if (!msg || !msg.text || !msg.text.startsWith('/')) return;
 		if (ctx.chat?.type !== 'group' && ctx.chat?.type !== 'supergroup') return;
 		await ctx.api.deleteMessage(ctx.chat.id, msg.message_id).catch(() => {/* noop */});
+	});
+
+	// Гейтинг команд по теме форума. Если в группе админ выставил
+	// `play_thread_id` (см. /setplay), команды из других тем (включая
+	// General) игнорим и удаляем — чтобы /play, /lb и прочее не засирали
+	// темы «Идеи» / «Баги». Исключение: `/setplay` всегда работает,
+	// иначе администратор, ошибившись с темой, не смог бы перенастроить.
+	// В DM и в группах без настроенной темы — никаких ограничений.
+	bot.use(async (ctx, next) => {
+		const msg = ctx.message;
+		if (!msg?.text || !msg.text.startsWith('/')) return next();
+		if (ctx.chat?.type !== 'group' && ctx.chat?.type !== 'supergroup') return next();
+
+		const command = parseCommandName(msg.text);
+		// SELECT play_thread_id для этой беседы. Один лёгкий запрос на
+		// команду — для alpha-нагрузки приемлемо; кэш заведём, если
+		// начнёт мозолить глаза в профайле.
+		const [row] = await db
+			.select({playThreadId: schema.groupChats.playThreadId})
+			.from(schema.groupChats)
+			.where(eq(schema.groupChats.chatId, ctx.chat.id))
+			.limit(1);
+
+		const allowed = isThreadAllowed({
+			configuredThread: row?.playThreadId ?? null,
+			msgThread: msg.message_thread_id ?? null,
+			command,
+		});
+		if (allowed) return next();
+
+		// Молча гасим команду: уборочный middleware выше всё равно
+		// попытается её удалить (его вызов в afterware-ветке).
+		// Дублирующий delete тут не нужен — он бесплатный, но избыточный.
+		return; // не пускаем к handler'ам
 	});
 
 	// Команды
