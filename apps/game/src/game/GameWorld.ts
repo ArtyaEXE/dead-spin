@@ -25,6 +25,7 @@ import {createMine} from './enemies/mine';
 import {createWorm} from './enemies/worm';
 import type {Enemy} from './enemies/types';
 import {createSmokeSystem, type SmokeSystem} from './effects/smokes';
+import {createFireSystem, type FireSystem} from './effects/fires';
 import {createExplosion, type ExplosionHandle} from './effects/explosion';
 import {createDecorationsLayer, type DecorationsLayer} from './renderers/decorations';
 import {audio} from './audio';
@@ -61,6 +62,7 @@ export class GameWorld {
 	private stars: StarSprite[] = [];
 	private enemies: Enemy[] = [];
 	private smokes: SmokeSystem | null = null;
+	private fires: FireSystem | null = null;
 	private explosions: ExplosionHandle[] = [];
 	private decorations: DecorationsLayer | null = null;
 	private lightLayer: TilingSprite | null = null;
@@ -171,6 +173,7 @@ export class GameWorld {
 		for (const ex of this.explosions) ex.destroy();
 		this.explosions = [];
 		this.smokes?.destroy();
+		this.fires?.destroy();
 		this.smokes = null;
 		this.decorations?.destroy();
 		this.decorations = null;
@@ -250,6 +253,10 @@ export class GameWorld {
 		// Дымы рендерятся под врагами/игроком, но поверх стен.
 		this.smokes = createSmokeSystem(this.textures.explosion);
 		this.world.addChild(this.smokes.container);
+
+		// Огонь — поверх дыма (яркий язык пламени ближе к камере).
+		this.fires = createFireSystem(this.textures.explosion);
+		this.world.addChild(this.fires.container);
 
 		this.stars = [
 			createStar('1', this.level.star1, this.textures.star),
@@ -355,11 +362,27 @@ export class GameWorld {
 
 		audio.play('booster', 0.7);
 
-		// Дым за соплом — в 35px от центра в противоположном направлении от носа.
+		// Дым + огонь за соплом — в противоположном направлении от носа.
+		// Огонь компактнее (offset 22px) и быстрее затухает; дым 35px и
+		// уносится дальше с move-вектором.
+		const rad = ((this.player.r + 180) * Math.PI) / 180;
+		const sinR = Math.sin(rad);
+		const cosR = -Math.cos(rad);
+
+		if (this.fires) {
+			const fox = 22 * sinR;
+			const foy = 22 * cosR;
+			this.fires.add(
+				{x: this.player.x + fox, y: this.player.y + foy},
+				55,
+				500,
+				{x: fox * 0.6, y: foy * 0.6},
+			);
+		}
+
 		if (this.smokes) {
-			const rad = ((this.player.r + 180) * Math.PI) / 180;
-			const ox = 35 * Math.sin(rad);
-			const oy = -35 * Math.cos(rad);
+			const ox = 35 * sinR;
+			const oy = 35 * cosR;
 			this.smokes.add(
 				{x: this.player.x + ox, y: this.player.y + oy},
 				80,
@@ -610,6 +633,7 @@ export class GameWorld {
 
 		// Дым, взрывы и декорации живут даже на паузе — как в оригинале.
 		this.smokes?.tick(now);
+		this.fires?.tick(now);
 		this.decorations?.tick(now);
 		for (let i = this.explosions.length - 1; i >= 0; i--) {
 			if (!this.explosions[i]!.tick(now)) {
