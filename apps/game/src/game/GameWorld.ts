@@ -4,7 +4,7 @@ import {
 	createLoop, type Loop, type Body, type ChunkMap,
 } from '@dead-spin/engine';
 import {
-	PLAYER_RADIUS, STAR_RADIUS, FINISH_RADIUS, BOOST_FORCE,
+	PLAYER_RADIUS, STAR_RADIUS, FINISH_RADIUS, FINISH_MAX_SPEED, BOOST_FORCE,
 	FUEL_CONSUMPTION_PER_BOOST,
 } from '@dead-spin/shared';
 import type {Level, GhostRecording} from '@dead-spin/shared';
@@ -459,7 +459,7 @@ export class GameWorld {
 		}
 
 		const finishCircle = {x: this.level.finishPoint.x, y: this.level.finishPoint.y, radius: FINISH_RADIUS};
-		if (Physics.resolveCollision(this.player, finishCircle) && this.player.speed < 40) {
+		if (Physics.resolveCollision(this.player, finishCircle) && this.player.speed < FINISH_MAX_SPEED) {
 			this.beginFinishAnim();
 			return;
 		}

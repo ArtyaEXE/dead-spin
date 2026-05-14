@@ -19,7 +19,9 @@ export const MAX_LEVEL_NUMBER = 1000;
 
 export const PLAYER_RADIUS = 30;
 export const STAR_RADIUS = 20;
-export const FINISH_RADIUS = 15;
+export const FINISH_RADIUS = 25;
+/** Максимальная скорость в момент касания финиша. Выше — пролёт мимо. */
+export const FINISH_MAX_SPEED = 80;
 export const FUEL_CONSUMPTION_PER_BOOST = 100;
 export const BOOST_FORCE = 50;
 

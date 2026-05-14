@@ -108,7 +108,8 @@ Camera: follow + 7% parallax на заднем слое пещеры (`apps/game
 |---|---|
 | PLAYER_RADIUS | 30 |
 | STAR_RADIUS | 20 |
-| FINISH_RADIUS | 15 (требуется speed < 40) |
+| FINISH_RADIUS | 25 (требуется speed < FINISH_MAX_SPEED) |
+| FINISH_MAX_SPEED | 80 |
 | BOOST_FORCE | 50 |
 | FUEL_CONSUMPTION_PER_BOOST | 100 |
 | MIN_LEVEL_TIME_MS | 3000 (anti-cheat нижняя граница) |
