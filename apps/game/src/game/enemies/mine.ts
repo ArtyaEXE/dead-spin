@@ -1,9 +1,11 @@
-import {Sprite, Texture, Container, Graphics} from 'pixi.js';
+import {Sprite, Texture, Container} from 'pixi.js';
 import {
 	getDistanceBtwPoints,
 	updateHeat,
-	heatToColor,
+	heatToTint,
 	MINE_DETECT_MULT,
+	MINE_SWELL,
+	MINE_SHAKE_AMP,
 	DEFAULT_HEAT_PARAMS,
 	type MineHeatState,
 } from '@dead-spin/engine';
@@ -17,29 +19,27 @@ type MineSetup = {x: number; y: number; r: number; radius: number};
  * Мина с магнитным взрывателем. Старая «инстакилл на касание» осталась
  * как один из двух способов погибнуть; новый — heat-механика:
  *
- *   • r_kill   = radius            — прямое касание убивает мгновенно
- *   • r_detect = radius × 2        — магнитный детектор
+ *   • r_kill   = radius                  — прямое касание убивает мгновенно
+ *   • r_detect = radius × MINE_DETECT_MULT — магнитный детектор
  *
- * Пока игрок в r_detect, heat ∈ [0..1] растёт (по умолчанию за 2 с до
- * полного нагрева). При heat ≥ 1 мина взрывается. Если игрок в этот
- * момент всё ещё в r_detect — kill. Если успел вырваться — мина просто
- * «выгорает», без kill (одноразовая, deactivated).
+ * Пока игрок в r_detect, heat ∈ [0..1] растёт. При heat ≥ 1 мина
+ * взрывается; если игрок ещё в r_detect — kill, иначе мина «выгорает»
+ * без жертвы (одноразовая). Подробнее — `@dead-spin/engine/mine-heat.ts`.
  *
- * Подробнее про числовые параметры — `@dead-spin/engine/mine-heat.ts`.
+ * Визуал — без UI-элементов, всё через сам спрайт:
+ *   • idle: лёгкое покачивание ±5px по синусу (наследие Mine.svelte).
+ *   • heat растёт → спрайт надувается (scale до MINE_SWELL), тинт уходит
+ *     от белого к красному (heatToTint), добавляется случайная тряска
+ *     амплитудой до MINE_SHAKE_AMP.
+ *   • Burn-out (heat=1, игрока нет): быстрый «вздулась-лопнула» pop —
+ *     scale до 1.7 + fade alpha за 350 ms, потом скрытие.
  *
- * Визуал:
- *   • Спрайт мины + старое покачивание ±5px по синусу (см. оригинал).
- *   • Кольцо радиуса детекта появляется когда heat > 0, цвет
- *     зелёный→жёлтый→красный, плюс arc-progress по периметру.
- *   • После выгорания без kill — короткая 0.5-секундная вспышка
- *     расширяющегося красного кольца, потом мина исчезает.
+ * Игрок не видит технических колец и шкал, ориентируется на органическую
+ * реакцию объекта: тряска и краснение = «отойди», pop = «опоздал, повезло».
  */
 export function createMine(setup: MineSetup, tex: Texture): Enemy {
 	const container = new Container();
 	container.position.set(setup.x, setup.y);
-
-	const ring = new Graphics();
-	container.addChild(ring);
 
 	const sprite = new Sprite(tex);
 	sprite.anchor.set(0.5);
@@ -47,6 +47,10 @@ export function createMine(setup: MineSetup, tex: Texture): Enemy {
 	sprite.height = setup.radius * 2;
 	sprite.rotation = (setup.r * Math.PI) / 180;
 	container.addChild(sprite);
+
+	// Базовые размеры — от них пляшут scale в step.
+	const baseW = sprite.width;
+	const baseH = sprite.height;
 
 	const startedAtMs = performance.now();
 	const rDetect = setup.radius * MINE_DETECT_MULT;
@@ -57,41 +61,48 @@ export function createMine(setup: MineSetup, tex: Texture): Enemy {
 	let burnedAtMs: number | null = null;
 	let lastStepMs = startedAtMs;
 
-	function drawRing(heat: number, nowMs: number): void {
-		ring.clear();
+	const BURN_MS = 350;
 
-		// Burn-out FX: мина потратила заряд, игрока нет — короткая вспышка.
-		if (burnedAtMs !== null) {
-			const t = (nowMs - burnedAtMs) / 500; // 0.5s анимация
-			if (t >= 1) {
-				ring.visible = false;
-				return;
-			}
-			const radius = rDetect * (1 + t * 0.5);
-			const alpha = 1 - t;
-			ring.circle(0, 0, radius).stroke({width: 3, color: 0xff5028, alpha});
-			return;
+	function applyBurnoutFx(nowMs: number): boolean {
+		// Возвращает true когда анимация догорела и спрайт уже не нужно
+		// рисовать (caller тогда может выйти из step раньше).
+		if (burnedAtMs === null) return false;
+		const t = (nowMs - burnedAtMs) / BURN_MS;
+		if (t >= 1) {
+			sprite.visible = false;
+			return true;
 		}
+		// «Вздулась-лопнула»: scale 1.3 → 1.7, alpha 1 → 0, лёгкое
+		// случайное вращение поверх исходного, чтобы выглядело «рвано».
+		const s = 1.3 + t * 0.4;
+		sprite.width = baseW * s;
+		sprite.height = baseH * s;
+		sprite.alpha = 1 - t;
+		return false;
+	}
 
-		if (heat <= 0) {
-			ring.visible = false;
-			return;
+	function applyHeatFx(heat: number, nowMs: number): void {
+		// Scale: 1.0 → 1+SWELL. Тинт: white → red. Тряска: 0 → SHAKE_AMP.
+		const s = 1 + MINE_SWELL * heat;
+		sprite.width = baseW * s;
+		sprite.height = baseH * s;
+		sprite.tint = heatToTint(heat);
+
+		// Базовое покачивание (как раньше) + добавочная тряска от heat.
+		const t = (nowMs - startedAtMs) / 1000;
+		const phase = (t % 3) / 3;
+		const idleY = -Math.sin(Math.PI * phase) * 5;
+
+		if (heat > 0) {
+			// Чем выше heat — тем чаще «дёрганость». Используем sin от
+			// большой частоты + псевдо-noise через addition of harmonics.
+			const freq = 40 + heat * 30;
+			const shakeX = Math.sin(t * freq) * MINE_SHAKE_AMP * heat;
+			const shakeY = Math.cos(t * freq * 1.3) * MINE_SHAKE_AMP * heat;
+			sprite.position.set(shakeX, idleY + shakeY);
+		} else {
+			sprite.position.set(0, idleY);
 		}
-		ring.visible = true;
-
-		const color = heatToColor(heat);
-		// Прозрачное появление: при heat<0.1 кольцо почти не видно.
-		const baseAlpha = Math.min(1, 0.25 + heat * 0.75);
-		const lineWidth = 1.5 + heat * 2.5;
-
-		// Тонкий контур по радиусу детекта.
-		ring.circle(0, 0, rDetect).stroke({width: lineWidth, color, alpha: baseAlpha});
-
-		// Arc-прогресс «таймер до взрыва». От 12 часов по часовой.
-		const startAngle = -Math.PI / 2;
-		const endAngle = startAngle + heat * Math.PI * 2;
-		ring.arc(0, 0, rDetect + 5, startAngle, endAngle)
-			.stroke({width: 3, color, alpha: 1});
 	}
 
 	return {
@@ -103,16 +114,8 @@ export function createMine(setup: MineSetup, tex: Texture): Enemy {
 			const dt = Math.max(0, (nowMs - lastStepMs) / 1000);
 			lastStepMs = nowMs;
 
-			// Покачивание ±5px: keyframes {0%: 0, 50%: -5, 100%: 0} ease-in-out.
-			// Оригинал из Mine.svelte — translateY на ±5px за 3 сек.
-			const t = (nowMs - startedAtMs) / 1000;
-			const phase = (t % 3) / 3;
-			sprite.position.set(0, -Math.sin(Math.PI * phase) * 5);
-
-			// Уже выгорела (либо после kill, либо после burn-out) — только
-			// дорисовываем затухание кольца, в логику больше не вмешиваемся.
 			if (deactivated) {
-				drawRing(0, nowMs);
+				applyBurnoutFx(nowMs);
 				return false;
 			}
 
@@ -120,36 +123,32 @@ export function createMine(setup: MineSetup, tex: Texture): Enemy {
 			const inDetect = dist <= rDetect + player.radius;
 			const inKill = dist <= rKill + player.radius;
 
-			// Прямое касание — instakill, как раньше. Кольцо/heat не важны.
+			// Прямое касание — instakill, как раньше. Скрываем спрайт сразу,
+			// GameWorld нарисует штатный взрыв через `getHitPosition()`.
 			if (inKill) {
 				sprite.visible = false;
-				ring.visible = false;
 				deactivated = true;
 				return true;
 			}
 
-			// Обновляем heat.
 			const next = updateHeat(state, dt, inDetect, nowMs, DEFAULT_HEAT_PARAMS);
 			state.heat = next.heat;
 			state.lastInRangeAtMs = next.lastInRangeAtMs;
 
-			// Триггер взрыва.
 			if (state.heat >= 1) {
 				deactivated = true;
-				sprite.visible = false;
 				if (inDetect) {
-					// Игрок попал в радиус разлёта — kill, GameWorld нарисует
-					// штатный взрыв через `getHitPosition()`.
-					ring.visible = false;
+					// Поймали — kill, штатный взрыв.
+					sprite.visible = false;
 					return true;
 				}
-				// Игрок успел уйти — мина просто выгорает без жертвы.
+				// Игрок сбежал — pop без жертвы. Анимация догорит в
+				// следующих кадрах через applyBurnoutFx.
 				burnedAtMs = nowMs;
-				drawRing(0, nowMs);
 				return false;
 			}
 
-			drawRing(state.heat, nowMs);
+			applyHeatFx(state.heat, nowMs);
 			return false;
 		},
 		destroy() { container.destroy({children: true}); },

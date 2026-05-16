@@ -11,16 +11,21 @@
  * kill. Если уже выскочил — мина просто потратила заряд (одноразовая).
  *
  * Все цифры подобраны под существующие 30 уровней с минами radius=28..30:
- *   r_detect = 60 → 2× radius — лезет в коридоры от 50 px
- *   ARM 2.0 с    → проскочить можно за ~0.5-1.0 c без последствий
+ *   r_detect = 96 → 3.2× radius — щедрая зона предупреждения
+ *   ARM 2.5 с    → есть время заметить тряску и скорректировать траекторию
  *   COOL 3.0 c   → остывает дольше чем греется → возвращаться рискованно
  */
 
 
-export const MINE_DETECT_MULT = 2.0;
-export const MINE_ARM_TIME = 2.0;
+export const MINE_DETECT_MULT = 3.2;
+export const MINE_ARM_TIME = 2.5;
 export const MINE_COOL_DELAY = 0.5;
 export const MINE_COOL_TIME = 3.0;
+
+/** Насколько мина «надувается» при heat=1 (× от исходного размера). */
+export const MINE_SWELL = 0.3;
+/** Амплитуда тряски при heat=1, px. На heat=0 — 0. */
+export const MINE_SHAKE_AMP = 3;
 
 
 export interface MineHeatState {
@@ -77,27 +82,16 @@ export function updateHeat(
 
 
 /**
- * Цвет кольца как функция heat'а. Зелёный → жёлтый → красный.
- *   0.0..0.5 — зелёный → жёлтый
- *   0.5..1.0 — жёлтый → красный
- * Возвращает целое 0xRRGGBB (формат Pixi).
+ * Tint спрайта мины как функция heat'а: белый (0xFFFFFF, нейтрально)
+ * → красный (0xFF4040, перегрев). Pixi применяет tint мультипликативно,
+ * поэтому белый = «без изменений», более тёмные значения «выкручивают»
+ * исходные цвета к указанному. Промежуточные значения дают розово-оранжевый.
  */
-export function heatToColor(heat: number): number {
+export function heatToTint(heat: number): number {
 	const t = clamp01(heat);
-	// Линейная интерполяция в two-stop gradient через жёлтый.
-	if (t < 0.5) {
-		const k = t * 2;
-		// (0,255,80) → (255,220,40)
-		const r = lerp(0, 255, k);
-		const g = lerp(255, 220, k);
-		const b = lerp(80, 40, k);
-		return rgb(r, g, b);
-	}
-	const k = (t - 0.5) * 2;
-	// (255,220,40) → (255,50,40)
 	const r = 255;
-	const g = lerp(220, 50, k);
-	const b = lerp(40, 40, k);
+	const g = lerp(255, 64, t);
+	const b = lerp(255, 64, t);
 	return rgb(r, g, b);
 }
 
