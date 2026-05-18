@@ -3,12 +3,19 @@ import {
 	Physics, createClosedBSpline, initSplineMovement, updateSplineMovement,
 	getDistanceBtwPoints, type Body, type SplineState,
 } from '@dead-spin/engine';
+import type {Point} from '@dead-spin/shared';
 import type {Enemy} from './types';
 import type {SmokeSystem} from '../effects/smokes';
 import {audio, type LoopHandle} from '../audio';
 
 
 type WormSetup = {seed: string; x: number; y: number};
+
+
+/** Амплитуда seed-зависимого «дрожания» waypoints, px. */
+const JITTER = 110;
+/** Сколько случайных промежуточных точек добавлять между waypoints для непредсказуемости. */
+const EXTRA_RANDOM_POINTS = 2;
 
 
 const SEGMENT_COUNT = 5;
@@ -30,11 +37,25 @@ type Segment = {
 
 /**
  * "Червяк" — цепочка из 5 сегментов, движущихся по замкнутому B-сплайну.
- * Путь строится детерминировано из seed (одинаковый для всех рендеров
- * одного и того же врага). Каждый сегмент ещё слегка покачивается
- * относительно направления спланной касательной (localRotation).
  *
- * Логика 1:1 с [Worm.svelte](space/imports/ui/enemy/worm/Worm.svelte):274 строк.
+ * Путь червя ВСЕГДА проходит через ключевые точки уровня
+ * (start → star1 → star2 → star3 → finish) с seed-зависимым jitter ~110 px
+ * + 2 случайные промежуточные точки. Это значит червь физически
+ * патрулирует маршрут игрока, а не «случайный угол» — раньше путь был
+ * раскидан по всему levelW×levelH из чистого хеша seed'а, и при «плохом»
+ * сиде звук червя слышался, но визуально он гулял в недосягаемом углу.
+ *
+ * Спавн-сдвиг (`safeFromPlayer`) теперь работает не как «спрятать червя»,
+ * а как «timing-offset»: голова стартует в дальней точке маршрута, и пока
+ * игрок продвигается через звёзды — червь сближается с ним по тому же
+ * сплайну, перехватывая в неудобный момент (узкий коридор у star2 или
+ * непосредственно перед финишем — зависит от уровня).
+ *
+ * Каждый сегмент ещё слегка покачивается относительно направления
+ * сплайной касательной (localRotation).
+ *
+ * Логика 1:1 с [Worm.svelte](space/imports/ui/enemy/worm/Worm.svelte):274
+ * строк, кроме path-генератора — он переписан с учётом waypoints.
  */
 export function createWorm(
 	setup: WormSetup,
@@ -44,11 +65,12 @@ export function createWorm(
 	smokes: SmokeSystem,
 	speedMult: number = 1,
 	safeFromPlayer?: {x: number; y: number},
+	routeWaypoints?: readonly Point[],
 ): Enemy {
 	const container = new Container();
 	const speed = 100 * speedMult;
 
-	const path = generatePath(setup.seed, levelW, levelH);
+	const path = generatePath(setup.seed, levelW, levelH, routeWaypoints ?? []);
 	const splinePoints = createClosedBSpline(path, 50);
 
 	// Спавн-сдвиг: ищем offset по замкнутому сплайну такой, чтобы голова червяка
@@ -192,14 +214,25 @@ function quadraticInterpolation(
 
 
 /**
- * Генерирует детерминированный путь червяка из seed — простой hash-based
- * rand range (поведение оригинала без keccak256 — нам не нужна криптография).
+ * Детерминированный путь червяка вокруг маршрута игрока.
+ *
+ * Берём waypoints (start, stars, finish), дёргаем каждую seed-зависимым
+ * jitter'ом (±JITTER px), добавляем 2 промежуточные random-точки между
+ * соседними waypoints — получаем замкнутый сплайн, который физически
+ * проходит через все «полезные» места уровня. Игрок и червь движутся
+ * по одной и той же ленте; вопрос только в том, кто и когда оказывается
+ * в данной её точке (timing решает `safeFromPlayer`-сдвиг в caller'е).
+ *
+ * Fallback: если waypoints не переданы или их меньше 2 (старый код,
+ * тесты) — возвращаемся к прежнему «случайно по уровню» поведению,
+ * чтобы ничего не сломать.
  */
-function generatePath(seed: string, levelW: number, levelH: number): {x: number; y: number}[] {
-	const count = Math.round((levelW + levelH) / 300);
-	const minDist = Math.min(levelW, levelH) * 0.3;
-	const points: {x: number; y: number}[] = [];
-
+function generatePath(
+	seed: string,
+	levelW: number,
+	levelH: number,
+	waypoints: readonly Point[],
+): {x: number; y: number}[] {
 	let cursor = 0;
 	const rand = (max: number): number => {
 		cursor++;
@@ -212,21 +245,42 @@ function generatePath(seed: string, levelW: number, levelH: number): {x: number;
 		return (h >>> 0) / 0xffffffff * max;
 	};
 
+	const clampX = (x: number): number => Math.max(50, Math.min(levelW - 50, x));
+	const clampY = (y: number): number => Math.max(50, Math.min(levelH - 50, y));
+
+	if (waypoints.length >= 2) {
+		const out: {x: number; y: number}[] = [];
+		for (let i = 0; i < waypoints.length; i++) {
+			const wp = waypoints[i]!;
+			out.push({
+				x: clampX(wp.x + rand(JITTER * 2) - JITTER),
+				y: clampY(wp.y + rand(JITTER * 2) - JITTER),
+			});
+		}
+		// Промежуточные точки между парами соседних waypoints — без них
+		// сплайн получается «слишком ровным» по маршруту игрока, и червь
+		// предсказуемо ползёт вдоль; с jitter-вставками появляются заходы
+		// в стороны / срезы / непредсказуемые петли.
+		for (let i = 0; i < EXTRA_RANDOM_POINTS; i++) {
+			out.push({x: 80 + rand(levelW - 160), y: 80 + rand(levelH - 160)});
+		}
+		return out;
+	}
+
+	// Legacy fallback: чисто случайно по уровню.
+	const count = Math.round((levelW + levelH) / 300);
+	const minDist = Math.min(levelW, levelH) * 0.3;
+	const points: {x: number; y: number}[] = [];
 	let tries = 0;
 	while (points.length < count && tries < 100) {
 		tries++;
-		const p = {
-			x: 50 + rand(levelW - 100),
-			y: 50 + rand(levelH - 100),
-		};
+		const p = {x: 50 + rand(levelW - 100), y: 50 + rand(levelH - 100)};
 		let ok = true;
 		for (const q of points) {
-			if (getDistanceBtwPoints(p, q) < minDist) {ok = false; break;}
+			if (getDistanceBtwPoints(p, q) < minDist) { ok = false; break; }
 		}
 		if (ok) points.push(p);
 	}
-
-	// Fallback: если слишком мало точек, добавляем произвольные
 	while (points.length < 4) {
 		points.push({x: levelW / 2 + rand(levelW / 4), y: levelH / 2 + rand(levelH / 4)});
 	}

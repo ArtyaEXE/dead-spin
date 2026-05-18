@@ -297,6 +297,18 @@ export class GameWorld {
 					this.textures.mine,
 				);
 			} else if (e.name === 'worm') {
+				// Маршрут червя «прибит» к ключевым точкам уровня — иначе
+				// он раньше гулял в случайном углу, и при «плохом» seed'е
+				// игроки слышали звук, но самого червя не видели. Теперь
+				// сплайн физически проходит через старт, звёзды и финиш с
+				// jitter-вставками, а timing-сдвиг — через safeFromPlayer.
+				const wp = [
+					this.level.startPoint,
+					this.level.star1,
+					this.level.star2,
+					this.level.star3,
+					this.level.finishPoint,
+				];
 				enemy = createWorm(
 					{seed: e.seed, x: e.x, y: e.y},
 					this.level.res.x, this.level.res.y,
@@ -304,6 +316,7 @@ export class GameWorld {
 					this.smokes,
 					1,
 					this.level.startPoint,
+					wp,
 				);
 			}
 			if (enemy) {
