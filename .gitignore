@@ -8,6 +8,9 @@ coverage/
 Thumbs.db
 
 *.log
+
+# Deprecated assets — kept locally for reference, excluded from repo/bundle
+DEP_*
 npm-debug.log*
 pnpm-debug.log*
 

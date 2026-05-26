@@ -7,10 +7,16 @@ import {getSkinById, type SkinId} from '../stores/skin';
  * Имена совпадают с путями в public/.
  */
 export type GameTextures = {
-	cave1: Texture;
-	cave2: Texture;
-	cave2_1: Texture;  // PALLAS outer rock
-	cave2_2: Texture;  // PALLAS inner parallax
+	ceresOuter: Texture;
+	ceresInner: Texture;
+	pallasOuter: Texture;
+	pallasInner: Texture;
+	junoOuter: Texture;
+	junoInner: Texture;
+	vestaOuter: Texture;
+	vestaInner: Texture;
+	eunomiaOuter: Texture;
+	eunomiaInner: Texture;
 	hole: Texture;
 	ship: Texture;
 	booster: Texture;
@@ -26,10 +32,16 @@ export type GameTextures = {
 
 
 const SIMPLE_PATHS = {
-	cave1: '/cave1.jpg',
-	cave2: '/cave2.jpg',
-	cave2_1: '/cave2-1.jpg',
-	cave2_2: '/cave2-2.jpg',
+	ceresOuter: '/ceres-1.jpg',
+	ceresInner: '/ceres-2.jpg',
+	pallasOuter: '/pallas-1.jpg',
+	pallasInner: '/pallas-2.jpg',
+	junoOuter: '/juno-1.jpg',
+	junoInner: '/juno-2.jpg',
+	vestaOuter: '/vesta-1.jpg',
+	vestaInner: '/vesta-2.jpg',
+	eunomiaOuter: '/eunomia-1.jpg',
+	eunomiaInner: '/eunomia-2.jpg',
 	hole: '/hole.png',
 	ship: '/ship2.png',
 	booster: '/booster-single.png',
@@ -65,16 +77,20 @@ export async function loadShipTexture(skinId: SkinId): Promise<Texture> {
 
 
 /**
- * Cave-текстуры по миру. CERES (L1-15) — cave1+cave2, PALLAS (L16-30) —
- * cave2-1+cave2-2. Будущие миры (JUNO/VESTA/EUNOMIA) добавим сюда же,
- * когда появятся свои тайлы.
+ * Cave-текстуры по миру. 15 уровней на мир, 5 миров.
+ * Каждый мир — своя пара (outer wall + inner parallax).
  */
 export function caveTexturesForLevel(
 	levelNumber: number, t: GameTextures,
 ): {outer: Texture; inner: Texture} {
 	const worldIdx = Math.floor((levelNumber - 1) / 15);
-	if (worldIdx === 1) return {outer: t.cave2_1, inner: t.cave2_2};
-	return {outer: t.cave1, inner: t.cave2};
+	switch (worldIdx) {
+		case 1:  return {outer: t.pallasOuter, inner: t.pallasInner};
+		case 2:  return {outer: t.junoOuter,   inner: t.junoInner};
+		case 3:  return {outer: t.vestaOuter,  inner: t.vestaInner};
+		case 4:  return {outer: t.eunomiaOuter, inner: t.eunomiaInner};
+		default: return {outer: t.ceresOuter,  inner: t.ceresInner};
+	}
 }
 
 

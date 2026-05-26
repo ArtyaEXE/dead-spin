@@ -25,7 +25,11 @@ const UI_IMAGES = [
 	// Skins (скины ракеты — превьюшки в Shop + игровая ship-текстура)
 	'/ship-skins/ship-wanderer.png', '/ship-skins/ship-engineer.png',
 	'/ship-skins/ship-veteran.png', '/ship-skins/ship-asteroid-king.png',
-	'/cave1.jpg', '/cave2.jpg', '/cave2-1.jpg', '/cave2-2.jpg',
+	'/ceres-1.jpg', '/ceres-2.jpg',
+	'/pallas-1.jpg', '/pallas-2.jpg',
+	'/juno-1.jpg', '/juno-2.jpg',
+	'/vesta-1.jpg', '/vesta-2.jpg',
+	'/eunomia-1.jpg', '/eunomia-2.jpg',
 	// Machinarium-иконки: tutorial + level decorations (stop/gravity) + misc UI
 	'/icons/icon-tap.png', '/icons/icon-boost.png',
 	'/icons/icon-mine-warning.png', '/icons/icon-stone-warning.png', '/icons/icon-worm-warning.png',
