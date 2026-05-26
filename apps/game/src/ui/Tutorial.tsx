@@ -2,7 +2,6 @@
 
 import {getLevelByNumber} from '@dead-spin/levels';
 import {authStore} from '../stores/auth';
-import {groupStore} from '../stores/group';
 import {api} from '../net/client';
 
 
@@ -12,7 +11,7 @@ import {api} from '../net/client';
  *
  * Состояние хранится в БД per-context:
  *  - DM-сессия → `users.seen_tutorials` (через authStore.user)
- *  - Group-сессия → `user_group_tutorials` (через groupStore.seenTutorials)
+ *  - (deprecated) Group-сессия → ранее per-chat, теперь глобально
  *
  * Раньше всё лежало в localStorage и не выживало между девайсами / чистками.
  * См. миграцию 0015_seen_tutorials.
@@ -40,8 +39,6 @@ const TUTORIALS: Record<TutorialKey, TutorialContent> = {
 
 
 function getSeenSet(): Set<string> {
-	const g = groupStore.getState();
-	if (g.chatId !== null) return new Set(g.seenTutorials);
 	const u = authStore.getState().user;
 	return new Set(u?.seenTutorials ?? []);
 }
@@ -55,14 +52,9 @@ function getSeenSet(): Set<string> {
  * /me-refresh настоящий source-of-truth подтянется с сервера.
  */
 export function markSeen(key: TutorialKey): void {
-	const g = groupStore.getState();
-	if (g.chatId !== null) {
-		g.addSeenTutorial(key);
-	} else {
-		const u = authStore.getState().user;
-		if (u && !(u.seenTutorials ?? []).includes(key)) {
-			authStore.getState().setUser({...u, seenTutorials: [...(u.seenTutorials ?? []), key]});
-		}
+	const u = authStore.getState().user;
+	if (u && !(u.seenTutorials ?? []).includes(key)) {
+		authStore.getState().setUser({...u, seenTutorials: [...(u.seenTutorials ?? []), key]});
 	}
 	void api.markTutorialSeen(key).catch((e) => {
 		console.warn('markTutorialSeen failed:', e instanceof Error ? e.message : e);

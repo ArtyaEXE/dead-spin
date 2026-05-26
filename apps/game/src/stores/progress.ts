@@ -3,11 +3,14 @@ import {api} from '../net/client';
 import type {ProgressLevel} from '../net/schemas';
 import {createSolidStoreAdapter} from './solid';
 import {groupStore} from './group';
+import {isGroupMode} from './mode';
 
 
 type ProgressState = {
 	summaryStars: number;
 	levels: Record<number, ProgressLevel>;
+	/** Group-mode records (per-chat). Null in single mode. */
+	groupLevels: Record<number, ProgressLevel> | null;
 	loaded: boolean;
 	refresh: () => Promise<void>;
 	recordLocal: (level: number, stars: number, timeMs: number, fuelSpent: number) => void;
@@ -17,31 +20,31 @@ type ProgressState = {
 export const progressStore = createStore<ProgressState>((set, get) => ({
 	summaryStars: 0,
 	levels: {},
+	groupLevels: null,
 	loaded: false,
 
 	async refresh() {
-		// Прогресс в группе считается отдельно от DM-прогресса. Если игра
-		// открыта через `/play` в беседе — лидерборд/уровни показывают
-		// "чистый" прогресс этой беседы, даже если игрок ранее всё прошёл
-		// в DM или другой группе.
-		const g = groupStore.getState();
-		const res = g.chatId !== null && g.hmac !== null
-			? await api.groupProgress(g.chatId, g.hmac)
-			: await api.progress();
-		const map: Record<number, ProgressLevel> = {};
-		for (const row of res.levels) map[row.level] = row;
-		set({summaryStars: res.summaryStars, levels: map, loaded: true});
+		// Всегда загружаем global progress — он нужен для unlock gate и summaryStars.
+		const globalRes = await api.progress();
+		const globalMap: Record<number, ProgressLevel> = {};
+		for (const row of globalRes.levels) globalMap[row.level] = row;
 
-		// В group-ответе сервер кладёт selectedSkin (или null если override
-		// для этого чата нет). Сохраняем в groupStore — getActiveSkinId
-		// возьмёт его в group-контексте.
-		if (g.chatId !== null && 'selectedSkin' in res) {
-			groupStore.getState().setSelectedSkin(res.selectedSkin ?? null);
+		let groupMap: Record<number, ProgressLevel> | null = null;
+		if (isGroupMode()) {
+			const g = groupStore.getState();
+			if (g.chatId !== null && g.hmac !== null) {
+				const groupRes = await api.groupProgress(g.chatId, g.hmac);
+				groupMap = {};
+				for (const row of groupRes.levels) groupMap[row.level] = row;
+			}
 		}
-		// Per-chat просмотренные туториалы — тоже из group-ответа.
-		if (g.chatId !== null && 'seenTutorials' in res) {
-			groupStore.getState().setSeenTutorials(res.seenTutorials ?? []);
-		}
+
+		set({
+			summaryStars: globalRes.summaryStars,
+			levels: globalMap,
+			groupLevels: groupMap,
+			loaded: true,
+		});
 	},
 
 	recordLocal(level, stars, timeMs, fuelSpent) {
@@ -53,19 +56,22 @@ export const progressStore = createStore<ProgressState>((set, get) => ({
 			? get().summaryStars + Math.max(0, stars - existing.stars)
 			: get().summaryStars + stars;
 
+		const entry: ProgressLevel = {
+			userId: existing?.userId ?? '',
+			level,
+			stars,
+			timeMs,
+			fuelSpent,
+			updatedAt: new Date().toISOString(),
+		};
+
 		set({
 			summaryStars: newSummary,
-			levels: {
-				...get().levels,
-				[level]: {
-					userId: existing?.userId ?? '',
-					level,
-					stars,
-					timeMs,
-					fuelSpent,
-					updatedAt: new Date().toISOString(),
-				},
-			},
+			levels: {...get().levels, [level]: entry},
+			// В group-mode обновляем и group-записи (оптимистично).
+			groupLevels: get().groupLevels
+				? {...get().groupLevels, [level]: entry}
+				: null,
 		});
 	},
 }));

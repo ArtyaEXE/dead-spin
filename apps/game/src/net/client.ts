@@ -2,6 +2,7 @@ import type {ZodTypeAny} from 'zod';
 import type {GhostRecording} from '@dead-spin/shared';
 import {API_BASE} from '../config';
 import {groupStore} from '../stores/group';
+import {isGroupMode} from '../stores/mode';
 import {
 	LoginResponseSchema, MeResponseSchema, ProgressResponseSchema,
 	LevelCompleteResponseSchema, FuelSpendResponseSchema, LeaderboardResponseSchema,
@@ -9,6 +10,7 @@ import {
 	DailyStateResponseSchema, DailyClaimResponseSchema,
 	AchievementsResponseSchema, SpendCoinsResponseSchema,
 	ActiveChallengeResponseSchema, SetSkinResponseSchema, SimpleOkSchema,
+	PendingPushResponseSchema,
 } from './schemas';
 
 
@@ -53,9 +55,6 @@ async function request<S extends ZodTypeAny>(
 			body: body !== undefined ? JSON.stringify(body) : undefined,
 		});
 	} catch (netErr) {
-		// Network-level failure: ERR_CONNECTION_RESET, ENOTFOUND, TLS errors,
-		// CORS preflight failure. Логируем максимум деталей для диагностики
-		// мобильных WebView-проблем (особенно Android).
 		const ms = Date.now() - t0;
 		const msg = netErr instanceof Error ? `${netErr.name}: ${netErr.message}` : String(netErr);
 		console.error(`[fetch ✗ NETWORK] ${method} ${url} after ${ms}ms — ${msg}`);
@@ -79,7 +78,6 @@ async function request<S extends ZodTypeAny>(
 }
 
 
-/** Fake-user login для dev (требует TEST=1 и FAKE_USER_PASSWORD на сервере). */
 export async function loginFake(tgId: string, password: string) {
 	const result = await request('POST', '/auth/telegram', LoginResponseSchema, {tgId, password});
 	setToken(result.token);
@@ -87,7 +85,6 @@ export async function loginFake(tgId: string, password: string) {
 }
 
 
-/** Реальный Telegram-logIn через initData из Mini App. */
 export async function loginTelegram(initData: string) {
 	const result = await request('POST', '/auth/telegram', LoginResponseSchema, {initData});
 	setToken(result.token);
@@ -95,64 +92,73 @@ export async function loginTelegram(initData: string) {
 }
 
 
+/**
+ * Получить group-контекст для API-вызова. Возвращает объект с chatId/hmac
+ * только если режим = group И контекст доступен. Иначе null.
+ */
+function groupCtx(): {chatId: number; hmac: string} | null {
+	if (!isGroupMode()) return null;
+	const g = groupStore.getState();
+	if (g.chatId === null || g.hmac === null) return null;
+	return {chatId: g.chatId, hmac: g.hmac};
+}
+
+
 export const api = {
 	me: () => request('GET', '/me', MeResponseSchema),
-	/** Глобальный прогресс игрока (DM-сценарий). */
+
 	progress: () => request('GET', '/progress', ProgressResponseSchema),
-	/** Прогресс в рамках конкретной беседы — отдельный «save» per chat. */
+
 	groupProgress: (chatId: number, hmac: string) =>
 		request('GET', `/progress/group/${chatId}?hmac=${hmac}`, ProgressResponseSchema),
+
 	levelComplete: (body: {
 		level: number; stars: number; timeMs: number; fuelSpent: number;
 		recording?: GhostRecording;
 	}) => {
-		// Если игра открыта в групповом контексте (через `/play` в беседе),
-		// добавляем chatId+hmac — сервер запишет результат и в групповой
-		// лидерборд, плюс при необходимости пушнёт нотификацию в чат.
-		// Recording (ghost-запись) отправляем только в групповом контексте —
-		// в DM-сценарии она бесполезна и только нагружает payload.
-		const g = groupStore.getState();
-		const enriched = g.chatId !== null && g.hmac !== null
+		// В group-режиме: enrichaем chatId+hmac → сервер запишет и в group,
+		// и в global (если new best). Recording (ghost) отправляем всегда
+		// (нужен для global_ghosts в single тоже).
+		const g = groupCtx();
+		const enriched = g
 			? {...body, groupChatId: g.chatId, groupHmac: g.hmac}
-			: {...body, recording: undefined};
+			: body;
 		return request('POST', '/progress/level-complete', LevelCompleteResponseSchema, enriched);
 	},
+
 	fuelSpend: (amount: number) => request('POST', '/fuel/spend', FuelSpendResponseSchema, {amount}),
+
 	leaderboard: (level: number, limit = 20) => {
-		// В групповом контексте показываем лидерборд только этой беседы.
-		const g = groupStore.getState();
-		const path = g.chatId !== null && g.hmac !== null
+		const g = groupCtx();
+		const path = g
 			? `/leaderboard/group/${g.chatId}/${level}?limit=${limit}&hmac=${g.hmac}`
 			: `/leaderboard/${level}?limit=${limit}`;
 		return request('GET', path, LeaderboardResponseSchema);
 	},
+
+	globalGhost: (level: number) =>
+		request('GET', `/leaderboard/${level}/ghost`, GhostResponseSchema),
+
 	groupGhost: (chatId: number, hmac: string, level: number) =>
 		request('GET', `/leaderboard/group/${chatId}/${level}/ghost?hmac=${hmac}`, GhostResponseSchema),
+
 	groupInfo: (chatId: number, hmac: string) =>
 		request('GET', `/groups/${chatId}/info?hmac=${hmac}`, GroupInfoResponseSchema),
+
 	dailyState: () => request('GET', '/me/daily', DailyStateResponseSchema),
 	claimDaily: () => request('POST', '/me/daily', DailyClaimResponseSchema, {}),
 	achievements: () => request('GET', '/me/achievements', AchievementsResponseSchema),
-	markTutorialSeen: (key: string) => {
-		const g = groupStore.getState();
-		const body = g.chatId !== null && g.hmac !== null
-			? {key, groupChatId: g.chatId, groupHmac: g.hmac}
-			: {key};
-		// Сервер возвращает {ok: true}; нам ответ не нужен — это write-only.
-		return request('POST', '/me/tutorial-seen', SimpleOkSchema, body);
-	},
-	setSkin: (skin: string) => {
-		// В group-контексте отправляем groupChatId+hmac — сервер сохранит
-		// per-chat override в user_group_skins вместо DM-выбора.
-		const g = groupStore.getState();
-		const body = g.chatId !== null && g.hmac !== null
-			? {skin, groupChatId: g.chatId, groupHmac: g.hmac}
-			: {skin};
-		// Group-ответ возвращает {groupSelectedSkin}, DM — {user}. Парсим
-		// схемой union; на клиенте сами разруливаем какой случай.
-		return request('POST', '/me/skin', SetSkinResponseSchema, body);
-	},
+
+	markTutorialSeen: (key: string) =>
+		request('POST', '/me/tutorial-seen', SimpleOkSchema, {key}),
+
+	setSkin: (skin: string) =>
+		request('POST', '/me/skin', SetSkinResponseSchema, {skin}),
+
 	activeChallenge: () => request('GET', '/challenges/active', ActiveChallengeResponseSchema),
+
+	pendingPush: () => request('GET', '/challenges/pending-push', PendingPushResponseSchema),
+
 	spendCoins: (amount: number, reason: string) =>
 		request('POST', '/me/spend-coins', SpendCoinsResponseSchema, {amount, reason}),
 };

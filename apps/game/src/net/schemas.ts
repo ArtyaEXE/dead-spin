@@ -199,3 +199,20 @@ export const GhostResponseSchema = z.object({
 	recordedAt: z.string(),
 });
 export type GhostResponse = z.infer<typeof GhostResponseSchema>;
+
+
+export const PendingPushSchema = z.object({
+	challengeId: z.string(),
+	chatId: z.number(),
+	chatTitle: z.string().nullable(),
+	hmac: z.string(),
+	level: z.number().int(),
+	opponentUsername: z.string(),
+	expiresAt: z.string(),
+});
+export type PendingPush = z.infer<typeof PendingPushSchema>;
+
+export const PendingPushResponseSchema = z.object({
+	push: PendingPushSchema.nullable(),
+});
+export type PendingPushResponse = z.infer<typeof PendingPushResponseSchema>;

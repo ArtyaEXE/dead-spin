@@ -7,41 +7,22 @@ import {createSolidStoreAdapter} from './solid';
 type GroupState = {
 	chatId: number | null;
 	hmac: string | null;
-	/** Метаданные беседы из API — title, кастомные nickname/emoji. */
 	title: string | null;
 	nickname: string | null;
 	emoji: string | null;
-	/**
-	 * Per-chat выбранный скин юзера. NULL = выбора в этой беседе ещё не
-	 * было — клиент покажет prospector. Загружается из ответа
-	 * `/progress/group/:chatId` (см. progressStore.refresh).
-	 */
-	selectedSkin: string | null;
-	/** Per-chat просмотренные туториалы. Загружается оттуда же. */
-	seenTutorials: string[];
 	hydrate: () => void;
 	loadInfo: () => Promise<void>;
 	setTitle: (title: string | null) => void;
-	setSelectedSkin: (skin: string | null) => void;
-	setSeenTutorials: (list: string[]) => void;
-	addSeenTutorial: (key: string) => void;
 	clear: () => void;
 };
 
 
 /**
- * Групповой контекст, в рамках которого открыт Mini App.
+ * Групповой контекст — transport-данные (chatId + HMAC). Скины и
+ * туториалы больше не per-context: они глобальные (users.*).
  *
- * Источники start_param (по приоритету):
- *   1) `?g=g_<chatId>_<hmac>` в `window.location.search` — приходит, когда
- *      Mini App открывают через inline-кнопку `web_app` бота в группе.
- *   2) `Telegram.WebApp.initDataUnsafe.start_param` — для запуска через
- *      direct-link `t.me/<bot>/<app>?startapp=...` (на будущее, если
- *      перейдём на этот формат).
- *
- * Пока контекст есть — все API-запросы записи прогресса дополнительно
- * шлют `groupChatId + groupHmac`, и результат пишется в групповой
- * лидерборд (см. `apps/api/src/routes/progress.ts`).
+ * Режим single/group вынесен в modeStore — groupStore хранит только
+ * «откуда открыли» (transport), а не «во что играем» (mode).
  */
 export const groupStore = createStore<GroupState>((set, get) => ({
 	chatId: null,
@@ -49,22 +30,16 @@ export const groupStore = createStore<GroupState>((set, get) => ({
 	title: null,
 	nickname: null,
 	emoji: null,
-	selectedSkin: null,
-	seenTutorials: [],
 
 	hydrate() {
 		if (typeof window === 'undefined') return;
-
-		// 1) URL-параметр (web_app inline button)
 		const urlParam = new URLSearchParams(window.location.search).get('g');
-		// 2) Telegram start_param (direct-link)
 		const tgParam = (window as unknown as {
 			Telegram?: {WebApp?: {initDataUnsafe?: {start_param?: string}}};
 		}).Telegram?.WebApp?.initDataUnsafe?.start_param ?? null;
 
 		const parsed = parseGroupStartParam(urlParam) ?? parseGroupStartParam(tgParam);
 		if (!parsed) return;
-
 		set({chatId: parsed.chatId, hmac: parsed.hmac});
 	},
 
@@ -81,18 +56,8 @@ export const groupStore = createStore<GroupState>((set, get) => ({
 
 	setTitle(title) { set({title}); },
 
-	setSelectedSkin(skin) { set({selectedSkin: skin}); },
-
-	setSeenTutorials(list) { set({seenTutorials: list}); },
-
-	addSeenTutorial(key) {
-		const cur = get().seenTutorials;
-		if (cur.includes(key)) return;
-		set({seenTutorials: [...cur, key]});
-	},
-
 	clear() {
-		set({chatId: null, hmac: null, title: null, nickname: null, emoji: null, selectedSkin: null, seenTutorials: []});
+		set({chatId: null, hmac: null, title: null, nickname: null, emoji: null});
 	},
 }));
 

@@ -2,6 +2,7 @@ import {createEffect, createSignal, Match, Show, Switch, onMount} from 'solid-js
 import {authStore, useAuth} from './stores/auth';
 import {progressStore, useProgress} from './stores/progress';
 import {groupStore} from './stores/group';
+import {modeStore} from './stores/mode';
 import {LoginScreen} from './ui/LoginScreen';
 import {MainMenu} from './ui/MainMenu';
 import {Levels} from './ui/Levels';
@@ -47,6 +48,7 @@ export default function App() {
 
 	onMount(() => {
 		groupStore.getState().hydrate();
+		modeStore.getState().hydrate();
 		void authStore.getState().refresh();
 		type Inset = {top?: number; bottom?: number; left?: number; right?: number};
 		type TgWebApp = {
