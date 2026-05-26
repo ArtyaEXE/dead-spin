@@ -127,6 +127,13 @@
       "when": 1778675782426,
       "tag": "0017_group_play_thread",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1779802917363,
+      "tag": "0018_global_ghosts",
+      "breakpoints": true
     }
   ]
 }

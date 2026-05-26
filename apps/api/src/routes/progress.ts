@@ -15,7 +15,7 @@ import {
 import {getLevelByNumber, getPreviousLevelNumber} from '@dead-spin/levels';
 import {verifyGroupContext} from '@dead-spin/shared/group-hmac';
 import {db} from '../db/client';
-import {progresses, progressLevels, groupChats, groupProgressLevels, groupGhosts, users, userGroupSkins, userGroupTutorials} from '../db/schema';
+import {progresses, progressLevels, groupChats, groupProgressLevels, groupGhosts, users} from '../db/schema';
 import {requireAuth, type AuthedEnv} from '../middleware/auth';
 import {badRequest, forbidden} from '../lib/errors';
 import {env} from '../config';
@@ -27,6 +27,7 @@ import {updateStreak, sendStreakNotification} from '../lib/group-streaks';
 import {onLevelCompleteForChallenge, sweepExpired as sweepChallenges} from '../lib/group-challenges';
 import {track} from '../lib/analytics';
 import {evaluateAchievementsAfterLevelComplete, unlockAchievement} from '../lib/achievements';
+import {upsertGlobalGhost} from '../lib/global-ghosts';
 
 
 export const progressRoutes = new Hono<AuthedEnv>();
@@ -102,24 +103,12 @@ progressRoutes.get('/group/:chatId', requireAuth, async (c) => {
 
 	const summaryStars = rows.reduce((acc, r) => acc + r.stars, 0);
 
-	// Выбранный скин в этой беседе (per-chat override). Если строки нет —
-	// клиент покажет prospector в этом чате (per-context дефолт).
-	const [skinRow] = await db.select({selectedSkin: userGroupSkins.selectedSkin})
-		.from(userGroupSkins)
-		.where(and(eq(userGroupSkins.userId, userId), eq(userGroupSkins.chatId, chatId)))
-		.limit(1);
-
-	// Просмотренные туториалы в этой беседе.
-	const [tutorialsRow] = await db.select({seenTutorials: userGroupTutorials.seenTutorials})
-		.from(userGroupTutorials)
-		.where(and(eq(userGroupTutorials.userId, userId), eq(userGroupTutorials.chatId, chatId)))
-		.limit(1);
-
+	// Скин и туториалы теперь глобальные (users.selectedSkin /
+	// users.seenTutorials) — клиент берёт их из /me. Здесь возвращаем
+	// только progress-данные для per-chat лидерборда.
 	return c.json({
 		summaryStars,
 		levels: rows,
-		selectedSkin: skinRow?.selectedSkin ?? null,
-		seenTutorials: tutorialsRow?.seenTutorials ?? [],
 	});
 });
 
@@ -242,6 +231,10 @@ progressRoutes.post('/level-complete', requireAuth, async (c) => {
 		level, stars, timeMs, fuelSpent,
 	}).catch((e) => console.warn('evaluateAchievements failed:', e instanceof Error ? e.message : e));
 
+	// Global ghost — fire-and-forget. Если текущий результат побил
+	// абсолютный рекорд уровня — перезаписываем запись для single-mode ghost'а.
+	void upsertGlobalGhost({userId, level, stars, timeMs, recording});
+
 	// Групповой контекст — ждём DB-write до ответа, чтобы клиентский
 	// refresh после level-complete увидел свежую запись (без этого ловим
 	// race: 200 уходит, group_progress_levels ещё не записан, refresh
@@ -317,25 +310,22 @@ async function processGroupResult(args: {
 	}
 
 	const diff = await db.transaction(async (tx): Promise<GroupDiff | null> => {
-		// Прогресс в беседе — отдельный от глобального. Чтобы лидерборд
-		// per chat начинался "с чистого листа", ставим тот же gate, что и
-		// в глобальном пути: уровень N доступен только когда есть запись
-		// о ближайшем СУЩЕСТВУЮЩЕМ предыдущем уровне в этой беседе.
-		// `getPreviousLevelNumber` уважает дыру между мирами (CERES 1-3
-		// → PALLAS 16+).
+		// Unlock gate: уровень N доступен в группе, только если юзер
+		// прошёл N-1 ГЛОБАЛЬНО (в progress_levels). Раньше гейт был
+		// per-chat → каждую группу начинали с L1. Теперь единый
+		// global unlock: открыл в single → можешь играть в любой группе.
 		const prevNum = getPreviousLevelNumber(level);
 		if (prevNum !== null) {
 			const [prev] = await tx
-				.select({level: groupProgressLevels.level})
-				.from(groupProgressLevels)
+				.select({level: progressLevels.level})
+				.from(progressLevels)
 				.where(and(
-					eq(groupProgressLevels.chatId, chatId),
-					eq(groupProgressLevels.userId, userId),
-					eq(groupProgressLevels.level, prevNum),
+					eq(progressLevels.userId, userId),
+					eq(progressLevels.level, prevNum),
 				))
 				.limit(1);
 			if (!prev) {
-				console.warn(`group prev-level gate: user ${userId} chat ${chatId} level ${level} skipped (no level ${prevNum})`);
+				console.warn(`group global-unlock gate: user ${userId} chat ${chatId} level ${level} skipped (no global level ${prevNum})`);
 				return null;
 			}
 		}

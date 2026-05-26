@@ -327,6 +327,27 @@ export type NewGroupProgressLevel = typeof groupProgressLevels.$inferInsert;
 export type GroupGhost = typeof groupGhosts.$inferSelect;
 export type NewGroupGhost = typeof groupGhosts.$inferInsert;
 
+
+/**
+ * global_ghosts — запись прохождения глобального лидера уровня. Один row
+ * на level. Обновляется при каждом level-complete, если побит глобальный
+ * рекорд (stars DESC, timeMs ASC). Mini App в single-режиме фетчит
+ * запись и проигрывает translucent-кораблём — аналог group_ghosts, но
+ * для глобального лидерборда.
+ */
+export const globalGhosts = pgTable('global_ghosts', {
+	level: integer('level').primaryKey(),
+	userId: text('user_id').notNull().references(() => users.id, {onDelete: 'cascade'}),
+	stars: integer('stars').notNull(),
+	timeMs: integer('time_ms').notNull(),
+	recording: jsonb('recording').$type<GhostRecording>().notNull(),
+	recordedAt: timestamp('recorded_at', {withTimezone: true}).notNull().defaultNow(),
+});
+
+
+export type GlobalGhost = typeof globalGhosts.$inferSelect;
+export type NewGlobalGhost = typeof globalGhosts.$inferInsert;
+
 export type GroupStreak = typeof groupStreaks.$inferSelect;
 export type NewGroupStreak = typeof groupStreaks.$inferInsert;
 

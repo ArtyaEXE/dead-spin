@@ -2,17 +2,12 @@ import {Hono} from 'hono';
 import {z} from 'zod';
 import {eq, sql} from 'drizzle-orm';
 import {db} from '../db/client';
-import {progresses, progressLevels, groupProgressLevels, users, userGroupSkins, userGroupTutorials, groupChats} from '../db/schema';
-import {badRequest, forbidden} from '../lib/errors';
+import {progresses, progressLevels, groupProgressLevels, users} from '../db/schema';
+import {badRequest} from '../lib/errors';
 import {requireAuth, type AuthedEnv} from '../middleware/auth';
 import {getDailyState, claimDaily} from '../lib/daily-rewards';
 import {track} from '../lib/analytics';
 import {ACHIEVEMENTS, listUserAchievements, type AchievementKey} from '../lib/achievements';
-import {GROUP_HMAC_LEN} from '@dead-spin/shared';
-import {verifyGroupContext} from '@dead-spin/shared/group-hmac';
-import {env} from '../config';
-import {isGroupMember} from '../lib/group-membership';
-import {and, isNull} from 'drizzle-orm';
 
 
 export const meRoutes = new Hono<AuthedEnv>();
@@ -114,50 +109,26 @@ meRoutes.post('/spend-coins', requireAuth, async (c) => {
 /**
  * POST /me/skin — сохранить выбранный скин.
  *
- * Без groupChatId+groupHmac → DM-выбор, апдейт `users.selected_skin`.
- * С группой → per-chat выбор, upsert в `user_group_skins (user_id, chat_id)`.
- *
- * DM- и group-выборы независимы. Клиент при рендере проверяет контекст
- * (groupStore.chatId !== null → читает groupSelectedSkin, иначе user.selectedSkin),
- * и применяет fallback на prospector если в этом контексте звёзд не хватает.
+ * Скин глобальный: один `users.selected_skin` на аккаунт. Per-chat
+ * overrides (user_group_skins) deprecated — клиент больше их не шлёт.
+ * groupChatId/groupHmac в теле принимаются для backwards-compat, но
+ * игнорируются: всегда пишем в users.
  */
 const SKIN_IDS = ['prospector', 'wanderer', 'engineer', 'veteran', 'asteroid-king'] as const;
 const SetSkinSchema = z.object({
 	skin: z.enum(SKIN_IDS),
 	groupChatId: z.number().int().optional(),
-	groupHmac: z.string().regex(new RegExp(`^[0-9a-f]{${GROUP_HMAC_LEN}}$`)).optional(),
+	groupHmac: z.string().optional(),
 });
 
 meRoutes.post('/skin', requireAuth, async (c) => {
 	const userId = c.var.user.id;
-	const tgId = c.var.user.tgId;
 	const raw = await c.req.json().catch(() => null);
 	const parsed = SetSkinSchema.safeParse(raw);
 	if (!parsed.success) throw badRequest('invalidBody');
-	const {skin, groupChatId, groupHmac} = parsed.data;
 
-	if (groupChatId !== undefined && groupHmac !== undefined) {
-		// Per-chat выбор. HMAC + членство в чате — как и в других group-роутах.
-		if (!verifyGroupContext(groupChatId, groupHmac, env.TELEGRAM_BOT_TOKEN)) throw forbidden('hmacMismatch');
-		const [chat] = await db.select()
-			.from(groupChats)
-			.where(and(eq(groupChats.chatId, groupChatId), isNull(groupChats.leftAt)))
-			.limit(1);
-		if (!chat) throw forbidden('groupInactive');
-		if (!await isGroupMember(groupChatId, tgId)) throw forbidden('notMember');
-
-		await db.insert(userGroupSkins)
-			.values({userId, chatId: groupChatId, selectedSkin: skin})
-			.onConflictDoUpdate({
-				target: [userGroupSkins.userId, userGroupSkins.chatId],
-				set: {selectedSkin: skin, updatedAt: sql`now()`},
-			});
-		return c.json({groupSelectedSkin: skin});
-	}
-
-	// DM-выбор.
 	await db.update(users)
-		.set({selectedSkin: skin, updatedAt: sql`now()`})
+		.set({selectedSkin: parsed.data.skin, updatedAt: sql`now()`})
 		.where(eq(users.id, userId));
 	const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
 	return c.json({user});
@@ -166,55 +137,29 @@ meRoutes.post('/skin', requireAuth, async (c) => {
 
 /**
  * POST /me/tutorial-seen — отметить просмотренный туториал.
- * Без groupChatId+groupHmac — пишем в DM-копию (users.seen_tutorials).
- * С группой — в per-chat (user_group_tutorials). Дубликаты не плодим:
- * если ключ уже в массиве — операция no-op.
+ *
+ * Туториалы глобальные: `users.seen_tutorials`. Per-chat копия
+ * (user_group_tutorials) deprecated. groupChatId/groupHmac
+ * принимаются для backwards-compat, но игнорируются.
  */
 const TUTORIAL_KEYS = ['controls', 'mine', 'stone', 'worm'] as const;
 const TutorialSeenSchema = z.object({
 	key: z.enum(TUTORIAL_KEYS),
 	groupChatId: z.number().int().optional(),
-	groupHmac: z.string().regex(new RegExp(`^[0-9a-f]{${GROUP_HMAC_LEN}}$`)).optional(),
+	groupHmac: z.string().optional(),
 });
 
 meRoutes.post('/tutorial-seen', requireAuth, async (c) => {
 	const userId = c.var.user.id;
-	const tgId = c.var.user.tgId;
 	const raw = await c.req.json().catch(() => null);
 	const parsed = TutorialSeenSchema.safeParse(raw);
 	if (!parsed.success) throw badRequest('invalidBody');
-	const {key, groupChatId, groupHmac} = parsed.data;
 
-	if (groupChatId !== undefined && groupHmac !== undefined) {
-		if (!verifyGroupContext(groupChatId, groupHmac, env.TELEGRAM_BOT_TOKEN)) throw forbidden('hmacMismatch');
-		const [chat] = await db.select()
-			.from(groupChats)
-			.where(and(eq(groupChats.chatId, groupChatId), isNull(groupChats.leftAt)))
-			.limit(1);
-		if (!chat) throw forbidden('groupInactive');
-		if (!await isGroupMember(groupChatId, tgId)) throw forbidden('notMember');
-
-		// Upsert с дедупом массива: если key уже в seen_tutorials — no-op,
-		// иначе append.
-		await db.execute(sql`
-			insert into user_group_tutorials (user_id, chat_id, seen_tutorials)
-			values (${userId}, ${groupChatId}, array[${key}]::text[])
-			on conflict (user_id, chat_id) do update
-			set seen_tutorials = case
-				when ${key} = any(user_group_tutorials.seen_tutorials) then user_group_tutorials.seen_tutorials
-				else array_append(user_group_tutorials.seen_tutorials, ${key})
-			end,
-			updated_at = now()
-		`);
-		return c.json({ok: true});
-	}
-
-	// DM-выбор: апдейтим users.seen_tutorials с дедупом.
 	await db.execute(sql`
 		update users
 		set seen_tutorials = case
-			when ${key} = any(seen_tutorials) then seen_tutorials
-			else array_append(seen_tutorials, ${key})
+			when ${parsed.data.key} = any(seen_tutorials) then seen_tutorials
+			else array_append(seen_tutorials, ${parsed.data.key})
 		end,
 		updated_at = now()
 		where id = ${userId}

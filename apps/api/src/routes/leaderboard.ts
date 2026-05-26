@@ -4,7 +4,7 @@ import {z} from 'zod';
 import {MAX_LEVEL_NUMBER, GROUP_HMAC_LEN} from '@dead-spin/shared';
 import {verifyGroupContext} from '@dead-spin/shared/group-hmac';
 import {db} from '../db/client';
-import {progressLevels, groupChats, groupProgressLevels, groupGhosts, users} from '../db/schema';
+import {progressLevels, groupChats, groupProgressLevels, groupGhosts, globalGhosts, users} from '../db/schema';
 import {requireAuth, type AuthedEnv} from '../middleware/auth';
 import {badRequest, forbidden, notFound} from '../lib/errors';
 import {env} from '../config';
@@ -76,6 +76,44 @@ leaderboardRoutes.get('/:level', requireAuth, async (c) => {
 
 leaderboardRoutes.get('/', requireAuth, async (_c) => {
 	throw badRequest('levelRequired');
+});
+
+
+/**
+ * GET /leaderboard/:level/ghost
+ *
+ * Ghost-запись глобального лидера уровня — для single-режима. Без HMAC,
+ * авторизация только JWT. 404 если ghost ещё не записан.
+ */
+leaderboardRoutes.get('/:level/ghost', requireAuth, async (c) => {
+	const params = LevelParam.safeParse({level: c.req.param('level')});
+	if (!params.success) throw badRequest('invalidLevel');
+
+	const [row] = await db
+		.select({
+			userId: globalGhosts.userId,
+			username: users.username,
+			stars: globalGhosts.stars,
+			timeMs: globalGhosts.timeMs,
+			recording: globalGhosts.recording,
+			recordedAt: globalGhosts.recordedAt,
+		})
+		.from(globalGhosts)
+		.innerJoin(users, eq(users.id, globalGhosts.userId))
+		.where(eq(globalGhosts.level, params.data.level))
+		.limit(1);
+
+	if (!row) throw notFound('noGhost');
+
+	return c.json({
+		level: params.data.level,
+		userId: row.userId,
+		username: row.username,
+		stars: row.stars,
+		timeMs: row.timeMs,
+		recording: row.recording,
+		recordedAt: row.recordedAt,
+	});
 });
 
 
