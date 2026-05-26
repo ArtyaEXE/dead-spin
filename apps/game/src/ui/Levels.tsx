@@ -5,17 +5,19 @@ import {useAuth, authStore} from '../stores/auth';
 import {useProgress, progressStore} from '../stores/progress';
 import {useLiveFuel} from '../stores/fuel';
 import {useChallenge} from '../stores/challenge';
+import {useMode, modeStore, type GameMode} from '../stores/mode';
 import {groupStore} from '../stores/group';
 import {api} from '../net/client';
 import {track} from '../analytics';
 
 
 const WORLD_NAMES = ['CERES', 'PALLAS', 'JUNO', 'VESTA', 'EUNOMIA'] as const;
-// 1:1 с оригиналом: фон квадрата задан только для двух первых миров.
-// Для остальных сквозь квадрат просвечивает общий main-menu-bg родителя.
-const WORLD_BG: Record<number, string | undefined> = {
-	0: '/cave1.jpg',
-	1: '/cave2-1.jpg',
+const WORLD_BG: Record<number, string> = {
+	0: '/ceres-1.jpg',
+	1: '/pallas-1.jpg',
+	2: '/juno-1.jpg',
+	3: '/vesta-1.jpg',
+	4: '/eunomia-1.jpg',
 };
 
 
@@ -35,31 +37,43 @@ export function Levels(props: {onBack: () => void; onPlay: (levelNumber: number)
 		}
 	});
 
+	const mode = useMode();
+
 	/**
-	 * 15 уровней мира = 5 рядов по 3. Уровни в новой системе пока единые
-	 * 1..15 — но интерфейс миров (5 миров по 15) оставлен как у оригинала,
-	 * чтобы потом было куда расширять.
+	 * 15 уровней мира = 5 рядов по 3.
+	 *
+	 * single: sequential unlock через global progress_levels.
+	 * group:  все глобально-разблокированные уровни available (free select).
+	 *         Звёзды показываются из groupLevels (per-chat рекорд).
 	 */
 	const levelList = createMemo<LevelCell[][]>(() => {
 		const rows: LevelCell[][] = [[], [], [], [], []];
 		const from = worldIndex() * 15;
-		const levelsMap = progress().levels;
+		const globalLevels = progress().levels;
+		const groupLevels = progress().groupLevels;
+		const isGroup = mode().mode === 'group';
 
-		// `available` теперь резолвится через предыдущий-существующий-уровень,
-		// чтобы дырка между мирами (CERES 1-3 → PALLAS 16-30) не делала
-		// все PALLAS-карточки навсегда заблокированными.
-		// Карточка для несуществующего уровня (нет в data/) — навсегда locked
-		// с пометкой `exists=false`.
 		for (let i = 0; i < 15; i++) {
 			const rowIndex = Math.floor(i / 3);
 			const number = from + i + 1;
-			const rec = levelsMap[number];
 			const exists = getLevelByNumber(number) !== undefined;
+
 			let available = false;
 			if (exists) {
-				const prevNum = getPreviousLevelNumber(number);
-				available = prevNum === null || (levelsMap[prevNum] !== undefined);
+				if (isGroup) {
+					// Group: available if globally unlocked (prev level passed in global)
+					const prevNum = getPreviousLevelNumber(number);
+					available = prevNum === null || (globalLevels[prevNum] !== undefined);
+				} else {
+					// Single: sequential unlock
+					const prevNum = getPreviousLevelNumber(number);
+					available = prevNum === null || (globalLevels[prevNum] !== undefined);
+				}
 			}
+
+			// Stars: in group mode show per-chat record, in single — global
+			const rec = isGroup ? groupLevels?.[number] : globalLevels[number];
+
 			rows[rowIndex]!.push({
 				number,
 				stars: rec?.stars ?? 0,
@@ -137,11 +151,25 @@ export function Levels(props: {onBack: () => void; onPlay: (levelNumber: number)
 				</div>
 			</div>
 
+			<Show when={mode().hasGroupContext}>
+				<div class="mode-toggle">
+					<div
+						class="mode-toggle__tab"
+						classList={{active: mode().mode === 'single'}}
+						onClick={() => modeStore.getState().setMode('single')}
+					>SINGLE</div>
+					<div
+						class="mode-toggle__tab"
+						classList={{active: mode().mode === 'group'}}
+						onClick={() => modeStore.getState().setMode('group')}
+					>GROUP</div>
+				</div>
+			</Show>
+
 			<div class="levels-world">
 				<div
 					class="levels-world-inner"
-					classList={{'no-bg': !WORLD_BG[worldIndex()]}}
-					style={WORLD_BG[worldIndex()] ? {'background-image': `url(${WORLD_BG[worldIndex()]})`} : {}}
+					style={{'background-image': `url(${WORLD_BG[worldIndex()] ?? '/ceres-1.jpg'})`}}
 				>
 					<For each={levelList()}>
 						{(row) => (
