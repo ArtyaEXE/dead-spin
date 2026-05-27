@@ -1,4 +1,4 @@
-import {Container, Graphics, Texture, TilingSprite} from 'pixi.js';
+import {ColorMatrixFilter, Container, Graphics, Texture, TilingSprite} from 'pixi.js';
 import type {Level, Point} from '@dead-spin/shared';
 
 
@@ -28,15 +28,22 @@ export function createWallsLayer(level: Level, cave1: Texture, cave2: Texture): 
 	const w = level.res.x + pad * 2;
 	const h = level.res.y + pad * 2;
 
-	// 1) cave1 — внешняя скала, тайл на весь уровень
+	// 1) cave1 — внешняя скала (передний план, стены). Насыщенность
+	// приподнята чтобы стены визуально выделялись на фоне задника.
 	const outerCave = new TilingSprite({texture: cave1, width: w, height: h});
 	outerCave.position.set(-pad, -pad);
+	const satFilter = new ColorMatrixFilter();
+	satFilter.saturate(0.9, false);
+	outerCave.filters = [satFilter];
 	container.addChild(outerCave);
 
-	// 2) cave2 — внутренняя пещера, поверх cave1, маскируется полигоном
+	// 2) cave2 — внутренняя пещера, поверх cave1, маскируется полигоном.
+	// Tint затемняет задник чтобы он не перебивал передний план (стены,
+	// врагов, корабль). 0x808080 ≈ 50% яркости.
 	const innerCave = new TilingSprite({texture: cave2, width: w, height: h});
 	innerCave.position.set(-pad, -pad);
-	innerCave.tileTransform.scale.set(2, 2); // текстура покрупнее, чтобы видно было параллакс
+	innerCave.tileTransform.scale.set(0.8, 0.8);
+	innerCave.tint = 0xC0C0C0;
 
 	const polyMask = new Graphics();
 	for (const polygon of level.walls) {

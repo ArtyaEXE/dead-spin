@@ -33,22 +33,6 @@
   "decorations": [
     {
       "name": "static",
-      "x": 282,
-      "y": 803,
-      "r": -24,
-      "s": 0.28,
-      "src": "debris-2.png"
-    },
-    {
-      "name": "static",
-      "x": 716,
-      "y": 550,
-      "r": -45,
-      "s": 0.3,
-      "src": "debris-5.png"
-    },
-    {
-      "name": "static",
       "x": 198,
       "y": 625,
       "r": -65,
@@ -57,11 +41,43 @@
     },
     {
       "name": "static",
-      "x": 912,
-      "y": 65,
-      "r": 29,
+      "x": 920,
+      "y": 100,
+      "r": 185,
+      "s": 0.35,
+      "src": "ceres/ceres-stalactite.png"
+    },
+    {
+      "name": "static",
+      "x": 500,
+      "y": 460,
+      "r": 175,
+      "s": 0.3,
+      "src": "ceres/ceres-icicles.png"
+    },
+    {
+      "name": "static",
+      "x": 350,
+      "y": 840,
+      "r": 0,
       "s": 0.32,
-      "src": "stuff-2.png"
+      "src": "ceres/ceres-crystal-cluster.png"
+    },
+    {
+      "name": "static",
+      "x": 710,
+      "y": 630,
+      "r": -40,
+      "s": 0.3,
+      "src": "ceres/ceres-frozen-probe.png"
+    },
+    {
+      "name": "static",
+      "x": 1030,
+      "y": 195,
+      "r": 55,
+      "s": 0.28,
+      "src": "ceres/ceres-frost-pipe.png"
     }
   ],
   "enemies": [],

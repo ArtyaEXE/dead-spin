@@ -48,14 +48,6 @@
     },
     {
       "name": "static",
-      "x": 1449,
-      "y": 1237,
-      "r": 169,
-      "s": 0.3,
-      "src": "debris-7.png"
-    },
-    {
-      "name": "static",
       "x": 1099,
       "y": 641,
       "r": 177,
@@ -72,19 +64,35 @@
     },
     {
       "name": "static",
-      "x": 2080,
-      "y": 835,
-      "r": 129,
-      "s": 0.42,
-      "src": "pipe-1.png"
+      "x": 917,
+      "y": 213,
+      "r": 180,
+      "s": 0.3,
+      "src": "ceres/ceres-icicles.png"
     },
     {
       "name": "static",
-      "x": 1015,
-      "y": 1159,
-      "r": -43,
+      "x": 2035,
+      "y": 847,
+      "r": 50,
+      "s": 0.38,
+      "src": "ceres/ceres-frost-pipe.png"
+    },
+    {
+      "name": "static",
+      "x": 1010,
+      "y": 1190,
+      "r": 0,
+      "s": 0.32,
+      "src": "ceres/ceres-crystal-cluster.png"
+    },
+    {
+      "name": "static",
+      "x": 1450,
+      "y": 1460,
+      "r": 90,
       "s": 0.35,
-      "src": "robot-2.png"
+      "src": "ceres/ceres-ice-sheet.png"
     }
   ],
   "enemies": [
