@@ -4,11 +4,14 @@ import {useLiveFuel} from '../stores/fuel';
 import {progressStore} from '../stores/progress';
 import {authStore} from '../stores/auth';
 import {challengeStore, formatTimeLeft, useChallenge} from '../stores/challenge';
+import {challengePushStore, useChallengePush} from '../stores/challenge-push';
+import {modeStore} from '../stores/mode';
 import {groupStore} from '../stores/group';
 import {api, ApiError} from '../net/client';
-import type {DailyStateResponse} from '../net/schemas';
+import type {DailyStateResponse, PendingPush} from '../net/schemas';
 import {track} from '../analytics';
 import {AchievementsOverlay} from './Achievements';
+import {ChallengePushOverlay} from './ChallengePushOverlay';
 
 
 /**
@@ -31,6 +34,8 @@ export function MainMenu(props: {onPlay: () => void; onSettings: () => void; onS
 	const challenge = () => challengeState().current;
 	const [tick, setTick] = createSignal(0);
 
+	const pushState = useChallengePush();
+
 	onMount(() => {
 		void api.dailyState()
 			.then(setDaily)
@@ -39,7 +44,22 @@ export function MainMenu(props: {onPlay: () => void; onSettings: () => void; onS
 				console.warn('dailyState failed:', e);
 			});
 		void challengeStore.getState().refresh();
+		challengePushStore.getState().startPolling();
 	});
+
+	onCleanup(() => {
+		challengePushStore.getState().stopPolling();
+	});
+
+	const handlePushGo = (push: PendingPush): void => {
+		challengePushStore.getState().clearPending();
+		challengePushStore.getState().stopPolling();
+		// Переключаемся в group mode с контекстом этого чата, чтобы
+		// level-complete записался в group_progress_levels.
+		groupStore.setState({chatId: push.chatId, hmac: push.hmac, title: push.chatTitle});
+		modeStore.getState().setMode('group');
+		props.onPlay();
+	};
 
 	// Тикалка для лайв-таймера челленджа (раз в секунду пере-рендерим
 	// строку «осталось 47:23»). Без интервала — просто статичная цифра
@@ -167,6 +187,16 @@ export function MainMenu(props: {onPlay: () => void; onSettings: () => void; onS
 
 			<Show when={showAchievements()}>
 				<AchievementsOverlay onClose={() => setShowAchievements(false)} />
+			</Show>
+
+			<Show when={pushState().pending}>
+				{(push) => (
+					<ChallengePushOverlay
+						push={push()}
+						onGo={handlePushGo}
+						onDismiss={() => challengePushStore.getState().clearPending()}
+					/>
+				)}
 			</Show>
 		</div>
 	);

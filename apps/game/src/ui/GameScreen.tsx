@@ -6,6 +6,8 @@ import {progressStore} from '../stores/progress';
 import {ghostStore, useGhost} from '../stores/ghost';
 import {groupStore, useGroup} from '../stores/group';
 import {useChallenge, formatTimeLeft} from '../stores/challenge';
+import {challengePushStore} from '../stores/challenge-push';
+import {isGroupMode} from '../stores/mode';
 import {track} from '../analytics';
 import {GameWorld, type GameResult} from '../game/GameWorld';
 import {audio, type LoopHandle} from '../game/audio';
@@ -95,6 +97,10 @@ export function GameScreen(props: {
 					setTimeout(() => setShake(false), 500);
 				}
 
+				// Challenge push: после level-complete/death проверяем, не ждёт
+				// ли нас принятый челлендж. Если да — MainMenu покажет overlay.
+				void challengePushStore.getState().checkOnce();
+
 				// Показ overlay откладываем, чтобы была видна анимация взрыва.
 				if (overlayTimer !== null) clearTimeout(overlayTimer);
 				overlayTimer = window.setTimeout(
@@ -109,7 +115,7 @@ export function GameScreen(props: {
 						stars: r.stars,
 						time_ms: r.timeMs,
 						fuel_spent: r.fuelSpent,
-						in_group: groupStore.getState().chatId !== null,
+						in_group: isGroupMode(),
 					});
 					try {
 						const recording = world?.getRecording() ?? null;
@@ -126,7 +132,7 @@ export function GameScreen(props: {
 						level: levelNumber,
 						time_ms: r.timeMs,
 						fuel_spent: r.fuelSpent,
-						in_group: groupStore.getState().chatId !== null,
+						in_group: isGroupMode(),
 					});
 				}
 
@@ -148,7 +154,7 @@ export function GameScreen(props: {
 		});
 		track('level_start', {
 			level: levelNumber,
-			in_group: groupStore.getState().chatId !== null,
+			in_group: isGroupMode(),
 		});
 	};
 

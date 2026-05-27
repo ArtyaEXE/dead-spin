@@ -29,15 +29,16 @@ export function Levels(props: {onBack: () => void; onPlay: (levelNumber: number)
 	const progress = useProgress();
 	const [worldIndex, setWorldIndex] = createSignal(0);
 
-	// Обновляем прогресс при каждом открытии экрана — игрок мог пройти
-	// уровень и вернуться с новой записью с сервера.
+	const mode = useMode();
+
+	// Обновляем прогресс при каждом открытии экрана и при переключении
+	// mode (single↔group) — progressStore.refresh загрузит нужный набор.
 	createEffect(() => {
+		const _m = mode().mode; // dependency — ре-фетч при смене
 		if (auth().status === 'authed') {
 			void progressStore.getState().refresh().catch(() => {});
 		}
 	});
-
-	const mode = useMode();
 
 	/**
 	 * 15 уровней мира = 5 рядов по 3.
