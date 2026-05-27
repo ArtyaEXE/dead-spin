@@ -2,9 +2,13 @@ import {Assets, type Texture} from 'pixi.js';
 
 
 /**
- * Кэш для статичных декораций: спрайты из /deco/static/*.png.
- * Загружаются лениво по `src` из уровня, чтобы не тянуть все 38 PNG
- * когда они не нужны на текущем уровне.
+ * Кэш для статичных декораций.
+ *
+ * Пути резолвятся так:
+ *   - `ceres/ceres-stalactite.png` → `/deco/static/ceres/ceres-stalactite.png`
+ *   - `debris-1.png`               → `/deco/static/debris-1.png` (legacy flat)
+ *
+ * Загружаются лениво по `src` из уровня.
  */
 const cache = new Map<string, Promise<Texture>>();
 

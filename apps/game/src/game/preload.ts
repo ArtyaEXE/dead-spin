@@ -54,6 +54,7 @@ const UI_IMAGES = [
 
 
 const DECO_NAMES = [
+	// Legacy (shared / JUNO)
 	...Array.from({length: 13}, (_, i) => `debris-${i + 1}.png`),
 	'gear-1.png', 'gear-2.png',
 	'pipe-1.png', 'pipe-2.png', 'pipe-3.png', 'pipe-4.png',
@@ -62,6 +63,10 @@ const DECO_NAMES = [
 	'sign-danger.png', 'sign-down.png', 'sign-happy.png', 'sign-left.png',
 	'sign-right.png', 'sign-round.png', 'sign-sad.png', 'sign-warning.png',
 	'stuff-1.png', 'stuff-2.png', 'stuff-3.png', 'stuff-4.png',
+	// CERES
+	'ceres/ceres-stalactite.png', 'ceres/ceres-crystal-cluster.png',
+	'ceres/ceres-frozen-probe.png', 'ceres/ceres-ice-sheet.png',
+	'ceres/ceres-frost-pipe.png', 'ceres/ceres-icicles.png',
 ];
 
 
