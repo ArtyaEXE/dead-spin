@@ -3,12 +3,27 @@ import type {Point} from '@dead-spin/shared';
 
 
 /**
- * Маркеры start/finish — один и тот же спрайт hole.png, как в Game.svelte
- * (где .hole-start и .hole-finish — просто картинки hole.png, 160×160).
- * Разные размеры оставляем: start 160, finish 200 — соответствует offset
- * `(x - 80)/(x - 100)` из оригинала.
+ * Tint hole-спрайта по миру. Pixi tint мультипликативный: белый = без
+ * изменений, более холодные/тёплые значения окрашивают текстуру.
+ * Hole.png базово тёплый (коричневая земля) — для CERES сдвигаем в
+ * холодный голубой, для VESTA — в красноватый, и т.д.
  */
-export function createStartMarker(pos: Point, tex: Texture): Container {
+const WORLD_HOLE_TINT: Record<number, number> = {
+	0: 0xA0C0DD,  // CERES — ледяной голубой
+	1: 0xC8A0D0,  // PALLAS — фиолетово-органический
+	2: 0xFFFFFF,  // JUNO — нейтральный (охра hole уже совпадает)
+	3: 0xD0A0A0,  // VESTA — красноватый геотермальный
+	4: 0xD0D0D0,  // EUNOMIA — бледный серый
+};
+
+
+function holeTint(levelNumber: number): number {
+	const worldIdx = Math.floor((levelNumber - 1) / 15);
+	return WORLD_HOLE_TINT[worldIdx] ?? 0xFFFFFF;
+}
+
+
+export function createStartMarker(pos: Point, tex: Texture, levelNumber: number): Container {
 	const c = new Container();
 	c.position.set(pos.x, pos.y);
 
@@ -16,12 +31,13 @@ export function createStartMarker(pos: Point, tex: Texture): Container {
 	sprite.anchor.set(0.5);
 	sprite.width = 160;
 	sprite.height = 160;
+	sprite.tint = holeTint(levelNumber);
 	c.addChild(sprite);
 	return c;
 }
 
 
-export function createFinishMarker(pos: Point, tex: Texture): Container {
+export function createFinishMarker(pos: Point, tex: Texture, levelNumber: number): Container {
 	const c = new Container();
 	c.position.set(pos.x, pos.y);
 
@@ -29,6 +45,7 @@ export function createFinishMarker(pos: Point, tex: Texture): Container {
 	sprite.anchor.set(0.5);
 	sprite.width = 200;
 	sprite.height = 200;
+	sprite.tint = holeTint(levelNumber);
 	c.addChild(sprite);
 	return c;
 }

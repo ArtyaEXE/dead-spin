@@ -244,8 +244,8 @@ export class GameWorld {
 		this.decorations = createDecorationsLayer(this.level.decorations);
 		this.world.addChild(this.decorations.container);
 
-		this.world.addChild(createStartMarker(this.level.startPoint, this.textures.hole));
-		this.world.addChild(createFinishMarker(this.level.finishPoint, this.textures.hole));
+		this.world.addChild(createStartMarker(this.level.startPoint, this.textures.hole, this.levelNumber));
+		this.world.addChild(createFinishMarker(this.level.finishPoint, this.textures.hole, this.levelNumber));
 
 		// Дымы рендерятся под врагами/игроком, но поверх стен.
 		this.smokes = createSmokeSystem(this.textures.explosion);
