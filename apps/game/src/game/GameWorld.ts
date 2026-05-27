@@ -13,7 +13,7 @@ import {Camera} from './camera';
 import {Recorder} from './recorder';
 import {GhostPlayer} from './ghost-player';
 import {caveTexturesForLevel, loadGameTextures, loadShipTexture, type GameTextures} from './assets';
-import {getActiveSkinId} from '../stores/skin';
+import {getActiveSkinId, getSkinById} from '../stores/skin';
 import {progressStore} from '../stores/progress';
 import {createWallsLayer, type WallsLayer} from './renderers/walls';
 import {createPlayer} from './renderers/player';
@@ -260,7 +260,9 @@ export class GameWorld {
 
 		this.buildEnemies();
 
-		this.playerSprite = createPlayer(this.textures.ship, this.textures.booster);
+		const skinId = getActiveSkinId(progressStore.getState().summaryStars);
+		const nozzle = getSkinById(skinId).nozzle;
+		this.playerSprite = createPlayer(this.textures.ship, this.textures.booster, nozzle);
 		this.world.addChild(this.playerSprite.container);
 
 		// Световой слой — repeat-тайл light.png поверх всей сцены. Он в world,

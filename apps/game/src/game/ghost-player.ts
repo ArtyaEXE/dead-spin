@@ -37,7 +37,10 @@ export class GhostPlayer {
 	private lastBoostAt = -1;
 	private finished = false;
 
-	constructor(rec: GhostRecording, shipTex: Texture, boosterTex: Texture) {
+	constructor(
+		rec: GhostRecording, shipTex: Texture, boosterTex: Texture,
+		nozzle: {x: number; y: number} = {x: -2, y: 40},
+	) {
 		if (rec.events.length === 0) throw new Error('GhostPlayer: empty recording');
 		const start = rec.events[0]!;
 		this.body = {x: start.x, y: start.y, r: start.r, vx: start.vx, vy: start.vy, vr: start.vr};
@@ -46,12 +49,10 @@ export class GhostPlayer {
 
 		this.container = new Container();
 
-		// Бустер-пламя (под корпусом). 1:1 с createPlayer: anchor top-center,
-		// смещение (-2, 40), baseScale из native-размера текстуры.
 		this.booster = new Sprite(boosterTex);
 		this.booster.anchor.set(0.5, 0);
-		this.booster.x = -2;
-		this.booster.y = 40;
+		this.booster.x = nozzle.x;
+		this.booster.y = nozzle.y;
 		this.boosterBaseScaleX = 27 / (boosterTex.width || 27);
 		this.boosterBaseScaleY = 57 / (boosterTex.height || 57);
 		this.booster.scale.set(this.boosterBaseScaleX, this.boosterBaseScaleY);

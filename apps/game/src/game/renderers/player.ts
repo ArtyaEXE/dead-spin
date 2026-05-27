@@ -2,13 +2,19 @@ import {Container, Sprite, Texture} from 'pixi.js';
 
 
 /**
- * Спрайт игрока: корпус ship2.png + огонёк booster-single.png сзади.
- * Размеры 1:1 с оригиналом (Game.svelte):
- *   .player  — 80×80, anchor в центре (контейнер поворачивается вокруг центра)
- *   .booster — 30×40, top-center, растёт ВНИЗ от нижнего края корабля
- *              (bottom: -40 в Svelte → top = player.bottom + 0 = y=radius)
+ * Спрайт игрока: корпус ship + огонёк booster сзади.
+ *   .body    — 80×80, anchor в центре
+ *   .booster — anchor top-center, позиция из skin.nozzle
+ *
+ * nozzle — точка крепления бустера относительно центра спрайта.
+ * У каждого скина своя: prospector {-2,40}, king {0,35} и т.д.
+ * Задаётся в SKINS[] (stores/skin.ts).
  */
-export function createPlayer(shipTex: Texture, boosterTex: Texture): {
+export function createPlayer(
+	shipTex: Texture,
+	boosterTex: Texture,
+	nozzle: {x: number; y: number} = {x: -2, y: 40},
+): {
 	container: Container;
 	booster: Sprite;
 	body: Sprite;
@@ -17,11 +23,10 @@ export function createPlayer(shipTex: Texture, boosterTex: Texture): {
 } {
 	const container = new Container();
 
-	// Бустер: якорь сверху-центр, начинается ровно под корпусом (y = radius 40).
 	const booster = new Sprite(boosterTex);
 	booster.anchor.set(0.5, 0);
-	booster.x = -2;
-	booster.y = 40;
+	booster.x = nozzle.x;
+	booster.y = nozzle.y;
 	// baseScale считается из native-размера текстуры — 27×57 это desired в game-px.
 	// Анимация в GameWorld умножает на этот baseScale, чтобы scale.set(...)
 	// в каждом кадре не сбрасывал размер.

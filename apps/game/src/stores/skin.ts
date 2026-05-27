@@ -10,15 +10,17 @@ export type SkinDef = {
 	src: string;
 	name: string;
 	requiredStars: number;
+	/** Точка крепления бустера относительно центра спрайта (0,0). */
+	nozzle: {x: number; y: number};
 };
 
 
 export const SKINS: readonly SkinDef[] = [
-	{id: 'prospector',    src: '/ship2.png',                          name: 'PROSPECTOR',    requiredStars: 0},
-	{id: 'wanderer',      src: '/ship-skins/ship-wanderer.png',       name: 'WANDERER',      requiredStars: 8},
-	{id: 'engineer',      src: '/ship-skins/ship-engineer.png',       name: 'ENGINEER',      requiredStars: 20},
-	{id: 'veteran',       src: '/ship-skins/ship-veteran.png',        name: 'VETERAN',       requiredStars: 35},
-	{id: 'asteroid-king', src: '/ship-skins/ship-asteroid-king.png',  name: 'ASTEROID KING', requiredStars: 45},
+	{id: 'prospector',    src: '/ship2.png',                          name: 'PROSPECTOR',    requiredStars: 0,  nozzle: {x: -2, y: 40}},
+	{id: 'wanderer',      src: '/ship-skins/ship-wanderer.png',       name: 'WANDERER',      requiredStars: 8,  nozzle: {x: -1, y: 38}},
+	{id: 'engineer',      src: '/ship-skins/ship-engineer.png',       name: 'ENGINEER',      requiredStars: 20, nozzle: {x: 0,  y: 36}},
+	{id: 'veteran',       src: '/ship-skins/ship-veteran.png',        name: 'VETERAN',       requiredStars: 35, nozzle: {x: 0,  y: 36}},
+	{id: 'asteroid-king', src: '/ship-skins/ship-asteroid-king.png',  name: 'ASTEROID KING', requiredStars: 45, nozzle: {x: 0,  y: 35}},
 ] as const;
 
 
