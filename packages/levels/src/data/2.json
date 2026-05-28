@@ -49,32 +49,32 @@
     {
       "name": "static",
       "x": 1050,
-      "y": 120,
-      "r": 180,
+      "y": 141,
+      "r": -4,
       "s": 0.33,
       "src": "ceres/ceres-icicles.png"
     },
     {
       "name": "static",
       "x": 420,
-      "y": 960,
-      "r": 5,
+      "y": 976,
+      "r": -4,
       "s": 0.35,
       "src": "ceres/ceres-crystal-cluster.png"
     },
     {
       "name": "static",
-      "x": 1185,
-      "y": 370,
-      "r": 50,
+      "x": 1161,
+      "y": 366,
+      "r": -26,
       "s": 0.3,
       "src": "ceres/ceres-frozen-probe.png"
     },
     {
       "name": "static",
       "x": 850,
-      "y": 880,
-      "r": 90,
+      "y": 889,
+      "r": -4,
       "s": 0.28,
       "src": "ceres/ceres-ice-sheet.png"
     }
