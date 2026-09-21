@@ -49,7 +49,6 @@ export function track(args: {
 /** Идентификация юзера — заполняем профиль в PostHog. */
 export function identify(args: {
 	userId: string;
-	tgId: string;
 	username: string;
 	locale: string;
 }): void {
@@ -57,7 +56,6 @@ export function identify(args: {
 	client.identify({
 		distinctId: args.userId,
 		properties: {
-			tg_id: args.tgId,
 			username: args.username,
 			locale: args.locale,
 		},

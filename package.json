@@ -2,7 +2,7 @@
 	"name": "dead-spin",
 	"private": true,
 	"version": "0.0.0",
-	"description": "Dead Spin — Telegram Mini App game (monorepo).",
+	"description": "Dead Spin — физическая аркада (монорепо).",
 	"packageManager": "pnpm@9.12.0",
 	"engines": {
 		"node": ">=22.0.0"

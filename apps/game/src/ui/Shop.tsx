@@ -1,7 +1,6 @@
 import {createEffect, For, Show} from 'solid-js';
 import {progressStore, useProgress} from '../stores/progress';
 import {useAuth} from '../stores/auth';
-import {useGroup} from '../stores/group';
 import {useLiveFuel} from '../stores/fuel';
 import {
 	SKINS, getActiveSkinId, setSelectedSkinId, isSkinUnlocked,
@@ -12,22 +11,18 @@ import {
 /**
  * Магазин скинов ракеты. Открывается из главного меню.
  * Пять карточек: PROSPECTOR (бесплатно) + 4 скина по нарастанию ★-цены.
- * Состояние выбранного скина в localStorage (см. stores/skin.ts).
+ * Выбранный скин хранится на сервере (users.selected_skin).
  */
 export function Shop(props: {onBack: () => void}) {
 	const auth = useAuth();
-	const group = useGroup();
 	const progress = useProgress();
 	const liveFuel = useLiveFuel();
 	const fuelK = () => (liveFuel() / 1000).toFixed(2);
 
-	// `active` — фактически применяющийся скин в текущем контексте.
-	// В DM читает из user.selectedSkin, в группе из group.selectedSkin.
-	// Если в контексте звёзд не хватает — fallback на prospector (см.
-	// stores/skin.ts:getActiveSkinId).
+	// `active` — фактически применяющийся скин. Если звёзд не хватает —
+	// fallback на prospector (см. stores/skin.ts:getActiveSkinId).
 	const active = (): SkinId => {
 		auth();   // dependency на user.selectedSkin
-		group();  // dependency на group.selectedSkin
 		return getActiveSkinId(progress().summaryStars);
 	};
 

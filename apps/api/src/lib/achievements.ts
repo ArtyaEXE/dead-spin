@@ -2,7 +2,6 @@ import {eq, sql} from 'drizzle-orm';
 import {LEVEL_COUNT, ACHIEVEMENTS, type AchievementKey} from '@dead-spin/shared';
 import {db} from '../db/client';
 import {achievements} from '../db/schema';
-import {tgSendMessage, tgSetMessageReaction} from './telegram-bot';
 import {track} from './analytics';
 
 
@@ -10,11 +9,9 @@ import {track} from './analytics';
  * Логика выдачи ачивок. Метаданные (emoji + локализованные названия)
  * лежат в `@dead-spin/shared/achievements` — общие для бота и API.
  *
- * Detection-логика встраивается в level-complete (шесть из этих десяти),
- * в group-streaks (week_streak), в group-challenges (first_duel_win),
- * в processGroupResult (bot_in_group). Получить можно только один раз
- * каждую — повторное unlockAchievement с тем же ключом тихо no-op'нется
- * (PK constraint).
+ * Detection-логика встраивается в level-complete. Получить можно только
+ * один раз каждую — повторное unlockAchievement с тем же ключом тихо
+ * no-op'нется (PK constraint).
  */
 
 
@@ -23,15 +20,11 @@ export {ACHIEVEMENTS, type AchievementKey};
 
 /**
  * Выдаёт ачивку, если ещё не выдана. Возвращает true только при
- * фактической первой выдаче — чтобы caller знал отправлять ли
- * нотификацию. Best-effort: ошибка не пробрасывается дальше.
+ * фактической первой выдаче. Best-effort: ошибка не пробрасывается дальше.
  */
 export async function unlockAchievement(args: {
 	userId: string;
 	key: AchievementKey;
-	notify?: boolean;
-	tgId?: string;
-	locale?: string;
 }): Promise<boolean> {
 	const {userId, key} = args;
 	try {
@@ -45,16 +38,6 @@ export async function unlockAchievement(args: {
 		if (!isNew) return false;
 
 		track({userId, event: 'achievement_unlocked', properties: {key}});
-
-		if (args.notify && args.tgId) {
-			const a = ACHIEVEMENTS[key];
-			const locale = args.locale ?? 'en';
-			const text = locale === 'ru'
-				? `${a.emoji} <b>Достижение</b>\n«${a.ru}»`
-				: `${a.emoji} <b>Achievement</b>\n«${a.en}»`;
-			const messageId = await tgSendMessage(Number(args.tgId), text);
-			if (messageId !== null) await tgSetMessageReaction(Number(args.tgId), messageId, a.emoji);
-		}
 
 		return true;
 	} catch (e) {
@@ -71,32 +54,29 @@ export async function unlockAchievement(args: {
  */
 export async function evaluateAchievementsAfterLevelComplete(args: {
 	userId: string;
-	tgId: string;
-	locale: string;
 	level: number;
 	stars: number;
 	timeMs: number;
 	fuelSpent: number;
 }): Promise<void> {
-	const {userId, tgId, locale} = args;
-	const ctx = {tgId, locale, notify: true};
+	const {userId} = args;
 
 	// first_clear — первое прохождение любого уровня.
-	void unlockAchievement({userId, key: 'first_clear', ...ctx});
+	void unlockAchievement({userId, key: 'first_clear'});
 
 	// first_3stars — первое 3⭐.
 	if (args.stars === 3) {
-		void unlockAchievement({userId, key: 'first_3stars', ...ctx});
+		void unlockAchievement({userId, key: 'first_3stars'});
 	}
 
 	// speedrunner — пройти любой уровень быстрее 10 секунд.
 	if (args.timeMs < 10_000) {
-		void unlockAchievement({userId, key: 'speedrunner', ...ctx});
+		void unlockAchievement({userId, key: 'speedrunner'});
 	}
 
 	// fuel_efficient — пройти уровень с ≤300 топлива (3 буста или меньше).
 	if (args.fuelSpent <= 300 && args.stars >= 1) {
-		void unlockAchievement({userId, key: 'fuel_efficient', ...ctx});
+		void unlockAchievement({userId, key: 'fuel_efficient'});
 	}
 
 	// all_levels / all_3stars / all_skins — после каждого level-complete
@@ -117,13 +97,13 @@ export async function evaluateAchievementsAfterLevelComplete(args: {
 	`);
 	if (agg) {
 		if (agg.cleared >= LEVEL_COUNT) {
-			void unlockAchievement({userId, key: 'all_levels', ...ctx});
+			void unlockAchievement({userId, key: 'all_levels'});
 		}
 		if (agg.perfect >= LEVEL_COUNT) {
-			void unlockAchievement({userId, key: 'all_3stars', ...ctx});
+			void unlockAchievement({userId, key: 'all_3stars'});
 		}
 		if (agg.total_stars >= 45) {
-			void unlockAchievement({userId, key: 'all_skins', ...ctx});
+			void unlockAchievement({userId, key: 'all_skins'});
 		}
 	}
 }

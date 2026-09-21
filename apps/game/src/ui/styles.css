@@ -368,7 +368,7 @@ html, body, #root {
 }
 
 /* Универсальный inline-значок — заменяет ушедшие FontAwesome
-   (fa fa-tint и т.п.). Размер привязан к высоте текста, кастомные
+   Размер привязан к высоте текста, кастомные
    PNG-иконки в /icons/ нарисованы в стилистике Machinarium. */
 .icon-inline {
 	height: 1.2em;
@@ -380,78 +380,6 @@ html, body, #root {
 	flex-shrink: 0;
 	/* Лёгкая тень — иконка не сливается с тёмно-серым screen-bold задником. */
 	filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55));
-}
-
-
-/* Challenge-баннер на главном меню. Использует screen-bold.png как
-   текстуру задника (стилистика проекта — те же UI-плашки что в игре). */
-.challenge-banner {
-	position: relative;
-	width: min(92%, 360px);
-	margin: 0 auto 14px;
-	padding: 12px 18px;
-	border-radius: 18px;
-	overflow: hidden;
-	color: #fff;
-	font-family: inherit;
-	box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
-	border: 1px solid rgba(255, 255, 255, 0.12);
-	cursor: pointer;
-}
-.challenge-banner__bg {
-	position: absolute;
-	inset: 0;
-	background-image: url('/screen-bold.png');
-	background-size: cover;
-	background-position: center;
-	opacity: 0.55;
-	z-index: 0;
-}
-.challenge-banner__content { position: relative; z-index: 1; }
-.challenge-banner__title {
-	display: flex;
-	align-items: center;
-	font-size: 14px;
-	font-weight: 700;
-	letter-spacing: 0.04em;
-	text-transform: uppercase;
-	margin-bottom: 4px;
-	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
-}
-.challenge-banner__row {
-	display: flex;
-	justify-content: space-between;
-	align-items: baseline;
-	font-size: 15px;
-	margin-bottom: 2px;
-}
-.challenge-banner__opponent { font-size: 14px; opacity: 0.95; }
-.challenge-banner__opponent b { color: #ffe082; }
-.challenge-banner__level { font-size: 13px; opacity: 0.75; }
-.challenge-banner__timer {
-	font-size: 12px;
-	font-variant-numeric: tabular-nums;
-	opacity: 0.85;
-	margin-top: 2px;
-}
-.challenge-banner__hint {
-	font-size: 11px;
-	opacity: 0.6;
-	margin-top: 4px;
-	font-style: italic;
-}
-.challenge-banner--pending {
-	box-shadow: 0 6px 18px rgba(255, 180, 60, 0.35);
-	border-color: rgba(255, 180, 60, 0.4);
-}
-.challenge-banner--active {
-	box-shadow: 0 6px 18px rgba(255, 90, 90, 0.5);
-	border-color: rgba(255, 90, 90, 0.5);
-	animation: challenge-pulse 2.4s ease-in-out infinite;
-}
-@keyframes challenge-pulse {
-	0%, 100% { box-shadow: 0 6px 18px rgba(255, 90, 90, 0.5); }
-	50% { box-shadow: 0 8px 24px rgba(255, 90, 90, 0.75); }
 }
 
 
@@ -893,26 +821,6 @@ html, body, #root {
 	overflow: hidden;
 }
 .lvl-btn.locked { filter: grayscale(0.8); cursor: not-allowed; pointer-events: none; }
-/* Карточка уровня с активным челленджем — пульсирующая обводка + бэйдж. */
-.lvl-btn--challenge {
-	position: relative;
-	box-shadow:
-		0 0 0 2px rgba(255, 90, 90, 0.7) inset,
-		0 0 16px rgba(255, 90, 90, 0.6);
-	animation: lvl-challenge-pulse 1.8s ease-in-out infinite;
-}
-.lvl-btn__challenge-badge {
-	position: absolute;
-	top: 4px; right: 4px;
-	width: 26px; height: 26px;
-	object-fit: contain;
-	filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.7));
-	z-index: 2;
-}
-@keyframes lvl-challenge-pulse {
-	0%, 100% { box-shadow: 0 0 0 2px rgba(255, 90, 90, 0.7) inset, 0 0 16px rgba(255, 90, 90, 0.55); }
-	50%      { box-shadow: 0 0 0 2px rgba(255, 120, 120, 0.95) inset, 0 0 24px rgba(255, 120, 120, 0.85); }
-}
 .lvl-stars { display: flex; align-items: center; flex-shrink: 0; }
 .lvl-stars img { height: clamp(28px, 6.5vmin, 44px); margin: 0 -4px; }
 .lvl-star-1 { transform: rotate(-10deg); }
@@ -987,27 +895,6 @@ html, body, #root {
 	flex-direction: column;
 }
 
-/* Плашка беседы (группа) — название команды + эмодзи. Видна когда игра
-   открыта через /play в беседе. Над ghost-badge. Опускаем под TopBar
-   с запасом, чтобы не упиралась в шкалу топлива/время. */
-.group-badge {
-	position: absolute;
-	top: calc(110px + var(--sa-top));
-	right: calc(12px + var(--sa-right));
-	background: rgba(0, 0, 0, 0.55);
-	color: #fff;
-	font-size: 13px;
-	padding: 4px 10px;
-	border-radius: 6px;
-	z-index: 5;
-	pointer-events: none;
-	letter-spacing: 0.2px;
-	max-width: 50%;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-
 /* Плашка ghost'а — видна только в групповом контексте, когда есть лидер. */
 .ghost-badge {
 	position: absolute;
@@ -1028,45 +915,6 @@ html, body, #root {
 .ghost-badge code {
 	color: #fff;
 	font-family: ui-monospace, SFMono-Regular, monospace;
-}
-
-/* In-game плашка активного челленджа — справа сверху, с тикающим
-   таймером. Картинка-задник `dashboard-small.png` — стилистика игровых
-   панелей. */
-.challenge-ingame {
-	position: absolute;
-	top: calc(110px + var(--sa-top));
-	right: calc(12px + var(--sa-right));
-	z-index: 5;
-	pointer-events: none;
-	min-width: 160px;
-	padding: 8px 14px;
-	overflow: hidden;
-	border-radius: 8px;
-	border: 1px solid rgba(255, 90, 90, 0.55);
-}
-.challenge-ingame__bg {
-	position: absolute;
-	inset: 0;
-	background-image: url('/dashboard-small.png');
-	background-size: cover;
-	background-position: center;
-	opacity: 0.65;
-	z-index: 0;
-}
-.challenge-ingame__content {
-	position: relative;
-	z-index: 1;
-	color: #fff;
-	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
-}
-.challenge-ingame__title { font-size: 12px; letter-spacing: 0.04em; }
-.challenge-ingame__title b { color: #ffe082; }
-.challenge-ingame__timer {
-	font-size: 14px;
-	font-variant-numeric: tabular-nums;
-	font-weight: 700;
-	margin-top: 2px;
 }
 .game-screen.shake {
 	animation: earthquake 0.4s ease-in-out;
@@ -1496,110 +1344,4 @@ html, body, #root {
 	background: radial-gradient(circle at 40% 35%, #c4a265, #7a6235 70%, #5a4a2a);
 	border: 2px solid #8a7a50;
 	box-shadow: 0 2px 4px #0008;
-}
-
-
-/* ============================================================
-   Mode toggle — SINGLE / GROUP tabs (Levels header)
-   ============================================================ */
-.mode-toggle {
-	display: flex;
-	justify-content: center;
-	gap: 4px;
-	margin: 6px auto 2px;
-	width: min(88%, 320px);
-	background: url('/screen-wide.png') center / 100% 100% no-repeat;
-	padding: 6px 8px;
-	border-radius: 6px;
-}
-.mode-toggle__tab {
-	flex: 1;
-	text-align: center;
-	padding: 6px 0;
-	font-size: 14px;
-	letter-spacing: 1.5px;
-	color: var(--gold-soft);
-	opacity: 0.55;
-	transition: opacity 0.2s, transform 0.15s;
-	cursor: pointer;
-	border-radius: 4px;
-}
-.mode-toggle__tab.active {
-	background: url('/dashboard-small.png') center / 100% 100% no-repeat;
-	color: var(--accent);
-	opacity: 1;
-	text-shadow: 0 0 10px rgba(255,179,71,0.4);
-}
-.mode-toggle__tab:active {
-	transform: scale(0.95);
-}
-
-
-/* ============================================================
-   Challenge push overlay — countdown 3-2-1-GO
-   ============================================================ */
-.cpush-overlay {
-	position: fixed;
-	inset: 0;
-	z-index: 60;
-	background: rgba(0, 0, 0, 0.82);
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	padding: calc(24px + var(--sa-top, 0px)) calc(16px + var(--sa-right, 0px))
-	         calc(24px + var(--sa-bottom, 0px)) calc(16px + var(--sa-left, 0px));
-	animation: tutorial-fade-in 200ms ease-out;
-}
-.cpush-card {
-	width: min(92%, 320px);
-	background: url('/result-screen-bg.png') center / 100% 100% no-repeat;
-	padding: 36px 24px 28px;
-	text-align: center;
-	animation: pop-in 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-.cpush-icon {
-	height: 40px;
-	margin-bottom: 8px;
-	filter: drop-shadow(0 2px 6px rgba(255, 90, 90, 0.6));
-}
-.cpush-title {
-	font-size: 22px;
-	letter-spacing: 3px;
-	color: var(--accent);
-	text-shadow: 0 0 12px rgba(255, 102, 0, 0.5);
-	margin-bottom: 12px;
-}
-.cpush-opponent {
-	font-size: 16px;
-	color: var(--gold);
-	margin-bottom: 4px;
-}
-.cpush-level {
-	font-size: 14px;
-	color: var(--gold-soft);
-	margin-bottom: 20px;
-}
-.cpush-countdown {
-	font-size: 64px;
-	color: var(--accent);
-	text-shadow: 0 0 20px rgba(255, 102, 0, 0.6);
-	line-height: 1;
-	margin-bottom: 16px;
-	animation: cpush-pulse 0.9s ease-in-out infinite;
-}
-.cpush-countdown.go {
-	color: #4cff4c;
-	text-shadow: 0 0 24px rgba(76, 255, 76, 0.7);
-	font-size: 48px;
-	letter-spacing: 6px;
-}
-.cpush-chat {
-	font-size: 12px;
-	color: var(--gold-soft);
-	opacity: 0.6;
-}
-
-@keyframes cpush-pulse {
-	0%, 100% { transform: scale(1); }
-	50% { transform: scale(1.08); }
 }

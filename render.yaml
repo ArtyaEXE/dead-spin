@@ -1,4 +1,4 @@
-# Render Blueprint — автодеплой API и Bot из монорепо.
+# Render Blueprint — автодеплой API из монорепо.
 # Frontend (apps/game) деплоится отдельно на Cloudflare Pages (статика).
 #
 # Free tier особенности:
@@ -25,14 +25,6 @@ services:
         sync: false
       - key: JWT_SECRET            # 32+ байта
         generateValue: true
-      - key: TELEGRAM_BOT_TOKEN    # токен @BotFather
-        sync: false
-      - key: TEST
-        value: "0"
-      - key: FAKE_USER_PASSWORD
-        value: ""
-      - key: MONGO_URL
-        value: ""
       - key: CORS_ORIGINS          # e.g. "https://dead-spin.pages.dev"
         sync: false
       - key: SENTRY_DSN            # опционально: error tracking. Пусто = отключён
@@ -42,50 +34,3 @@ services:
       - key: POSTHOG_HOST          # default https://eu.i.posthog.com
         sync: false
 
-  # ---------- Bot (polling) ----------
-  - type: web
-    name: dead-spin-bot
-    runtime: node
-    plan: free
-    region: frankfurt
-    rootDir: .
-    buildCommand: corepack enable && pnpm install --frozen-lockfile --prod=false
-    startCommand: pnpm --filter @dead-spin/bot run start:prod
-    healthCheckPath: /healthz
-    autoDeploy: true
-    envVars:
-      - key: NODE_ENV
-        value: production
-      # Делим DATABASE_URL с API — один и тот же Postgres.
-      - key: DATABASE_URL
-        fromService:
-          type: web
-          name: dead-spin-api
-          envVarKey: DATABASE_URL
-      - key: TELEGRAM_BOT_TOKEN
-        fromService:
-          type: web
-          name: dead-spin-api
-          envVarKey: TELEGRAM_BOT_TOKEN
-      - key: WEB_APP_URL           # "https://dead-spin.pages.dev"
-        sync: false
-      - key: BOT_MODE
-        value: polling
-      - key: ALLOWLIST_OPEN
-        value: "0"
-      - key: FEEDBACK_URL          # e.g. "https://t.me/dead_spin_testers" — куда тестеры пишут о багах
-        sync: false
-      - key: COMMUNITY_URL         # публичная группа — куда зовём в review-prompt
-        value: "https://t.me/dead_spin_chat"
-      - key: SWEEPERS_ENABLED      # 1 — фоновые DM-пуши (full-fuel, review-prompt) крутятся. 0 — выкл.
-        value: "1"
-      - key: SWEEPERS_INTERVAL_MS  # как часто sweep'ы тикают, мс. Дефолт 300000 (5 мин)
-        value: "300000"
-      - key: PUSH_QUIET_HOURS_UTC  # окно тишины UTC, "HH-HH". Дефолт "22-7"
-        value: "22-7"
-      - key: REVIEW_PROMPT_MIN_STARS # порог звёзд для one-time review-prompt
-        value: "5"
-      - key: REVIEW_PROMPT_IDLE_MIN  # минут тишины перед review-prompt
-        value: "60"
-      - key: PUSH_MAX_AGE_DAYS     # не шлём push'и юзерам, не заходившим > N дней
-        value: "14"

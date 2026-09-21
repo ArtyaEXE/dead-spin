@@ -4,9 +4,6 @@ import {getLevelByNumber, getPreviousLevelNumber} from '@dead-spin/levels';
 import {useAuth, authStore} from '../stores/auth';
 import {useProgress, progressStore} from '../stores/progress';
 import {useLiveFuel} from '../stores/fuel';
-import {useChallenge} from '../stores/challenge';
-import {useMode, modeStore, type GameMode} from '../stores/mode';
-import {groupStore} from '../stores/group';
 import {api} from '../net/client';
 import {track} from '../analytics';
 
@@ -29,12 +26,8 @@ export function Levels(props: {onBack: () => void; onPlay: (levelNumber: number)
 	const progress = useProgress();
 	const [worldIndex, setWorldIndex] = createSignal(0);
 
-	const mode = useMode();
-
-	// Обновляем прогресс при каждом открытии экрана и при переключении
-	// mode (single↔group) — progressStore.refresh загрузит нужный набор.
+	// Обновляем прогресс при каждом открытии экрана.
 	createEffect(() => {
-		const _m = mode().mode; // dependency — ре-фетч при смене
 		if (auth().status === 'authed') {
 			void progressStore.getState().refresh().catch(() => {});
 		}
@@ -43,16 +36,12 @@ export function Levels(props: {onBack: () => void; onPlay: (levelNumber: number)
 	/**
 	 * 15 уровней мира = 5 рядов по 3.
 	 *
-	 * single: sequential unlock через global progress_levels.
-	 * group:  все глобально-разблокированные уровни available (free select).
-	 *         Звёзды показываются из groupLevels (per-chat рекорд).
+	 * Последовательная разблокировка через progress_levels.
 	 */
 	const levelList = createMemo<LevelCell[][]>(() => {
 		const rows: LevelCell[][] = [[], [], [], [], []];
 		const from = worldIndex() * 15;
 		const globalLevels = progress().levels;
-		const groupLevels = progress().groupLevels;
-		const isGroup = mode().mode === 'group';
 
 		for (let i = 0; i < 15; i++) {
 			const rowIndex = Math.floor(i / 3);
@@ -61,19 +50,11 @@ export function Levels(props: {onBack: () => void; onPlay: (levelNumber: number)
 
 			let available = false;
 			if (exists) {
-				if (isGroup) {
-					// Group: available if globally unlocked (prev level passed in global)
-					const prevNum = getPreviousLevelNumber(number);
-					available = prevNum === null || (globalLevels[prevNum] !== undefined);
-				} else {
-					// Single: sequential unlock
-					const prevNum = getPreviousLevelNumber(number);
-					available = prevNum === null || (globalLevels[prevNum] !== undefined);
-				}
+				const prevNum = getPreviousLevelNumber(number);
+				available = prevNum === null || (globalLevels[prevNum] !== undefined);
 			}
 
-			// Stars: in group mode show per-chat record, in single — global
-			const rec = isGroup ? groupLevels?.[number] : globalLevels[number];
+			const rec = globalLevels[number];
 
 			rows[rowIndex]!.push({
 				number,
@@ -124,18 +105,6 @@ export function Levels(props: {onBack: () => void; onPlay: (levelNumber: number)
 	const canSkip = (): boolean => userCoins() >= SKIP_LOW_FUEL_COST;
 	const summary = () => progress().summaryStars;
 
-	// Подсветка карточки уровня, на котором сейчас активный челлендж — но
-	// только если открыты в той же беседе, где челлендж создан. В DM/чужой
-	// беседе не подсвечиваем — там этот челлендж не играется.
-	const challengeState = useChallenge();
-	const challengeLevel = (): number | null => {
-		const c = challengeState().current;
-		if (!c) return null;
-		const g = groupStore.getState();
-		if (g.chatId !== c.chatId) return null;
-		return c.level;
-	};
-
 	const prevWorld = () => setWorldIndex(w => Math.max(0, w - 1));
 	const nextWorld = () => setWorldIndex(w => Math.min(4, w + 1));
 
@@ -151,21 +120,6 @@ export function Levels(props: {onBack: () => void; onPlay: (levelNumber: number)
 					{fuelK()}
 				</div>
 			</div>
-
-			<Show when={mode().hasGroupContext}>
-				<div class="mode-toggle">
-					<div
-						class="mode-toggle__tab"
-						classList={{active: mode().mode === 'single'}}
-						onClick={() => modeStore.getState().setMode('single')}
-					>SINGLE</div>
-					<div
-						class="mode-toggle__tab"
-						classList={{active: mode().mode === 'group'}}
-						onClick={() => modeStore.getState().setMode('group')}
-					>GROUP</div>
-				</div>
-			</Show>
 
 			<div class="levels-world">
 				<div
@@ -184,13 +138,9 @@ export function Levels(props: {onBack: () => void; onPlay: (levelNumber: number)
 													classList={{
 														locked: !c().available,
 														pressable: c().available,
-														'lvl-btn--challenge': challengeLevel() === c().number,
-													}}
+																	}}
 													onClick={() => c().available && tryPlay(c().number)}
 												>
-													<Show when={challengeLevel() === c().number}>
-														<img class="lvl-btn__challenge-badge" src="/icons/challenge-icon.png" alt="" />
-													</Show>
 													<div>{c().number}</div>
 													<div class="lvl-stars">
 														<img class="lvl-star-1" classList={{'lvl-star-disabled': c().stars < 1}} src="/star.png" alt="" />

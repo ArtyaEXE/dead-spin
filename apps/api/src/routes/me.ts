@@ -2,7 +2,7 @@ import {Hono} from 'hono';
 import {z} from 'zod';
 import {eq, sql} from 'drizzle-orm';
 import {db} from '../db/client';
-import {progresses, progressLevels, groupProgressLevels, users} from '../db/schema';
+import {progresses, progressLevels, users} from '../db/schema';
 import {badRequest} from '../lib/errors';
 import {requireAuth, type AuthedEnv} from '../middleware/auth';
 import {getDailyState, claimDaily} from '../lib/daily-rewards';
@@ -22,7 +22,6 @@ meRoutes.get('/', requireAuth, (c) => {
  * DELETE /me/progress — обнуление прогресса юзера. Сносит:
  *   - записи в progress_levels (глобальные рекорды по уровням)
  *   - запись в progresses (агрегат summaryStars)
- *   - все записи в group_progress_levels (per-chat рекорды во ВСЕХ беседах)
  *
  * Не трогает: user-row сам, fuel/coins, скины (они в localStorage).
  *
@@ -35,7 +34,6 @@ meRoutes.delete('/progress', requireAuth, async (c) => {
 	await db.transaction(async (tx) => {
 		await tx.delete(progressLevels).where(eq(progressLevels.userId, userId));
 		await tx.delete(progresses).where(eq(progresses.userId, userId));
-		await tx.delete(groupProgressLevels).where(eq(groupProgressLevels.userId, userId));
 	});
 	return c.json({ok: true});
 });
@@ -109,16 +107,11 @@ meRoutes.post('/spend-coins', requireAuth, async (c) => {
 /**
  * POST /me/skin — сохранить выбранный скин.
  *
- * Скин глобальный: один `users.selected_skin` на аккаунт. Per-chat
- * overrides (user_group_skins) deprecated — клиент больше их не шлёт.
- * groupChatId/groupHmac в теле принимаются для backwards-compat, но
- * игнорируются: всегда пишем в users.
+ * Скин глобальный: один `users.selected_skin` на аккаунт.
  */
 const SKIN_IDS = ['prospector', 'wanderer', 'engineer', 'veteran', 'asteroid-king'] as const;
 const SetSkinSchema = z.object({
 	skin: z.enum(SKIN_IDS),
-	groupChatId: z.number().int().optional(),
-	groupHmac: z.string().optional(),
 });
 
 meRoutes.post('/skin', requireAuth, async (c) => {
@@ -138,15 +131,11 @@ meRoutes.post('/skin', requireAuth, async (c) => {
 /**
  * POST /me/tutorial-seen — отметить просмотренный туториал.
  *
- * Туториалы глобальные: `users.seen_tutorials`. Per-chat копия
- * (user_group_tutorials) deprecated. groupChatId/groupHmac
- * принимаются для backwards-compat, но игнорируются.
+ * Туториалы глобальные: `users.seen_tutorials`.
  */
 const TUTORIAL_KEYS = ['controls', 'mine', 'stone', 'worm'] as const;
 const TutorialSeenSchema = z.object({
 	key: z.enum(TUTORIAL_KEYS),
-	groupChatId: z.number().int().optional(),
-	groupHmac: z.string().optional(),
 });
 
 meRoutes.post('/tutorial-seen', requireAuth, async (c) => {

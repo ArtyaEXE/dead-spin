@@ -1,54 +1,27 @@
 {
-  "id": "4e217e27-ef1b-442d-ae7e-eeefb36d2b2d",
+  "id": "cc468e24-314a-44b5-a24d-bbf7b164abe5",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "public.allowlist": {
-      "name": "allowlist",
+    "public.achievements": {
+      "name": "achievements",
       "schema": "",
       "columns": {
-        "tg_id": {
-          "name": "tg_id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "note": {
-          "name": "note",
+        "user_id": {
+          "name": "user_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "default": "''"
-        },
-        "added_at": {
-          "name": "added_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.editor_admins": {
-      "name": "editor_admins",
-      "schema": "",
-      "columns": {
-        "tg_id": {
-          "name": "tg_id",
-          "type": "text",
-          "primaryKey": true,
           "notNull": true
         },
-        "added_at": {
-          "name": "added_at",
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "unlocked_at": {
+          "name": "unlocked_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
@@ -57,15 +30,83 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "editor_admins_tg_id_allowlist_tg_id_fk": {
-          "name": "editor_admins_tg_id_allowlist_tg_id_fk",
-          "tableFrom": "editor_admins",
-          "tableTo": "allowlist",
+        "achievements_user_id_users_id_fk": {
+          "name": "achievements_user_id_users_id_fk",
+          "tableFrom": "achievements",
+          "tableTo": "users",
           "columnsFrom": [
-            "tg_id"
+            "user_id"
           ],
           "columnsTo": [
-            "tg_id"
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "achievements_user_id_key_pk": {
+          "name": "achievements_user_id_key_pk",
+          "columns": [
+            "user_id",
+            "key"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.daily_rewards": {
+      "name": "daily_rewards",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "streak_days": {
+          "name": "streak_days",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "longest_streak": {
+          "name": "longest_streak",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "last_claim_date": {
+          "name": "last_claim_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "daily_rewards_user_id_users_id_fk": {
+          "name": "daily_rewards_user_id_users_id_fk",
+          "tableFrom": "daily_rewards",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
           ],
           "onDelete": "cascade",
           "onUpdate": "no action"
@@ -77,21 +118,14 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.payments": {
-      "name": "payments",
+    "public.global_ghosts": {
+      "name": "global_ghosts",
       "schema": "",
       "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
+        "level": {
+          "name": "level",
+          "type": "integer",
           "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()::text"
-        },
-        "tg_charge_id": {
-          "name": "tg_charge_id",
-          "type": "text",
-          "primaryKey": false,
           "notNull": true
         },
         "user_id": {
@@ -100,69 +134,37 @@
           "primaryKey": false,
           "notNull": true
         },
-        "lot_id": {
-          "name": "lot_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "amount": {
-          "name": "amount",
+        "stars": {
+          "name": "stars",
           "type": "integer",
           "primaryKey": false,
           "notNull": true
         },
-        "currency": {
-          "name": "currency",
-          "type": "text",
+        "time_ms": {
+          "name": "time_ms",
+          "type": "integer",
           "primaryKey": false,
-          "notNull": true,
-          "default": "'XTR'"
+          "notNull": true
         },
-        "created_at": {
-          "name": "created_at",
+        "recording": {
+          "name": "recording",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "recorded_at": {
+          "name": "recorded_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
         }
       },
-      "indexes": {
-        "payments_tg_charge_id_idx": {
-          "name": "payments_tg_charge_id_idx",
-          "columns": [
-            {
-              "expression": "tg_charge_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "payments_user_idx": {
-          "name": "payments_user_idx",
-          "columns": [
-            {
-              "expression": "user_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
+      "indexes": {},
       "foreignKeys": {
-        "payments_user_id_users_id_fk": {
-          "name": "payments_user_id_users_id_fk",
-          "tableFrom": "payments",
+        "global_ghosts_user_id_users_id_fk": {
+          "name": "global_ghosts_user_id_users_id_fk",
+          "tableFrom": "global_ghosts",
           "tableTo": "users",
           "columnsFrom": [
             "user_id"
@@ -170,7 +172,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -343,8 +345,8 @@
           "notNull": true,
           "default": "gen_random_uuid()::text"
         },
-        "tg_id": {
-          "name": "tg_id",
+        "device_id": {
+          "name": "device_id",
           "type": "text",
           "primaryKey": false,
           "notNull": true
@@ -390,6 +392,20 @@
           "notNull": true,
           "default": 0
         },
+        "selected_skin": {
+          "name": "selected_skin",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'prospector'"
+        },
+        "seen_tutorials": {
+          "name": "seen_tutorials",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::text[]"
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -406,11 +422,11 @@
         }
       },
       "indexes": {
-        "users_tg_id_idx": {
-          "name": "users_tg_id_idx",
+        "users_device_id_idx": {
+          "name": "users_device_id_idx",
           "columns": [
             {
-              "expression": "tg_id",
+              "expression": "device_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"

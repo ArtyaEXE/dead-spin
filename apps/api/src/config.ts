@@ -9,13 +9,6 @@ const EnvSchema = z.object({
 
 	JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 bytes'),
 
-	TELEGRAM_BOT_TOKEN: z.string().default(''),
-
-	TEST: z.coerce.number().int().min(0).max(1).default(0),
-	FAKE_USER_PASSWORD: z.string().default(''),
-
-	MONGO_URL: z.string().default(''),
-
 	CORS_ORIGINS: z.string().default('*'),
 
 	/** Sentry DSN. Если пусто — Sentry не инициализируется (no-op). */
@@ -61,4 +54,3 @@ export const env: Env = parseEnv();
 export const isProd = env.NODE_ENV === 'production';
 export const isDev = env.NODE_ENV === 'development';
 export const isTest = env.NODE_ENV === 'test';
-export const isTestMode = env.TEST === 1;

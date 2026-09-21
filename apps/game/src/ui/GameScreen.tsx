@@ -4,10 +4,6 @@ import {api} from '../net/client';
 import {authStore} from '../stores/auth';
 import {progressStore} from '../stores/progress';
 import {ghostStore, useGhost} from '../stores/ghost';
-import {groupStore, useGroup} from '../stores/group';
-import {useChallenge, formatTimeLeft} from '../stores/challenge';
-import {challengePushStore} from '../stores/challenge-push';
-import {isGroupMode} from '../stores/mode';
 import {track} from '../analytics';
 import {GameWorld, type GameResult} from '../game/GameWorld';
 import {audio, type LoopHandle} from '../game/audio';
@@ -97,10 +93,6 @@ export function GameScreen(props: {
 					setTimeout(() => setShake(false), 500);
 				}
 
-				// Challenge push: после level-complete/death проверяем, не ждёт
-				// ли нас принятый челлендж. Если да — MainMenu покажет overlay.
-				void challengePushStore.getState().checkOnce();
-
 				// Показ overlay откладываем, чтобы была видна анимация взрыва.
 				if (overlayTimer !== null) clearTimeout(overlayTimer);
 				overlayTimer = window.setTimeout(
@@ -115,7 +107,6 @@ export function GameScreen(props: {
 						stars: r.stars,
 						time_ms: r.timeMs,
 						fuel_spent: r.fuelSpent,
-						in_group: isGroupMode(),
 					});
 					try {
 						const recording = world?.getRecording() ?? null;
@@ -132,7 +123,6 @@ export function GameScreen(props: {
 						level: levelNumber,
 						time_ms: r.timeMs,
 						fuel_spent: r.fuelSpent,
-						in_group: isGroupMode(),
 					});
 				}
 
@@ -154,7 +144,6 @@ export function GameScreen(props: {
 		});
 		track('level_start', {
 			level: levelNumber,
-			in_group: isGroupMode(),
 		});
 	};
 
@@ -217,72 +206,15 @@ export function GameScreen(props: {
 		return result()?.type ?? 'pause';
 	};
 
-	const group = useGroup();
-	const groupLabel = (): string | null => {
-		const g = group();
-		if (g.chatId === null) return null;
-		const emoji = g.emoji ?? '🚀';
-		const name = g.nickname ?? g.title;
-		return name ? `${emoji} ${name}` : null;
-	};
-
-	// Активный челлендж именно на этом уровне в этой беседе. Только в
-	// active-статусе (pending_accept в игре не показываем — оппонент ещё
-	// не принял, играть «в зачёт» рано).
-	const challengeState = useChallenge();
-	const challengeOnThisLevel = () => {
-		const c = challengeState().current;
-		if (!c || c.status !== 'active') return null;
-		const g = group();
-		if (g.chatId !== c.chatId) return null;
-		if (c.level !== props.levelNumber) return null;
-		return c;
-	};
-
-	// Live-таймер до конца окна игры (1 час с момента принятия).
-	const [tickGame, setTickGame] = createSignal(0);
-	createEffect(() => {
-		if (!challengeOnThisLevel()) return;
-		const id = window.setInterval(() => setTickGame(t => t + 1), 1000);
-		onCleanup(() => window.clearInterval(id));
-	});
-	const timeLeft = (): string | null => {
-		tickGame(); // dependency
-		const c = challengeOnThisLevel();
-		if (!c) return null;
-		return formatTimeLeft(c.expiresAt);
-	};
-
 	return (
 		<div class="game-screen" classList={{shake: shake()}}>
 			<TopBar fuel={fuel()} time={time()} stars={stars()} />
-
-			<Show when={groupLabel()}>
-				{(label) => <div class="group-badge">{label()}</div>}
-			</Show>
 
 			<Show when={ghost().current}>
 				{(g) => (
 					<div class="ghost-badge">
 						<img class="icon-inline" src="/icons/ghost-icon.png" alt="" />
 						<b>{g().username}</b> — {g().stars}<img class="icon-inline" src="/star.png" alt="" style={{height: '1em'}} /> <code>{fmtTime(g().timeMs)}</code>
-					</div>
-				)}
-			</Show>
-
-			<Show when={challengeOnThisLevel()}>
-				{(c) => (
-					<div class="challenge-ingame">
-						<div class="challenge-ingame__bg" />
-						<div class="challenge-ingame__content">
-							<div class="challenge-ingame__title">
-								<img class="icon-inline" src="/icons/challenge-icon.png" alt="" />
-								Челлендж vs <b>{c().opponentUsername}</b>
-							</div>
-							<Show when={timeLeft()}>
-								{(tl) => <div class="challenge-ingame__timer">{tl()}</div>}
-							</Show>
-						</div>
 					</div>
 				)}
 			</Show>

@@ -29,8 +29,7 @@ try { localStorage.removeItem(LEGACY_SKIN_KEY); } catch {/* noop */}
 
 
 /**
- * Выбранный скин — глобальный. Всегда из `authStore.user.selectedSkin`.
- * Per-context overrides (user_group_skins) deprecated.
+ * Выбранный скин — всегда из `authStore.user.selectedSkin`.
  */
 export function getSelectedSkinId(): SkinId {
 	const u = authStore.getState().user;

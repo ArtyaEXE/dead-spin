@@ -1,8 +1,6 @@
 import {createEffect, createSignal, Match, Show, Switch, onMount} from 'solid-js';
 import {authStore, useAuth} from './stores/auth';
 import {progressStore, useProgress} from './stores/progress';
-import {groupStore} from './stores/group';
-import {modeStore} from './stores/mode';
 import {LoginScreen} from './ui/LoginScreen';
 import {MainMenu} from './ui/MainMenu';
 import {Levels} from './ui/Levels';
@@ -47,53 +45,7 @@ export default function App() {
 	const [preloadPct, setPreloadPct] = createSignal(0);
 
 	onMount(() => {
-		groupStore.getState().hydrate();
-		modeStore.getState().hydrate();
 		void authStore.getState().refresh();
-		type Inset = {top?: number; bottom?: number; left?: number; right?: number};
-		type TgWebApp = {
-			expand?: () => void;
-			ready?: () => void;
-			requestFullscreen?: () => void;
-			disableVerticalSwipes?: () => void;
-			isVersionAtLeast?: (v: string) => boolean;
-			onEvent?: (event: string, handler: () => void) => void;
-			safeAreaInset?: Inset;
-			contentSafeAreaInset?: Inset;
-		};
-		const tg = (window as unknown as {Telegram?: {WebApp?: TgWebApp}}).Telegram?.WebApp;
-		tg?.ready?.();
-		tg?.expand?.();
-		try {
-			if (tg?.isVersionAtLeast?.('8.0')) tg.requestFullscreen?.();
-		} catch {/* старая версия — остаётся expand() как фоллбэк */}
-		try {
-			if (tg?.isVersionAtLeast?.('7.7')) tg.disableVerticalSwipes?.();
-		} catch {/* noop */}
-
-		// Telegram-специфичные safe-area: SDK 8.0+ предоставляет два инсета —
-		//   safeAreaInset       — device notches/dynamic island
-		//   contentSafeAreaInset — собственный UI Telegram (close-button, ⋮-меню)
-		// Складываем их и переписываем CSS-переменные --sa-*. На обычном
-		// браузере эти поля undefined → используется env() как фоллбэк.
-		if (tg) {
-			const applyTgInsets = (): void => {
-				const sa = tg.safeAreaInset || {};
-				const ca = tg.contentSafeAreaInset || {};
-				const root = document.documentElement.style;
-				const set = (side: 'top' | 'bottom' | 'left' | 'right'): void => {
-					const a = sa[side] ?? 0, b = ca[side] ?? 0;
-					if (a > 0 || b > 0) root.setProperty(`--sa-${side}`, `${a + b}px`);
-					else root.removeProperty(`--sa-${side}`);
-				};
-				set('top'); set('bottom'); set('left'); set('right');
-			};
-			applyTgInsets();
-			try { tg.onEvent?.('safeAreaChanged', applyTgInsets); } catch {/* noop */}
-			try { tg.onEvent?.('contentSafeAreaChanged', applyTgInsets); } catch {/* noop */}
-			try { tg.onEvent?.('viewportChanged', applyTgInsets); } catch {/* noop */}
-			try { tg.onEvent?.('fullscreenChanged', applyTgInsets); } catch {/* noop */}
-		}
 	});
 
 	// Прелоадим весь контент сразу после успешной авторизации —
@@ -103,9 +55,6 @@ export default function App() {
 		if (auth().status !== 'authed') return;
 		audio.init();
 		void progressStore.getState().refresh().catch(() => {});
-		// Если открыты в групповом контексте — подгружаем метаданные беседы
-		// (title/nickname/emoji) для плашки в GameScreen.
-		void groupStore.getState().loadInfo().catch(() => {});
 		void preloadAll((done, total) => {
 			setPreloadPct(Math.floor((done / total) * 100));
 		}).then(() => setPreloadDone(true));

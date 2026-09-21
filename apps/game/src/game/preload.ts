@@ -38,7 +38,7 @@ const UI_IMAGES = [
 	'/icons/deco-gravity-down.png', // одна текстура; renderer крутит её по углу гравитации
 	// Batch 1 — UI-иконки в текстах/панелях (заменили FA).
 	'/icons/fuel-icon.png', '/icons/coins-icon.png', '/icons/clock-icon.png',
-	'/icons/trophy-icon.png', '/icons/lock-icon.png', '/icons/challenge-icon.png',
+	'/icons/trophy-icon.png', '/icons/lock-icon.png',
 	'/icons/warning-icon.png', '/icons/daily-gift-icon.png',
 	// Batch 3 — Settings / ResultScreen / ghost.
 	'/icons/music-icon.png', '/icons/sound-icon.png',
@@ -48,8 +48,7 @@ const UI_IMAGES = [
 	'/icons/ach-first-clear.png', '/icons/ach-first-3stars.png',
 	'/icons/ach-all-levels.png', '/icons/ach-all-3stars.png',
 	'/icons/ach-speedrunner.png', '/icons/ach-fuel-efficient.png',
-	'/icons/ach-all-skins.png', '/icons/ach-week-streak.png',
-	'/icons/ach-first-duel-win.png', '/icons/ach-bot-in-group.png',
+	'/icons/ach-all-skins.png',
 ];
 
 

@@ -1,1 +1,0 @@
-ALTER TABLE "users" ADD COLUMN "selected_skin" text DEFAULT 'prospector' NOT NULL;

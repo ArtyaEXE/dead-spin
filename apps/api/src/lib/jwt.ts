@@ -5,7 +5,6 @@ import {DAY} from '@dead-spin/shared';
 
 export type JWTPayload = {
 	sub: string;       // users.id
-	tgId: string;
 	exp: number;
 };
 
@@ -13,10 +12,9 @@ export type JWTPayload = {
 const ALG = 'HS256' as const;
 
 
-export async function signUserToken(userId: string, tgId: string): Promise<string> {
+export async function signUserToken(userId: string): Promise<string> {
 	const payload: JWTPayload = {
 		sub: userId,
-		tgId,
 		exp: Math.floor((Date.now() + 7 * DAY) / 1000),
 	};
 	return sign(payload, env.JWT_SECRET, ALG);
@@ -29,8 +27,7 @@ export async function verifyUserToken(token: string): Promise<JWTPayload | null>
 		if (
 			typeof payload === 'object' &&
 			payload !== null &&
-			typeof (payload as JWTPayload).sub === 'string' &&
-			typeof (payload as JWTPayload).tgId === 'string'
+			typeof (payload as JWTPayload).sub === 'string'
 		) {
 			return payload as unknown as JWTPayload;
 		}
