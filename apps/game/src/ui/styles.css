@@ -1603,3 +1603,86 @@ html, body, #root {
 	0%, 100% { transform: scale(1); }
 	50% { transform: scale(1.08); }
 }
+
+
+/* ============================================================
+   Level editor (moderator tool)
+   ============================================================ */
+.ed-root {
+	position: fixed;
+	inset: 0;
+	display: flex;
+	background: #14100c;
+	z-index: 40;
+}
+.ed-gate {
+	position: fixed;
+	inset: 0;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 16px;
+	background: #14100c;
+	color: var(--gold);
+	z-index: 40;
+}
+.ed-panel {
+	width: 300px;
+	flex-shrink: 0;
+	height: 100%;
+	overflow-y: auto;
+	background: #1a140d;
+	border-right: 1px solid #3a2c1a;
+	padding: 10px;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	color: var(--gold-soft);
+	font-size: 13px;
+}
+.editor-canvas {
+	flex: 1;
+	height: 100%;
+	min-width: 0;
+}
+.ed-panel__row { display: flex; gap: 6px; flex-wrap: wrap; }
+.ed-panel__toolbar { position: sticky; top: 0; background: #1a140d; padding-bottom: 6px; }
+.ed-section {
+	border: 1px solid #3a2c1a;
+	border-radius: 6px;
+	padding: 8px;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+.ed-section__title { color: var(--accent); font-size: 12px; letter-spacing: 1px; text-transform: uppercase; }
+.ed-field { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.ed-field input { width: 90px; background: #0d0a07; border: 1px solid #3a2c1a; color: var(--gold); padding: 3px 6px; border-radius: 4px; }
+.ed-slider { width: 100%; }
+.ed-hint { font-size: 11px; color: #7a6647; font-style: italic; }
+.ed-btn {
+	background: #2a2014;
+	border: 1px solid #4a3a22;
+	color: var(--gold);
+	padding: 6px 10px;
+	border-radius: 5px;
+	cursor: pointer;
+	font-size: 12px;
+}
+.ed-btn:hover { background: #3a2c1a; }
+.ed-btn:disabled { opacity: 0.4; cursor: default; }
+.ed-btn--primary { background: var(--accent); color: #1a140d; border-color: var(--accent); font-weight: bold; }
+.ed-btn--sm { padding: 2px 7px; }
+.ed-entity { display: flex; justify-content: space-between; align-items: center; font-size: 12px; padding: 2px 0; }
+.ed-panel__footer { margin-top: auto; }
+.ed-file { display: inline-flex; align-items: center; }
+.mm-editor {
+	background: #2a2014;
+	border: 1px solid #4a3a22;
+	color: var(--accent);
+	padding: 6px 12px;
+	border-radius: 6px;
+	font-size: 12px;
+	letter-spacing: 1px;
+}

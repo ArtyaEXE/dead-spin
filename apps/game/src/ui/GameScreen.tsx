@@ -39,6 +39,10 @@ export function GameScreen(props: {
 	levelNumber: number;
 	onExit: () => void;
 	onSwitchLevel: (n: number) => void;
+	/** Playtest из редактора: играем этот Level вместо getLevelByNumber(). */
+	levelOverride?: import('@dead-spin/shared').Level;
+	/** Playtest: не сейвим прогресс/fuel/ghost, не показываем туториалы. */
+	noSave?: boolean;
 }) {
 	let hostRef: HTMLDivElement | undefined;
 	let world: GameWorld | null = null;
@@ -79,7 +83,7 @@ export function GameScreen(props: {
 	let overlayTimer: number | null = null;
 
 	const initWorld = (levelNumber: number) => {
-		const level = getLevelByNumber(levelNumber);
+		const level = props.levelOverride ?? getLevelByNumber(levelNumber);
 		if (!level || !hostRef) return;
 
 		const user = authStore.getState().user;
@@ -107,6 +111,10 @@ export function GameScreen(props: {
 					() => setShowOverlay(true),
 					RESULT_OVERLAY_DELAY_MS,
 				);
+
+				// Playtest (noSave): не трогаем прогресс/fuel/аналитику —
+				// только проигрываем уровень.
+				if (props.noSave) return;
 
 				if (r.type === 'win') {
 					progressStore.getState().recordLocal(levelNumber, r.stars, r.timeMs, r.fuelSpent);
@@ -145,7 +153,9 @@ export function GameScreen(props: {
 				}
 			},
 		});
-		void world.mount(hostRef, user?.fuel ?? 10_000).then(() => {
+		// Playtest — полный бак, чтобы моддер тестировал без ограничений.
+		const startFuel = props.noSave ? 30_000 : (user?.fuel ?? 10_000);
+		void world.mount(hostRef, startFuel).then(() => {
 			// После того как сцена готова — применяем ghost (если он уже
 			// загружен ghostStore'ом). На случай гонки: setGhostRecording
 			// будет вызвана повторно из createEffect ниже когда стор обновится.
@@ -159,9 +169,8 @@ export function GameScreen(props: {
 	};
 
 	// Грузим ghost для текущего уровня (только в групповом контексте — в DM
-	// store просто отдаст null без сети). После успеха setGhostRecording
-	// автоматически применит запись.
-	void ghostStore.getState().load(props.levelNumber);
+	// store просто отдаст null без сети). В playtest ghost не нужен.
+	if (!props.noSave) void ghostStore.getState().load(props.levelNumber);
 
 	const ghost = useGhost();
 	createEffect(() => {
@@ -170,6 +179,8 @@ export function GameScreen(props: {
 	});
 
 	onMount(() => {
+		// Playtest — без туториалов, сразу в игру.
+		if (props.noSave) { initWorld(props.levelNumber); return; }
 		const queue = computeTutorialQueue(props.levelNumber);
 		setTutorialQueue(queue);
 		if (queue.length === 0) initWorld(props.levelNumber);

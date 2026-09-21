@@ -14,6 +14,7 @@
 		"@dead-spin/levels": "workspace:*",
 		"@dead-spin/shared": "workspace:*",
 		"@sentry/browser": "^10.52.0",
+		"konva": "^10.3.0",
 		"pixi.js": "^8.5.0",
 		"posthog-js": "^1.372.10",
 		"solid-js": "^1.9.3",
