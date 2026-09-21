@@ -87,7 +87,16 @@
       "src": "ceres/ceres-stalactite.png"
     }
   ],
-  "enemies": [],
+  "enemies": [
+    {
+      "name": "mine",
+      "x": 602,
+      "y": 750,
+      "r": 0,
+      "radius": 28,
+      "speed": 0
+    }
+  ],
   "walls": [
     [
       {

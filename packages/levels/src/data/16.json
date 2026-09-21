@@ -13,8 +13,8 @@
     "y": 1550
   },
   "star1": {
-    "x": 380,
-    "y": 470
+    "x": 455,
+    "y": 895
   },
   "star2": {
     "x": 687,
@@ -79,7 +79,16 @@
       "src": "pipe-2.png"
     }
   ],
-  "enemies": [],
+  "enemies": [
+    {
+      "name": "mine",
+      "x": 605,
+      "y": 1186,
+      "r": 0,
+      "radius": 28,
+      "speed": 0
+    }
+  ],
   "walls": [
     [
       {
@@ -376,7 +385,7 @@
       }
     ]
   ],
-  "fuelTank": 4500,
-  "parTimeMs": 27000,
-  "parFuel": 2800
+  "fuelTank": 5000,
+  "parTimeMs": 30000,
+  "parFuel": 3200
 }
