@@ -1,18 +1,18 @@
 # Dead Spin
 
-Telegram Mini App game — переписка со стека Meteor 3 + Svelte + Mongo на современный.
+Однокнопочная физическая аркада: корабль вращается сам, игрок выбирает момент импульса.
+Самостоятельная игра для App Store / Google Play. Дизайн, экономика и roadmap — в
+[`docs/GDD.md`](docs/GDD.md) (v2.0).
 
 ## Стек
 
 | Слой | Выбор |
 |---|---|
-| Фронт (игра) | Vite + TypeScript + Solid.js + PixiJS v8 |
-| Фронт (редактор уровней) | Vite + Solid + Konva |
-| Бэк API | Hono + Node 22 + Drizzle ORM + PostgreSQL |
-| Бэк бот | grammY (webhook) |
-| Шина данных | Redis (rate-limit, leaderboards) |
+| Клиент | Vite + TypeScript + Solid.js + PixiJS v8 |
+| Мобильная обёртка | Capacitor (план, см. GDD §16) |
+| API | Hono + Node 22 + Drizzle ORM + PostgreSQL |
 | Валидация | Zod (общая для клиента и сервера) |
-| Тесты | Vitest + Playwright |
+| Тесты | Vitest |
 | Пакетный менеджер | pnpm workspaces |
 
 ## Структура
@@ -20,16 +20,15 @@ Telegram Mini App game — переписка со стека Meteor 3 + Svelte 
 ```
 dead-spin/
 ├─ apps/
-│  ├─ game/     — Telegram Mini App (Vite + Solid + Pixi)
-│  ├─ api/      — Hono + Drizzle + Postgres
-│  ├─ bot/      — grammY (polling/webhook)
-│  └─ editor/   — редактор уровней (Konva)
+│  ├─ game/     — клиент игры (Vite + Solid + Pixi)
+│  └─ api/      — Hono + Drizzle + Postgres
 ├─ packages/
-│  ├─ engine/   — чистая TS-физика, fixed-timestep loop, векторы
+│  ├─ engine/   — чистая TS-физика, fixed-timestep loop, векторы, heat мины
 │  ├─ shared/   — Zod-схемы, типы, константы
-│  ├─ db/       — общие Drizzle-таблицы (используются api и bot)
-│  └─ levels/   — 15 JSON-уровней + loader + валидатор
-└─ docker-compose.yml   — Postgres + Redis для локалки
+│  ├─ db/       — Drizzle-схема (6 таблиц)
+│  └─ levels/   — 30 JSON-уровней + loader + валидатор + генератор пещер
+├─ docs/GDD.md  — дизайн-документ
+└─ docker-compose.yml   — Postgres для локалки
 ```
 
 ## Команды
@@ -38,66 +37,53 @@ dead-spin/
 pnpm install                          # установить зависимости
 pnpm typecheck                        # проверить типы во всём монорепо
 pnpm test                             # все unit-тесты (engine + api)
-pnpm validate:levels                  # прогнать 15 уровней через Zod-схему
+pnpm validate:levels                  # прогнать 30 уровней через Zod-схему
+
+# Клиент
+pnpm --filter @dead-spin/game dev     # dev-сервер на :5173
+pnpm --filter @dead-spin/game build   # прод-сборка в apps/game/dist
 
 # API
-docker compose up -d                  # поднять Postgres + Redis
+docker compose up -d                  # поднять Postgres
 cd apps/api && cp .env.example .env   # настроить ENV
-pnpm --filter @dead-spin/api db:migrate      # применить миграции
-pnpm --filter @dead-spin/api dev             # запустить API на :3001
-pnpm --filter @dead-spin/api migrate:mongo   # одноразовый перенос из старой Mongo
+pnpm --filter @dead-spin/api db:migrate   # применить миграции
+pnpm --filter @dead-spin/api dev          # запустить API на :3001
+
+# Уровни
+pnpm --filter @dead-spin/levels exec tsx scripts/generate-pallas.ts   # перегенерировать PALLAS (L16–L30)
 ```
 
-## Эндпоинты API (Фаза 2)
+## Эндпоинты API
 
 | Метод | Путь | Назначение |
 |---|---|---|
-| POST | `/auth/telegram` | Логин по Telegram initData → JWT (7 дней) |
+| POST | `/auth/device` | Анонимный вход по UUID устройства → JWT (7 дней) |
 | GET  | `/healthz` | Health check |
-| GET  | `/me` | Текущий юзер (с регенерированным fuel) |
-| GET  | `/progress` | Прогресс: summary + рекорды по уровням |
-| POST | `/progress/level-complete` | Отметить прохождение уровня |
-| POST | `/fuel/spend` | Списать топливо |
-| GET  | `/leaderboard/:level` | Рейтинг по уровню + ранг текущего игрока |
+| GET  | `/me` | Текущий юзер |
+| GET/POST | `/me/daily` | Дневной бонус |
+| POST | `/me/skin`, `/me/tutorial-seen`, `/me/spend-coins` | Состояние игрока |
+| GET  | `/me/achievements` | Ачивки |
+| GET  | `/progress` | Прогресс: сумма звёзд + рекорды по уровням |
+| POST | `/progress/level-complete` | Записать прохождение (+ ghost-запись) |
+| POST | `/fuel/spend` | Списать топливо *(удаляется — топливо становится ресурсом уровня)* |
+| GET  | `/leaderboard/:level` | Рейтинг по уровню + ранг игрока |
+| GET  | `/leaderboard/:level/ghost` | Призрак глобального лидера |
 
-## Telegram-бот (Фаза 3)
+## Статус
 
-`apps/bot` на **grammY**, красивый UI:
-
-- **HTML-форматирование** везде, emoji-иерархия (🚀 ⛽ ⭐ 💰 🏁 🏆 💎 ⚙️ ❓)
-- **Inline-клавиатуры** + `editMessageText` — одно сообщение, не спамит
-- **Прогресс-бар топлива** `█████░░░░░` в карточке статы
-- **Лидерборд с переключением уровней** `◀ 1/15 ▶`, подсветка своего ника
-- **FAQ в expandable-blockquotes** — сворачиваемые ответы
-- **Магазин XTR** — лоты с ценой в Stars, инвойс по кнопке
-- **i18n ru/en** — смена языка прямо в настройках
-- **Идемпотентные платежи** — уникальный индекс по `tg_charge_id`, дубли не начисляются
-
-**Команды:** `/start`, `/menu`, `/home`, `/help`, `/shop`
-
-### Что нужно для запуска бота
-
-1. Создай бота у [@BotFather](https://t.me/BotFather): `/newbot` → получи `TELEGRAM_BOT_TOKEN`
-2. Включи платежи Stars: BotFather → `/mybots` → бот → Payments → Stars (автоматически)
-3. Опционально: `/setmenubutton` → Mini App URL (для кнопки "Играть" нужен https)
-
-```bash
-cd apps/bot && cp .env.example .env
-# вставить TELEGRAM_BOT_TOKEN и при желании WEB_APP_URL
-pnpm --filter @dead-spin/bot dev      # long-polling, подходит для локалки
-```
-
-## Текущий статус
-
-**Фазы 0–3 завершены.** Typecheck: 6 пакетов Done. **56 тестов зелёные** (33 engine + 15 api + 8 bot). 15/15 уровней валидны.
+Ветка `standalone`: вся связь с Telegram и встроенный редактор удалены (2026-09-21).
+Typecheck: 6 пакетов. 56 тестов зелёные (47 engine + 9 api). 30/30 уровней валидны.
 
 | Пакет | Назначение | Тесты |
 |---|---|---|
-| `@dead-spin/shared` | Zod-схемы (Level, Decoration, Enemy) + константы | — |
-| `@dead-spin/engine` | Физика, векторы, chunks, B-spline, fixed-timestep loop | 33 |
-| `@dead-spin/db` | Общие Drizzle-таблицы | — |
-| `@dead-spin/levels` | 15 JSON + loader с runtime-валидацией | — |
-| `@dead-spin/api` | Hono + Drizzle + JWT + Telegram auth + ленивая регенерация fuel | 15 |
-| `@dead-spin/bot` | grammY (polling/webhook), меню + магазин + лидерборд + XTR-платежи | 8 |
+| `@dead-spin/shared` | Zod-схемы (Level, Decoration, Enemy, Ghost) + константы + ачивки | — |
+| `@dead-spin/engine` | Физика, векторы, chunks, B-spline, fixed-timestep, heat мины | 47 |
+| `@dead-spin/db` | Drizzle-схема | — |
+| `@dead-spin/levels` | 30 JSON + loader + генератор | — |
+| `@dead-spin/api` | Hono + Drizzle + JWT + device auth | 9 |
+| `@dead-spin/game` | Клиент | — |
 
-**Следующая фаза:** Фаза 4 — `apps/game` на Vite + Solid + Pixi.
+**Следующий этап:** GDD §19, этап A — фундамент (см. §17 «Известные проблемы»).
+
+Легаси-документы `DEPLOY.md` и `SMOKE_TEST.md` описывают Telegram-альфу и будут
+переписаны на этапе C (обёртка).
