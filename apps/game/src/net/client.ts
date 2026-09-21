@@ -1,13 +1,10 @@
 import type {ZodTypeAny} from 'zod';
-import type {GhostRecording} from '@dead-spin/shared';
+import type {GhostRecording, Profile} from '@dead-spin/shared';
 import {API_BASE} from '../config';
 import {
 	LoginResponseSchema, MeResponseSchema, ProgressResponseSchema,
 	LevelCompleteResponseSchema, LeaderboardResponseSchema,
 	GhostResponseSchema,
-	DailyStateResponseSchema, DailyClaimResponseSchema,
-	AchievementsResponseSchema, SpendCoinsResponseSchema,
-	SetSkinResponseSchema, SimpleOkSchema,
 } from './schemas';
 
 
@@ -31,7 +28,7 @@ export class ApiError extends Error {
 
 
 async function request<S extends ZodTypeAny>(
-	method: 'GET' | 'POST',
+	method: 'GET' | 'POST' | 'PUT',
 	path: string,
 	schema: S,
 	body?: unknown,
@@ -117,14 +114,6 @@ export async function loginDevice() {
 }
 
 
-/** Местная дата YYYY-MM-DD — дейлик считает «новый день» по часам игрока. */
-function localDate(): string {
-	const d = new Date();
-	const p = (n: number): string => String(n).padStart(2, '0');
-	return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
-}
-
-
 export const api = {
 	me: () => request('GET', '/me', MeResponseSchema),
 
@@ -141,16 +130,6 @@ export const api = {
 	globalGhost: (level: number) =>
 		request('GET', `/leaderboard/${level}/ghost`, GhostResponseSchema),
 
-	dailyState: () => request('GET', `/me/daily?date=${localDate()}`, DailyStateResponseSchema),
-	claimDaily: () => request('POST', '/me/daily', DailyClaimResponseSchema, {date: localDate()}),
-	achievements: () => request('GET', '/me/achievements', AchievementsResponseSchema),
-
-	markTutorialSeen: (key: string) =>
-		request('POST', '/me/tutorial-seen', SimpleOkSchema, {key}),
-
-	setSkin: (skin: string) =>
-		request('POST', '/me/skin', SetSkinResponseSchema, {skin}),
-
-	spendCoins: (amount: number, reason: string) =>
-		request('POST', '/me/spend-coins', SpendCoinsResponseSchema, {amount, reason}),
+	/** Снимок профиля устройства → серверная копия (см. stores/sync.ts). */
+	putProfile: (profile: Profile) => request('PUT', '/me/profile', MeResponseSchema, profile),
 };

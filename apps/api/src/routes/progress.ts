@@ -18,7 +18,6 @@ import {progresses, progressLevels} from '../db/schema';
 import {requireAuth, type AuthedEnv} from '../middleware/auth';
 import {badRequest} from '../lib/errors';
 import {track} from '../lib/analytics';
-import {evaluateAchievementsAfterLevelComplete} from '../lib/achievements';
 import {upsertGlobalGhost} from '../lib/global-ghosts';
 
 
@@ -156,11 +155,6 @@ progressRoutes.post('/level-complete', requireAuth, async (c) => {
 		},
 	});
 
-	// Ачивки — fire-and-forget, чтобы не задерживать ответ.
-	void evaluateAchievementsAfterLevelComplete({
-		userId,
-		level, stars: rating.stars, timeMs, fuelSpent,
-	}).catch((e) => console.warn('evaluateAchievements failed:', e instanceof Error ? e.message : e));
 
 	// Global ghost — fire-and-forget. Если текущий результат побил
 	// абсолютный рекорд уровня — перезаписываем запись для single-mode ghost'а.

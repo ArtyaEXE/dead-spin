@@ -11,7 +11,7 @@ import {
 	check,
 } from 'drizzle-orm/pg-core';
 import {sql} from 'drizzle-orm';
-import type {GhostRecording} from '@dead-spin/shared';
+import type {GhostRecording, Profile} from '@dead-spin/shared';
 
 
 /**
@@ -27,19 +27,12 @@ export const users = pgTable('users', {
 	username: text('username').notNull(),
 	locale: text('locale').notNull().default('en'),
 
-	coins: integer('coins').notNull().default(0),
-	details: integer('details').notNull().default(0),
-
 	/**
-	 * Выбранный скин ракеты — id из stores/skin.ts SKINS. Если звёзд не
-	 * хватает на этот скин, клиент рисует prospector.
+	 * Снимок профиля с устройства (GDD §16.2): монеты, скин, туториалы,
+	 * дейлик, ачивки. Устройство — источник истины, сервер хранит копию для
+	 * восстановления и ничего в ней не пересчитывает. NULL — снимка ещё не было.
 	 */
-	selectedSkin: text('selected_skin').notNull().default('prospector'),
-	/**
-	 * Просмотренные туториал-карточки.
-	 * Ключи: 'controls' | 'mine' | 'stone' | 'worm' (см. ui/Tutorial.tsx).
-	 */
-	seenTutorials: text('seen_tutorials').array().notNull().default(sql`'{}'::text[]`),
+	profile: jsonb('profile').$type<Profile>(),
 
 	createdAt: timestamp('created_at', {withTimezone: true}).notNull().defaultNow(),
 	updatedAt: timestamp('updated_at', {withTimezone: true}).notNull().defaultNow(),
@@ -80,27 +73,6 @@ export const progressLevels = pgTable('progress_levels', {
 }));
 
 
-/**
- * daily_rewards — daily login bonus per юзер. UTC-дата по аналогии со
- * стриками. Стрик копит за подряд-играющих, на пропуске сбрасывается.
- *
- * Награды (фиксированный rotation по дням стрика):
- *   1 → 500 fuel
- *   2 → 1000 fuel
- *   3 → 25 coins
- *   4 → 2000 fuel
- *   5 → 50 coins
- *   6 → 3000 fuel
- *   7+ → 100 coins (повторяется)
- */
-export const dailyRewards = pgTable('daily_rewards', {
-	userId: text('user_id').primaryKey().references(() => users.id, {onDelete: 'cascade'}),
-	streakDays: integer('streak_days').notNull().default(1),
-	longestStreak: integer('longest_streak').notNull().default(1),
-	lastClaimDate: text('last_claim_date').notNull(),
-	updatedAt: timestamp('updated_at', {withTimezone: true}).notNull().defaultNow(),
-});
-
 
 /**
  * global_ghosts — запись прохождения глобального лидера уровня. Один row
@@ -118,20 +90,6 @@ export const globalGhosts = pgTable('global_ghosts', {
 });
 
 
-/**
- * achievements — глобальные ачивки игрока. Уникальный (user_id, key).
- * Список ключей — `apps/api/src/lib/achievements.ts`. Раз получили —
- * остаются навсегда (нет revoke). Бот шлёт нотификацию в DM при
- * первой выдаче.
- */
-export const achievements = pgTable('achievements', {
-	userId: text('user_id').notNull().references(() => users.id, {onDelete: 'cascade'}),
-	key: text('key').notNull(),
-	unlockedAt: timestamp('unlocked_at', {withTimezone: true}).notNull().defaultNow(),
-}, (table) => ({
-	pk: primaryKey({columns: [table.userId, table.key]}),
-}));
-
 
 // ─── Выводимые типы строк ────────────────────────────────────────────
 
@@ -144,11 +102,5 @@ export type NewProgress = typeof progresses.$inferInsert;
 export type ProgressLevel = typeof progressLevels.$inferSelect;
 export type NewProgressLevel = typeof progressLevels.$inferInsert;
 
-export type DailyReward = typeof dailyRewards.$inferSelect;
-export type NewDailyReward = typeof dailyRewards.$inferInsert;
-
 export type GlobalGhost = typeof globalGhosts.$inferSelect;
 export type NewGlobalGhost = typeof globalGhosts.$inferInsert;
-
-export type Achievement = typeof achievements.$inferSelect;
-export type NewAchievement = typeof achievements.$inferInsert;

@@ -1,4 +1,5 @@
 import {z} from 'zod';
+import {ProfileSchema} from '@dead-spin/shared';
 
 
 export const UserSchema = z.object({
@@ -6,10 +7,8 @@ export const UserSchema = z.object({
 	deviceId: z.string(),
 	username: z.string(),
 	locale: z.string(),
-	coins: z.number().int(),
-	details: z.number().int(),
-	selectedSkin: z.string().default('prospector'),
-	seenTutorials: z.array(z.string()).default([]),
+	/** Серверная копия профиля устройства; null — снимка ещё не было. */
+	profile: ProfileSchema.nullable().default(null),
 	createdAt: z.string(),
 	updatedAt: z.string(),
 });
@@ -74,52 +73,8 @@ export const MeResponseSchema = z.object({user: UserSchema});
 export const SimpleOkSchema = z.object({ok: z.literal(true)});
 
 
-/** POST /me/skin — возвращает обновлённого юзера. */
-export const SetSkinResponseSchema = z.object({user: UserSchema});
-export type SetSkinResponse = z.infer<typeof SetSkinResponseSchema>;
 
 
-export const DailyRewardSchema = z.object({coins: z.number().int()});
-
-
-export const DailyStateResponseSchema = z.object({
-	canClaim: z.boolean(),
-	streakDays: z.number().int(),
-	nextReward: DailyRewardSchema,
-});
-export type DailyStateResponse = z.infer<typeof DailyStateResponseSchema>;
-
-
-export const DailyClaimResponseSchema = z.object({
-	claimed: z.boolean(),
-	streakDays: z.number().int(),
-	reward: DailyRewardSchema.optional(),
-	nextReward: DailyRewardSchema,
-	user: UserSchema,
-});
-export type DailyClaimResponse = z.infer<typeof DailyClaimResponseSchema>;
-
-
-export const AchievementSchema = z.object({
-	key: z.string(),
-	emoji: z.string(),
-	icon: z.string().optional(),
-	ru: z.string(),
-	en: z.string(),
-	unlocked: z.boolean(),
-	unlockedAt: z.string().nullable(),
-});
-export const AchievementsResponseSchema = z.object({
-	achievements: z.array(AchievementSchema),
-});
-
-
-export const SpendCoinsResponseSchema = z.object({
-	ok: z.literal(true),
-	coins: z.number().int(),
-});
-export type Achievement = z.infer<typeof AchievementSchema>;
-export type AchievementsResponse = z.infer<typeof AchievementsResponseSchema>;
 
 
 /** GET /leaderboard/:level/ghost — запись прохождения глобального лидера. */

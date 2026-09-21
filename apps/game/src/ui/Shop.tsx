@@ -1,6 +1,7 @@
 import {createEffect, For, Show} from 'solid-js';
 import {progressStore, useProgress} from '../stores/progress';
 import {useAuth} from '../stores/auth';
+import {useProfile} from '../stores/profile';
 import {
 	SKINS, getActiveSkinId, setSelectedSkinId, isSkinUnlocked,
 	type SkinId, type SkinDef,
@@ -10,16 +11,17 @@ import {
 /**
  * Магазин скинов ракеты. Открывается из главного меню.
  * Пять карточек: PROSPECTOR (бесплатно) + 4 скина по нарастанию ★-цены.
- * Выбранный скин хранится на сервере (users.selected_skin).
+ * Выбранный скин хранится в профиле устройства (stores/profile.ts).
  */
 export function Shop(props: {onBack: () => void}) {
 	const auth = useAuth();
+	const profile = useProfile();
 	const progress = useProgress();
 
 	// `active` — фактически применяющийся скин. Если звёзд не хватает —
 	// fallback на prospector (см. stores/skin.ts:getActiveSkinId).
 	const active = (): SkinId => {
-		auth();   // dependency на user.selectedSkin
+		profile();   // dependency на profile.selectedSkin
 		return getActiveSkinId(progress().summaryStars);
 	};
 

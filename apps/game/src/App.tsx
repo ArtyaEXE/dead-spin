@@ -1,7 +1,8 @@
 import {createEffect, createSignal, Match, Show, Switch, onMount} from 'solid-js';
 import {authStore, useAuth} from './stores/auth';
 import {progressStore, useProgress} from './stores/progress';
-import {LoginScreen} from './ui/LoginScreen';
+import {profileStore} from './stores/profile';
+import {syncStore} from './stores/sync';
 import {MainMenu} from './ui/MainMenu';
 import {Levels} from './ui/Levels';
 import {Settings} from './ui/Settings';
@@ -44,20 +45,25 @@ export default function App() {
 	const [preloadDone, setPreloadDone] = createSignal(false);
 	const [preloadPct, setPreloadPct] = createSignal(0);
 
+	// Офлайн-first (GDD §16.2): прогресс и профиль уже загружены из хранилища
+	// при создании сторов, поэтому игра стартует сразу. Учётка заводится в
+	// фоне; сервер нужен только для копии, чужих призраков и лидерборда.
 	onMount(() => {
-		void authStore.getState().refresh();
-	});
-
-	// Прелоадим весь контент сразу после успешной авторизации —
-	// до показа MainMenu, чтобы все последующие переходы были мгновенными.
-	// Заодно тянем прогресс с сервера (нужен в MainMenu/Shop для счётчика звёзд).
-	createEffect(() => {
-		if (auth().status !== 'authed') return;
 		audio.init();
-		void progressStore.getState().refresh().catch(() => {});
+		syncStore.getState().init();
+		void authStore.getState().boot();
 		void preloadAll((done, total) => {
 			setPreloadPct(Math.floor((done / total) * 100));
 		}).then(() => setPreloadDone(true));
+	});
+
+	// Когда учётка появилась — сливаем серверные копии с локальными и
+	// проталкиваем очередь отложенных записей.
+	createEffect(() => {
+		if (auth().status !== 'authed') return;
+		profileStore.getState().mergeRemote(auth().user?.profile ?? null);
+		void progressStore.getState().refresh().catch(() => {});
+		void syncStore.getState().flush();
 	});
 
 	const startLevel = (level: number): void => {
@@ -88,10 +94,6 @@ export default function App() {
 		<div class="app">
 			<div class="screen">
 				<Switch>
-					<Match when={auth().status !== 'authed'}>
-						<LoginScreen />
-					</Match>
-
 					<Match when={!preloadDone()}>
 						<div class="preload-root">
 							<img class="preload-logo" src="/dead-spin-logo-shadow.png" alt="Dead Spin" />
@@ -185,7 +187,7 @@ export default function App() {
 					</Match>
 				</Switch>
 
-				<Show when={auth().status === 'authed'}>
+				<Show when={preloadDone()}>
 					<MusicPlayer play={musicPlay()} />
 				</Show>
 			</div>

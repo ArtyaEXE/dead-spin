@@ -1,27 +1,23 @@
 
 
 import {getLevelByNumber} from '@dead-spin/levels';
-import {authStore} from '../stores/auth';
-import {api} from '../net/client';
+import {profileStore} from '../stores/profile';
+import type {TutorialKey} from '@dead-spin/shared';
 
 
 /**
  * Однократные туториал-карточки: знакомят игрока с управлением на L1 и с
  * каждым новым типом врага при первой встрече.
  *
- * Состояние хранится в БД per-context:
- *  - DM-сессия → `users.seen_tutorials` (через authStore.user)
- *  - (deprecated) Group-сессия → ранее per-chat, теперь глобально
- *
- * Раньше всё лежало в localStorage и не выживало между девайсами / чистками.
- * См. миграцию 0015_seen_tutorials.
+ * Состояние — в профиле устройства (stores/profile.ts), серверная копия
+ * уходит снимком через очередь синхронизации.
  *
  * Минимум текста: каждая карточка — одна большая иконка + маленький
  * пульсирующий tap-хинт. "controls" показывает две иконки подряд (тап → буст).
  */
 
 
-type TutorialKey = 'controls' | 'mine' | 'stone' | 'worm';
+export type {TutorialKey};
 
 
 type TutorialContent = {
@@ -39,26 +35,13 @@ const TUTORIALS: Record<TutorialKey, TutorialContent> = {
 
 
 function getSeenSet(): Set<string> {
-	const u = authStore.getState().user;
-	return new Set(u?.seenTutorials ?? []);
+	return new Set(profileStore.getState().profile.seenTutorials);
 }
 
 
-/**
- * Помечает туториал как viewed: оптимистично обновляет local store
- * (чтобы повторный заход в очередь не показал его снова) + параллельно
- * пишет в БД. Если сетевая запись упадёт — local-update останется и
- * пользователь не увидит туториал повторно в текущей сессии. На следующем
- * /me-refresh настоящий source-of-truth подтянется с сервера.
- */
+/** Помечает туториал просмотренным — в профиле устройства, с синхронизацией. */
 export function markSeen(key: TutorialKey): void {
-	const u = authStore.getState().user;
-	if (u && !(u.seenTutorials ?? []).includes(key)) {
-		authStore.getState().setUser({...u, seenTutorials: [...(u.seenTutorials ?? []), key]});
-	}
-	void api.markTutorialSeen(key).catch((e) => {
-		console.warn('markTutorialSeen failed:', e instanceof Error ? e.message : e);
-	});
+	profileStore.getState().markTutorialSeen(key);
 }
 
 

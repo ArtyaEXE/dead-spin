@@ -1,8 +1,9 @@
 import {createEffect, createSignal, onCleanup, onMount, Show} from 'solid-js';
 import {getLevelByNumber, getNextLevelNumber} from '@dead-spin/levels';
 import {computeRating, levelFuelTank, LOW_FUEL_FRACTION, type Rating} from '@dead-spin/shared';
-import {api} from '../net/client';
 import {progressStore} from '../stores/progress';
+import {profileStore} from '../stores/profile';
+import {syncStore} from '../stores/sync';
 import {ghostStore, useGhost} from '../stores/ghost';
 import {track} from '../analytics';
 import {GameWorld, type GameResult} from '../game/GameWorld';
@@ -115,16 +116,20 @@ export function GameScreen(props: {
 						time_ms: r.timeMs,
 						fuel_spent: r.fuelSpent,
 					});
-					try {
-						const recording = world?.getRecording() ?? null;
-						await api.levelComplete({
-							level: levelNumber,
-							collected: r.collected,
-							timeMs: r.timeMs,
-							fuelSpent: r.fuelSpent,
-							recording: recording ?? undefined,
-						});
-					} catch {}
+					// Ачивки считаются на устройстве, результат уходит через очередь:
+					// без сети он не потеряется, а дойдёт при следующем подключении.
+					profileStore.getState().evaluateAfterLevel(
+						progressStore.getState().levels,
+						{stars: rt.stars, timeMs: r.timeMs, fuelSpent: r.fuelSpent},
+					);
+					const recording = world?.getRecording() ?? null;
+					syncStore.getState().enqueueLevelComplete({
+						level: levelNumber,
+						collected: r.collected,
+						timeMs: r.timeMs,
+						fuelSpent: r.fuelSpent,
+						recording: recording ?? undefined,
+					});
 				} else if (r.type === 'loose') {
 					track('level_loose', {
 						level: levelNumber,

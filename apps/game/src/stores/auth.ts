@@ -11,12 +11,14 @@ type AuthState = {
 	error: string | null;
 	login: () => Promise<void>;
 	refresh: () => Promise<void>;
+	/** Старт приложения: обновить сессию по токену, иначе завести аккаунт. Не блокирует UI. */
+	boot: () => Promise<void>;
 	setUser: (u: User) => void;
 	logout: () => void;
 };
 
 
-export const authStore = createStore<AuthState>((set) => ({
+export const authStore = createStore<AuthState>((set, get) => ({
 	user: null,
 	status: 'idle',
 	error: null,
@@ -57,6 +59,11 @@ export const authStore = createStore<AuthState>((set) => ({
 			setToken(null);
 			set({user: null, status: 'idle'});
 		}
+	},
+
+	async boot() {
+		if (getToken()) await get().refresh();
+		if (get().status !== 'authed') await get().login();
 	},
 
 	setUser(u) { set({user: u}); },
