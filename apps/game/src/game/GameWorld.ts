@@ -89,6 +89,9 @@ export class GameWorld {
 	private prevX = 0;
 	private prevY = 0;
 	private prevR = 0;
+	// Переиспользуемый буфер для попарной проверки камней — без аллокации
+	// нового массива на каждом физическом шаге.
+	private stoneBodies: Body[] = [];
 
 	// Анимации входа/выхода из дыры: на старте корабль "вылетает" из дыры
 	// (разворачивается и увеличивается в размере, крутясь); на финише —
@@ -476,7 +479,8 @@ export class GameWorld {
 		}
 		// Stone-stone collisions: попарный elastic ответ. Камни одной массы,
 		// поэтому при столкновении меняем нормальные компоненты скорости.
-		const stoneBodies: Body[] = [];
+		const stoneBodies = this.stoneBodies;
+		stoneBodies.length = 0;
 		for (const e of this.enemies) if (e.name === 'stone' && e.body) stoneBodies.push(e.body);
 		for (let i = 0; i < stoneBodies.length; i++) {
 			for (let j = i + 1; j < stoneBodies.length; j++) {
