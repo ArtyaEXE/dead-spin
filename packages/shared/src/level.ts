@@ -96,6 +96,11 @@ export const LevelSchema = z.object({
 	decorations: z.array(DecorationSchema).default([]),
 	enemies: z.array(EnemySchema).default([]),
 	walls: WallsSchema,
+	/** Бак топлива на попытку (GDD §10). Нет — DEFAULT_FUEL_TANK. */
+	fuelTank: z.number().int().positive().optional(),
+	/** Пороги рейтинга (GDD §9): ★ за время ≤ parTimeMs, ★ за зачистку при расходе ≤ parFuel. */
+	parTimeMs: z.number().int().positive().optional(),
+	parFuel: z.number().int().positive().optional(),
 });
 export type Level = z.infer<typeof LevelSchema>;
 

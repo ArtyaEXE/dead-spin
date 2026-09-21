@@ -6,8 +6,6 @@ export const UserSchema = z.object({
 	deviceId: z.string(),
 	username: z.string(),
 	locale: z.string(),
-	fuel: z.number().int(),
-	fuelUpdatedAt: z.string(),
 	coins: z.number().int(),
 	details: z.number().int(),
 	selectedSkin: z.string().default('prospector'),
@@ -31,6 +29,8 @@ export const ProgressLevelSchema = z.object({
 	stars: z.number().int(),
 	timeMs: z.number().int(),
 	fuelSpent: z.number().int(),
+	parHit: z.boolean().default(false),
+	fullClear: z.boolean().default(false),
 	updatedAt: z.string(),
 });
 export type ProgressLevel = z.infer<typeof ProgressLevelSchema>;
@@ -46,11 +46,9 @@ export type ProgressResponse = z.infer<typeof ProgressResponseSchema>;
 export const LevelCompleteResponseSchema = z.object({
 	ok: z.literal(true),
 	newStars: z.number().int(),
-});
-
-
-export const FuelSpendResponseSchema = z.object({
-	fuel: z.number().int(),
+	stars: z.number().int(),
+	parHit: z.boolean(),
+	fullClear: z.boolean(),
 });
 
 
@@ -81,7 +79,7 @@ export const SetSkinResponseSchema = z.object({user: UserSchema});
 export type SetSkinResponse = z.infer<typeof SetSkinResponseSchema>;
 
 
-export const DailyRewardSchema = z.object({fuel: z.number().int(), coins: z.number().int()});
+export const DailyRewardSchema = z.object({coins: z.number().int()});
 
 
 export const DailyStateResponseSchema = z.object({

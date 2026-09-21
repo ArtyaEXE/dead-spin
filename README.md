@@ -65,7 +65,6 @@ pnpm --filter @dead-spin/levels exec tsx scripts/generate-pallas.ts   # пере
 | GET  | `/me/achievements` | Ачивки |
 | GET  | `/progress` | Прогресс: сумма звёзд + рекорды по уровням |
 | POST | `/progress/level-complete` | Записать прохождение (+ ghost-запись) |
-| POST | `/fuel/spend` | Списать топливо *(удаляется — топливо становится ресурсом уровня)* |
 | GET  | `/leaderboard/:level` | Рейтинг по уровню + ранг игрока |
 | GET  | `/leaderboard/:level/ghost` | Призрак глобального лидера |
 

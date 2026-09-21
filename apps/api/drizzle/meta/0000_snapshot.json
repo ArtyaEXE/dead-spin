@@ -1,5 +1,5 @@
 {
-  "id": "cc468e24-314a-44b5-a24d-bbf7b164abe5",
+  "id": "c0b1e5d2-a3f1-4608-9339-3dfff2829f3c",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -216,6 +216,20 @@
           "primaryKey": false,
           "notNull": true
         },
+        "par_hit": {
+          "name": "par_hit",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "full_clear": {
+          "name": "full_clear",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
         "updated_at": {
           "name": "updated_at",
           "type": "timestamp with time zone",
@@ -363,20 +377,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'en'"
-        },
-        "fuel": {
-          "name": "fuel",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 10000
-        },
-        "fuel_updated_at": {
-          "name": "fuel_updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
         },
         "coins": {
           "name": "coins",

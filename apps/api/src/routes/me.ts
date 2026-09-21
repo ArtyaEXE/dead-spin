@@ -64,7 +64,7 @@ meRoutes.post('/daily', requireAuth, async (c) => {
 		track({
 			userId,
 			event: 'daily_checkin',
-			properties: {streak: result.streakDays, fuel: result.reward.fuel, coins: result.reward.coins},
+			properties: {streak: result.streakDays, coins: result.reward.coins},
 		});
 	}
 

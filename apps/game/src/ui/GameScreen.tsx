@@ -1,7 +1,7 @@
 import {createEffect, createSignal, onCleanup, onMount, Show} from 'solid-js';
 import {getLevelByNumber, getNextLevelNumber} from '@dead-spin/levels';
+import {computeRating, levelFuelTank, LOW_FUEL_FRACTION, type Rating} from '@dead-spin/shared';
 import {api} from '../net/client';
-import {authStore} from '../stores/auth';
 import {progressStore} from '../stores/progress';
 import {ghostStore, useGhost} from '../stores/ghost';
 import {track} from '../analytics';
@@ -12,8 +12,6 @@ import {BottomBar} from './BottomBar';
 import {ResultScreen, type ResultKind} from './ResultScreen';
 import {TutorialOverlay, computeTutorialQueue, markSeen} from './Tutorial';
 
-
-const LOW_FUEL_THRESHOLD = 2000;
 
 
 function fmtTime(ms: number): string {
@@ -39,7 +37,12 @@ export function GameScreen(props: {
 	let hostRef: HTMLDivElement | undefined;
 	let world: GameWorld | null = null;
 
+	// Топливо — ресурс уровня (GDD §10): бак берётся из JSON уровня.
+	const levelDef = () => getLevelByNumber(props.levelNumber);
+	const fuelTank = () => levelFuelTank(levelDef() ?? {});
+
 	const [fuel, setFuel] = createSignal(0);
+	const [rating, setRating] = createSignal<Rating | null>(null);
 	const [stars, setStars] = createSignal(0);
 	const [time, setTime] = createSignal(0);
 	// result — "игра окончена" состояние (физика заморожена).
@@ -51,7 +54,7 @@ export function GameScreen(props: {
 	// Low-fuel alarm: красная пульсация вокруг экрана + sirens, когда топлива мало
 	// и нет финального оверлея/паузы.
 	const isLowFuel = (): boolean =>
-		fuel() < LOW_FUEL_THRESHOLD &&
+		fuel() < fuelTank() * LOW_FUEL_FRACTION &&
 		!result() &&
 		!pause() &&
 		fuel() > 0;
@@ -78,7 +81,6 @@ export function GameScreen(props: {
 		const level = getLevelByNumber(levelNumber);
 		if (!level || !hostRef) return;
 
-		const user = authStore.getState().user;
 		world = new GameWorld(level, levelNumber, {
 			onFuelChange: setFuel,
 			onStarsChange: setStars,
@@ -101,10 +103,15 @@ export function GameScreen(props: {
 				);
 
 				if (r.type === 'win') {
-					progressStore.getState().recordLocal(levelNumber, r.stars, r.timeMs, r.fuelSpent);
+					const rt = computeRating(levelDef() ?? {}, {collected: r.collected, timeMs: r.timeMs, fuelSpent: r.fuelSpent});
+					setRating(rt);
+					progressStore.getState().recordLocal(levelNumber, {...rt, timeMs: r.timeMs, fuelSpent: r.fuelSpent});
 					track('level_win', {
 						level: levelNumber,
-						stars: r.stars,
+						collected: r.collected,
+						stars: rt.stars,
+						par_hit: rt.parHit,
+						full_clear: rt.fullClear,
 						time_ms: r.timeMs,
 						fuel_spent: r.fuelSpent,
 					});
@@ -112,7 +119,7 @@ export function GameScreen(props: {
 						const recording = world?.getRecording() ?? null;
 						await api.levelComplete({
 							level: levelNumber,
-							stars: r.stars,
+							collected: r.collected,
 							timeMs: r.timeMs,
 							fuelSpent: r.fuelSpent,
 							recording: recording ?? undefined,
@@ -126,16 +133,9 @@ export function GameScreen(props: {
 					});
 				}
 
-				if (r.fuelSpent > 0) {
-					try {
-						const res = await api.fuelSpend(r.fuelSpent);
-						const u = authStore.getState().user;
-						if (u) authStore.getState().setUser({...u, fuel: res.fuel});
-					} catch {}
-				}
 			},
 		});
-		void world.mount(hostRef, user?.fuel ?? 10_000).then(() => {
+		void world.mount(hostRef, fuelTank()).then(() => {
 			// После того как сцена готова — применяем ghost (если он уже
 			// загружен ghostStore'ом). На случай гонки: setGhostRecording
 			// будет вызвана повторно из createEffect ниже когда стор обновится.
@@ -181,16 +181,16 @@ export function GameScreen(props: {
 	});
 
 	const retry = () => {
-		const u = authStore.getState().user;
 		if (overlayTimer !== null) { clearTimeout(overlayTimer); overlayTimer = null; }
 		setResult(null);
+		setRating(null);
 		setShowOverlay(false);
 		setStars(0);
 		setTime(0);
 		setPause(false);
 		setShake(false);
 		world?.setPaused(false);
-		world?.restart(u?.fuel ?? 10_000);
+		world?.restart(fuelTank());
 	};
 
 	const togglePause = () => {
@@ -208,7 +208,7 @@ export function GameScreen(props: {
 
 	return (
 		<div class="game-screen" classList={{shake: shake()}}>
-			<TopBar fuel={fuel()} time={time()} stars={stars()} />
+			<TopBar fuel={fuel()} fuelTank={fuelTank()} time={time()} stars={stars()} />
 
 			<Show when={ghost().current}>
 				{(g) => (
@@ -244,7 +244,10 @@ export function GameScreen(props: {
 			<Show when={showOverlay()}>
 				<ResultScreen
 					result={resultKind()}
-					stars={result()?.stars ?? 0}
+					rating={rating()}
+					collected={result()?.collected ?? 0}
+					parTimeMs={levelDef()?.parTimeMs ?? null}
+					parFuel={levelDef()?.parFuel ?? null}
 					timeMs={result()?.timeMs ?? time()}
 					fuelSpent={result()?.fuelSpent ?? 0}
 					levelNumber={props.levelNumber}

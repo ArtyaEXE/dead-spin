@@ -618,5 +618,8 @@
         "y": 169
       }
     ]
-  ]
+  ],
+  "fuelTank": 9000,
+  "parTimeMs": 58000,
+  "parFuel": 5900
 }

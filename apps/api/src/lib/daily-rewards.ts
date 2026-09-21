@@ -15,18 +15,19 @@ import {dailyRewards, users} from '../db/schema';
  */
 
 
-type RewardKind = {fuel: number; coins: number};
+type RewardKind = {coins: number};
 
 
 function rewardForStreak(streakDays: number): RewardKind {
+	// Только монеты (GDD §12.1): топливо больше не ресурс аккаунта.
 	switch (streakDays) {
-		case 1: return {fuel: 500, coins: 0};
-		case 2: return {fuel: 1000, coins: 0};
-		case 3: return {fuel: 0, coins: 25};
-		case 4: return {fuel: 2000, coins: 0};
-		case 5: return {fuel: 0, coins: 50};
-		case 6: return {fuel: 3000, coins: 0};
-		default: return {fuel: 0, coins: 100};
+		case 1: return {coins: 20};
+		case 2: return {coins: 30};
+		case 3: return {coins: 40};
+		case 4: return {coins: 50};
+		case 5: return {coins: 60};
+		case 6: return {coins: 80};
+		default: return {coins: 100};
 	}
 }
 
@@ -113,19 +114,6 @@ export async function claimDaily(userId: string, clientDate?: string): Promise<C
 
 	const reward = rewardForStreak(streakDays);
 
-	// Зачисляем награду на user.fuel/coins. Внешние источники (daily-claim,
-	// referral, Stars-покупка) НЕ клампятся к FUEL_MAX — это «премиум»
-	// топливо сверх потолка. Авторегенерация остановится на FUEL_MAX,
-	// над-cap пополнения копятся отдельно.
-	if (reward.fuel > 0) {
-		await db.update(users)
-			.set({
-				fuel: sql`fuel + ${reward.fuel}`,
-				fuelUpdatedAt: sql`now()`,
-				updatedAt: sql`now()`,
-			})
-			.where(eq(users.id, userId));
-	}
 	if (reward.coins > 0) {
 		await db.update(users)
 			.set({coins: sql`coins + ${reward.coins}`, updatedAt: sql`now()`})

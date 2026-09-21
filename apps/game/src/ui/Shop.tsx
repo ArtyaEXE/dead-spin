@@ -1,7 +1,6 @@
 import {createEffect, For, Show} from 'solid-js';
 import {progressStore, useProgress} from '../stores/progress';
 import {useAuth} from '../stores/auth';
-import {useLiveFuel} from '../stores/fuel';
 import {
 	SKINS, getActiveSkinId, setSelectedSkinId, isSkinUnlocked,
 	type SkinId, type SkinDef,
@@ -16,8 +15,6 @@ import {
 export function Shop(props: {onBack: () => void}) {
 	const auth = useAuth();
 	const progress = useProgress();
-	const liveFuel = useLiveFuel();
-	const fuelK = () => (liveFuel() / 1000).toFixed(2);
 
 	// `active` — фактически применяющийся скин. Если звёзд не хватает —
 	// fallback на prospector (см. stores/skin.ts:getActiveSkinId).
@@ -51,10 +48,6 @@ export function Shop(props: {onBack: () => void}) {
 					<div class="panel">
 						<img src="/star.png" style={{height: '28px', 'margin-right': '6px'}} alt="" />
 						{progress().summaryStars}
-					</div>
-					<div class="panel">
-						<img class="icon-inline" src="/icons/fuel-icon.png" alt="" />
-						{fuelK()}
 					</div>
 				</div>
 			</div>

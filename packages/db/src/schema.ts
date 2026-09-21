@@ -2,7 +2,7 @@ import {
 	pgTable,
 	text,
 	integer,
-	bigint,
+	boolean,
 	timestamp,
 	jsonb,
 	primaryKey,
@@ -11,7 +11,7 @@ import {
 	check,
 } from 'drizzle-orm/pg-core';
 import {sql} from 'drizzle-orm';
-import {FUEL_INITIAL, type GhostRecording} from '@dead-spin/shared';
+import type {GhostRecording} from '@dead-spin/shared';
 
 
 /**
@@ -20,17 +20,12 @@ import {FUEL_INITIAL, type GhostRecording} from '@dead-spin/shared';
  * заменяет прежний `tg_id`. Когда появится вход через Apple/Google, их
  * идентификатор ляжет отдельной колонкой рядом, а device_id останется
  * фолбэком для гостевого режима.
- * `fuel_updated_at` — метка последнего обновления fuel; ленивая регенерация
- * читает эту метку вместо фонового воркера (см. lib/fuel.ts).
  */
 export const users = pgTable('users', {
 	id: text('id').primaryKey().default(sql`gen_random_uuid()::text`),
 	deviceId: text('device_id').notNull(),
 	username: text('username').notNull(),
 	locale: text('locale').notNull().default('en'),
-
-	fuel: integer('fuel').notNull().default(FUEL_INITIAL),
-	fuelUpdatedAt: timestamp('fuel_updated_at', {withTimezone: true}).notNull().defaultNow(),
 
 	coins: integer('coins').notNull().default(0),
 	details: integer('details').notNull().default(0),
@@ -74,6 +69,9 @@ export const progressLevels = pgTable('progress_levels', {
 	stars: integer('stars').notNull(),
 	timeMs: integer('time_ms').notNull(),
 	fuelSpent: integer('fuel_spent').notNull(),
+	/** Липкие флаги рейтинга (GDD §9); stars = 1 + parHit + fullClear. */
+	parHit: boolean('par_hit').notNull().default(false),
+	fullClear: boolean('full_clear').notNull().default(false),
 	updatedAt: timestamp('updated_at', {withTimezone: true}).notNull().defaultNow(),
 }, (table) => ({
 	pk: primaryKey({columns: [table.userId, table.level]}),

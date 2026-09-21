@@ -28,6 +28,8 @@ CREATE TABLE IF NOT EXISTS "progress_levels" (
 	"stars" integer NOT NULL,
 	"time_ms" integer NOT NULL,
 	"fuel_spent" integer NOT NULL,
+	"par_hit" boolean DEFAULT false NOT NULL,
+	"full_clear" boolean DEFAULT false NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "progress_levels_user_id_level_pk" PRIMARY KEY("user_id","level"),
 	CONSTRAINT "progress_levels_stars_check" CHECK ("progress_levels"."stars" between 0 and 3)
@@ -44,8 +46,6 @@ CREATE TABLE IF NOT EXISTS "users" (
 	"device_id" text NOT NULL,
 	"username" text NOT NULL,
 	"locale" text DEFAULT 'en' NOT NULL,
-	"fuel" integer DEFAULT 10000 NOT NULL,
-	"fuel_updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"coins" integer DEFAULT 0 NOT NULL,
 	"details" integer DEFAULT 0 NOT NULL,
 	"selected_skin" text DEFAULT 'prospector' NOT NULL,

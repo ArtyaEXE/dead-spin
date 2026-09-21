@@ -9,7 +9,6 @@ import {initAnalytics} from './lib/analytics';
 import {authRoutes} from './routes/auth';
 import {meRoutes} from './routes/me';
 import {progressRoutes} from './routes/progress';
-import {fuelRoutes} from './routes/fuel';
 import {leaderboardRoutes} from './routes/leaderboard';
 import type {AuthedEnv} from './middleware/auth';
 
@@ -39,7 +38,6 @@ export function createApp() {
 	app.route('/auth', authRoutes);
 	app.route('/me', meRoutes);
 	app.route('/progress', progressRoutes);
-	app.route('/fuel', fuelRoutes);
 	app.route('/leaderboard', leaderboardRoutes);
 
 	app.onError((err, c) => {

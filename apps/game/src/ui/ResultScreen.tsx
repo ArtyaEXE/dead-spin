@@ -1,5 +1,6 @@
 import {For, Show, createEffect, onCleanup} from 'solid-js';
 import {getNextLevelNumber} from '@dead-spin/levels';
+import type {Rating} from '@dead-spin/shared';
 import {useProgress} from '../stores/progress';
 import {audio} from '../game/audio';
 
@@ -18,7 +19,11 @@ export type ResultKind = 'win' | 'loose' | 'pause';
 
 export function ResultScreen(props: {
 	result: ResultKind;
-	stars: number;
+	/** Рейтинг заезда (null до финиша и на паузе/проигрыше). */
+	rating: Rating | null;
+	collected: number;
+	parTimeMs: number | null;
+	parFuel: number | null;
 	timeMs: number;
 	fuelSpent: number;
 	levelNumber: number;
@@ -40,7 +45,7 @@ export function ResultScreen(props: {
 		for (const t of timers) clearTimeout(t);
 		timers.length = 0;
 		if (props.result !== 'win') return;
-		for (let i = 1; i <= props.stars; i++) {
+		for (let i = 1; i <= (props.rating?.stars ?? 0); i++) {
 			timers.push(window.setTimeout(() => audio.play('star-catch'), 500 * i));
 		}
 	});
@@ -84,13 +89,26 @@ export function ResultScreen(props: {
 							{(n) => (
 								<div class="result-star" classList={{mid: n === 2}}>
 									<div class="result-star-bg"></div>
-									<Show when={n <= props.stars}>
+									<Show when={n <= (props.rating?.stars ?? 0)}>
 										<div class={`result-star-fg delay-${n}`}></div>
 									</Show>
 								</div>
 							)}
 						</For>
 					</div>
+					<Show when={props.rating}>
+						{(rt) => (
+							<div class="result-rating">
+								<span class="hit">финиш</span>
+								<span classList={{hit: rt().parHit}}>
+									время {printTimer(props.timeMs, true)}{props.parTimeMs !== null ? ` / ${printTimer(props.parTimeMs, true)}` : ''}
+								</span>
+								<span classList={{hit: rt().fullClear}}>
+									{props.collected}/3 и топливо{props.parFuel !== null ? ` ≤ ${(props.parFuel / 1000).toFixed(1)}k` : ''}
+								</span>
+							</div>
+						)}
+					</Show>
 				</Show>
 
 				<div class="result-buttons">

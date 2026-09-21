@@ -32,7 +32,8 @@ import {audio} from './audio';
 
 export type GameResult = {
 	type: 'win' | 'loose';
-	stars: number;
+	/** Подобрано звёзд-предметов (0..3). Рейтинг считается снаружи по par. */
+	collected: number;
 	timeMs: number;
 	fuelSpent: number;
 };
@@ -549,7 +550,7 @@ export class GameWorld {
 	private finish(type: 'win' | 'loose'): void {
 		this.result = {
 			type,
-			stars: this.collected,
+			collected: this.collected,
 			timeMs: Math.round(this.time),
 			fuelSpent: Math.max(0, this.initialFuel - this.fuel),
 		};

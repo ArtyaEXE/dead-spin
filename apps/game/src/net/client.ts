@@ -3,7 +3,7 @@ import type {GhostRecording} from '@dead-spin/shared';
 import {API_BASE} from '../config';
 import {
 	LoginResponseSchema, MeResponseSchema, ProgressResponseSchema,
-	LevelCompleteResponseSchema, FuelSpendResponseSchema, LeaderboardResponseSchema,
+	LevelCompleteResponseSchema, LeaderboardResponseSchema,
 	GhostResponseSchema,
 	DailyStateResponseSchema, DailyClaimResponseSchema,
 	AchievementsResponseSchema, SpendCoinsResponseSchema,
@@ -131,11 +131,9 @@ export const api = {
 	progress: () => request('GET', '/progress', ProgressResponseSchema),
 
 	levelComplete: (body: {
-		level: number; stars: number; timeMs: number; fuelSpent: number;
+		level: number; collected: number; timeMs: number; fuelSpent: number;
 		recording?: GhostRecording;
 	}) => request('POST', '/progress/level-complete', LevelCompleteResponseSchema, body),
-
-	fuelSpend: (amount: number) => request('POST', '/fuel/spend', FuelSpendResponseSchema, {amount}),
 
 	leaderboard: (level: number, limit = 20) =>
 		request('GET', `/leaderboard/${level}?limit=${limit}`, LeaderboardResponseSchema),

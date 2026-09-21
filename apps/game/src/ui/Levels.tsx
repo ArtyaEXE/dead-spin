@@ -1,11 +1,8 @@
 import {For, Show, createEffect, createMemo, createSignal} from 'solid-js';
-import {FUEL_CONSUMPTION_PER_BOOST, LEVEL_COUNT} from '@dead-spin/shared';
+import {LEVEL_COUNT} from '@dead-spin/shared';
 import {getLevelByNumber, getPreviousLevelNumber} from '@dead-spin/levels';
-import {useAuth, authStore} from '../stores/auth';
+import {useAuth} from '../stores/auth';
 import {useProgress, progressStore} from '../stores/progress';
-import {useLiveFuel} from '../stores/fuel';
-import {api} from '../net/client';
-import {track} from '../analytics';
 
 
 const WORLD_NAMES = ['CERES', 'PALLAS', 'JUNO', 'VESTA', 'EUNOMIA'] as const;
@@ -70,43 +67,6 @@ export function Levels(props: {onBack: () => void; onPlay: (levelNumber: number)
 		return rows;
 	});
 
-	const liveFuel = useLiveFuel();
-	const fuelK = () => (liveFuel() / 1000).toFixed(2);
-	// Минимум для запуска: ~1 буст × 5 (нужно дать корабли хотя бы стартовать).
-	const MIN_FUEL_TO_START = FUEL_CONSUMPTION_PER_BOOST * 5;
-	const [showLowFuel, setShowLowFuel] = createSignal(false);
-	const [pendingLevel, setPendingLevel] = createSignal<number | null>(null);
-
-	const tryPlay = (n: number): void => {
-		if (liveFuel() < MIN_FUEL_TO_START) {
-			setPendingLevel(n);
-			setShowLowFuel(true);
-			return;
-		}
-		props.onPlay(n);
-	};
-
-	const SKIP_LOW_FUEL_COST = 50;
-
-	const skipFuelGate = async (): Promise<void> => {
-		const u = authStore.getState().user;
-		if (!u || u.coins < SKIP_LOW_FUEL_COST) return;
-		const n = pendingLevel();
-		if (n === null) return;
-		try {
-			const res = await api.spendCoins(SKIP_LOW_FUEL_COST, 'skip_low_fuel');
-			authStore.getState().setUser({...u, coins: res.coins});
-			track('skip_low_fuel', {level: n, coins_spent: SKIP_LOW_FUEL_COST});
-			setShowLowFuel(false);
-			setPendingLevel(null);
-			props.onPlay(n);
-		} catch (e) {
-			console.warn('skip_low_fuel failed:', e);
-		}
-	};
-
-	const userCoins = (): number => auth().user?.coins ?? 0;
-	const canSkip = (): boolean => userCoins() >= SKIP_LOW_FUEL_COST;
 	const summary = () => progress().summaryStars;
 
 	const prevWorld = () => setWorldIndex(w => Math.max(0, w - 1));
@@ -119,10 +79,6 @@ export function Levels(props: {onBack: () => void; onPlay: (levelNumber: number)
 
 				<div class="world-title">{WORLD_NAMES[worldIndex()]}</div>
 
-				<div class="panel">
-					<img class="icon-inline" src="/icons/fuel-icon.png" alt="" />
-					{fuelK()}
-				</div>
 			</div>
 
 			<div class="levels-world">
@@ -143,7 +99,7 @@ export function Levels(props: {onBack: () => void; onPlay: (levelNumber: number)
 														locked: !c().available,
 														pressable: c().available,
 																	}}
-													onClick={() => c().available && tryPlay(c().number)}
+													onClick={() => c().available && props.onPlay(c().number)}
 												>
 													<div>{c().number}</div>
 													<div class="lvl-stars">
@@ -185,24 +141,6 @@ export function Levels(props: {onBack: () => void; onPlay: (levelNumber: number)
 				/>
 			</div>
 
-			<Show when={showLowFuel()}>
-				<div class="lowfuel-overlay" onClick={() => { setShowLowFuel(false); setPendingLevel(null); }}>
-					<div class="lowfuel-card" onClick={(e) => e.stopPropagation()}>
-						<img class="lowfuel-icon" src="/icons/fuel-icon.png" alt="" />
-						<div class="lowfuel-text">{liveFuel()} / {MIN_FUEL_TO_START}</div>
-						<div class="lowfuel-hint">WAIT</div>
-						<button
-							class="lowfuel-skip pressable"
-							classList={{disabled: !canSkip()}}
-							onClick={() => { if (canSkip()) void skipFuelGate(); }}
-						>
-							<img class="icon-inline" src="/icons/coins-icon.png" alt="" /> {SKIP_LOW_FUEL_COST} → играть
-							<span class="lowfuel-skip-balance">{userCoins()} имеется</span>
-						</button>
-						<img class="pressable lowfuel-close" src="/btn-close.png" alt="" onClick={() => { setShowLowFuel(false); setPendingLevel(null); }} />
-					</div>
-				</div>
-			</Show>
 		</div>
 	);
 }

@@ -1,4 +1,5 @@
 import {For} from 'solid-js';
+import {LOW_FUEL_FRACTION} from '@dead-spin/shared';
 
 
 function printTimer(ms: number, withMs: boolean = false): string {
@@ -10,13 +11,13 @@ function printTimer(ms: number, withMs: boolean = false): string {
 }
 
 
-export function TopBar(props: {fuel: number; time: number; stars: number}) {
+export function TopBar(props: {fuel: number; fuelTank: number; time: number; stars: number}) {
 	const stars = () => Array.from({length: props.stars}, (_, i) => i + 1);
 
 	return (
 		<div class="topbar">
 			<div class="panel">
-				<span classList={{'low-fuel': props.fuel < 2000}}>
+				<span classList={{'low-fuel': props.fuel < props.fuelTank * LOW_FUEL_FRACTION}}>
 					<img class="icon-inline" src="/icons/fuel-icon.png" alt="" />
 					{(props.fuel / 1000).toFixed(2)}
 				</span>

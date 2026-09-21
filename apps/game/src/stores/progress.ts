@@ -1,4 +1,5 @@
 import {createStore} from 'zustand/vanilla';
+import {mergeRecord, type Rating} from '@dead-spin/shared';
 import {api} from '../net/client';
 import type {ProgressLevel} from '../net/schemas';
 import {createSolidStoreAdapter} from './solid';
@@ -9,7 +10,7 @@ type ProgressState = {
 	levels: Record<number, ProgressLevel>;
 	loaded: boolean;
 	refresh: () => Promise<void>;
-	recordLocal: (level: number, stars: number, timeMs: number, fuelSpent: number) => void;
+	recordLocal: (level: number, run: Rating & {timeMs: number; fuelSpent: number}) => void;
 };
 
 
@@ -30,23 +31,18 @@ export const progressStore = createStore<ProgressState>((set, get) => ({
 		});
 	},
 
-	recordLocal(level, stars, timeMs, fuelSpent) {
+	recordLocal(level, run) {
 		const existing = get().levels[level];
-		// Три показателя улучшаются независимо: медленный заход на 3★ не должен
-		// стирать лучшее время, а быстрый на 1★ — не должен терять звёзды.
-		const bestStars = existing ? Math.max(existing.stars, stars) : stars;
-		const bestTime = existing ? Math.min(existing.timeMs, timeMs) : timeMs;
-		const bestFuel = existing ? Math.min(existing.fuelSpent, fuelSpent) : fuelSpent;
-		if (existing && bestStars === existing.stars && bestTime === existing.timeMs && bestFuel === existing.fuelSpent) return;
+		// Флаги рейтинга липкие, время и топливо — минимумы (см. mergeRecord).
+		const merged = mergeRecord(existing, run);
+		if (existing && merged.stars === existing.stars && merged.timeMs === existing.timeMs && merged.fuelSpent === existing.fuelSpent) return;
 
-		const newSummary = get().summaryStars + (bestStars - (existing?.stars ?? 0));
+		const newSummary = get().summaryStars + (merged.stars - (existing?.stars ?? 0));
 
 		const entry: ProgressLevel = {
 			userId: existing?.userId ?? '',
 			level,
-			stars: bestStars,
-			timeMs: bestTime,
-			fuelSpent: bestFuel,
+			...merged,
 			updatedAt: new Date().toISOString(),
 		};
 

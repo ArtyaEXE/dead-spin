@@ -1,6 +1,5 @@
 import {createSignal, createEffect, onCleanup, onMount, Show} from 'solid-js';
 import {getActiveSkinId, getSkinById} from '../stores/skin';
-import {useLiveFuel} from '../stores/fuel';
 import {progressStore} from '../stores/progress';
 import {authStore} from '../stores/auth';
 import {api, ApiError} from '../net/client';
@@ -19,11 +18,9 @@ import {AchievementsOverlay} from './Achievements';
 export function MainMenu(props: {onPlay: () => void; onSettings: () => void; onShop: () => void}) {
 	const shipSrc = (): string =>
 		getSkinById(getActiveSkinId(progressStore.getState().summaryStars)).src;
-	const liveFuel = useLiveFuel();
-	const fuelK = () => (liveFuel() / 1000).toFixed(2);
 
 	const [daily, setDaily] = createSignal<DailyStateResponse | null>(null);
-	const [claimed, setClaimed] = createSignal<{fuel: number; coins: number} | null>(null);
+	const [claimed, setClaimed] = createSignal<{coins: number} | null>(null);
 	const [showAchievements, setShowAchievements] = createSignal(false);
 
 	onMount(() => {
@@ -44,7 +41,7 @@ export function MainMenu(props: {onPlay: () => void; onSettings: () => void; onS
 			if (res.claimed && res.reward) {
 				setClaimed(res.reward);
 				setTimeout(() => setClaimed(null), 3000);
-				track('daily_claim', {streak: res.streakDays, fuel: res.reward.fuel, coins: res.reward.coins});
+				track('daily_claim', {streak: res.streakDays, coins: res.reward.coins});
 			}
 			setDaily({
 				canClaim: false,
@@ -56,20 +53,12 @@ export function MainMenu(props: {onPlay: () => void; onSettings: () => void; onS
 		}
 	};
 
-	const fmtReward = (r: {fuel: number; coins: number}): string => {
-		if (r.coins > 0) return `+${r.coins} 💰`;
-		if (r.fuel > 0) return `+${(r.fuel / 1000).toFixed(0)}k ⛽`;
-		return '';
-	};
+	const fmtReward = (r: {coins: number}): string => `+${r.coins} монет`;
 
 	return (
 		<div class="mm-root">
 			<div class="mm-top">
 				<img class="mm-shop pressable" src={shipSrc()} alt="Shop" onClick={props.onShop} />
-				<div class="panel">
-					<img class="icon-inline" src="/icons/fuel-icon.png" alt="" />
-					{fuelK()}
-				</div>
 				<img class="mm-cog pressable" src="/btn-cog.png" alt="Settings" onClick={props.onSettings} />
 			</div>
 
