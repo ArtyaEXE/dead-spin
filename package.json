@@ -10,11 +10,13 @@
 	"scripts": {
 		"typecheck": "pnpm -r run typecheck",
 		"test": "pnpm -r run test",
-		"validate:levels": "pnpm --filter @dead-spin/levels run validate"
+		"validate:levels": "pnpm --filter @dead-spin/levels run validate",
+		"optimize:assets": "tsx apps/game/scripts/optimize-assets.ts"
 	},
 	"devDependencies": {
-		"typescript": "^5.6.3",
+		"@types/node": "^22.7.5",
+		"sharp": "^0.35.4",
 		"tsx": "^4.19.1",
-		"@types/node": "^22.7.5"
+		"typescript": "^5.6.3"
 	}
 }

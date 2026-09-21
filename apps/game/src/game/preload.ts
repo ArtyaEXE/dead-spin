@@ -19,7 +19,7 @@ const UI_IMAGES = [
 	'/btn-star.png',
 	'/dead-spin-logo-shadow.png', '/dead-spin-logo.png',
 	'/dashboard-big.png', '/dashboard-small.png',
-	'/global-bg.png', '/main-menu-bg.png', '/result-screen-bg.png',
+	'/global-bg.jpg', '/main-menu-bg.png', '/result-screen-bg.png',
 	'/screen-bold.png', '/screen-wide.png',
 	'/star.png', '/booster-single.png',
 	// Skins (скины ракеты — превьюшки в Shop + игровая ship-текстура)

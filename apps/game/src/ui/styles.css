@@ -46,7 +46,7 @@ html, body, #root {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	background: url(/global-bg.png) center / cover no-repeat;
+	background: url(/global-bg.jpg) center / cover no-repeat;
 }
 .screen {
 	width: 100%;
