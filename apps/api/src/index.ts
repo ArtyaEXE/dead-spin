@@ -12,6 +12,12 @@ import {progressRoutes} from './routes/progress';
 import {leaderboardRoutes} from './routes/leaderboard';
 import type {AuthedEnv} from './middleware/auth';
 
+function appVersion(): string {
+	const v = process.env['APP_VERSION'];
+	const sha = v && v !== 'dev' ? v : (process.env['RENDER_GIT_COMMIT'] ?? 'dev');
+	return sha.slice(0, 7);
+}
+
 export function createApp() {
 	// Sentry инициализируем перед созданием роутов, чтобы любые
 	// uncaught внутри них уже летели в Sentry. Без DSN — no-op.
@@ -35,7 +41,9 @@ export function createApp() {
 		c.json({
 			ok: true,
 			env: env.NODE_ENV,
-			version: (process.env['APP_VERSION'] ?? process.env['RENDER_GIT_COMMIT'] ?? 'dev').slice(0, 7),
+			// APP_VERSION ставит Dockerfile из GIT_SHA; Render build-arg не передаёт и
+			// оставляет дефолт 'dev' — тогда берём его собственный RENDER_GIT_COMMIT.
+			version: appVersion(),
 		}),
 	);
 

@@ -6,13 +6,14 @@
 
 ```
 ┌──────────────────────┐   HTTPS   ┌──────────────────────────┐   TLS   ┌─────────────┐
-│ Cloudflare Workers   │◀────────▶│ Render (Docker)          │◀───────▶│ Neon        │
+│ Cloudflare Pages     │◀────────▶│ Render (Docker)          │◀───────▶│ Neon        │
 │ apps/game — статика  │          │ dead-spin-api  /healthz  │         │ Postgres 16 │
 └──────────────────────┘          └──────────────────────────┘         └─────────────┘
           ▲                                   ▲
-          │ wrangler deploy                   │ deploy hook
-          └──────── GitHub Actions ───────────┘
-                    (только main, после зелёного CI)
+          │ Git-интеграция Pages              │ deploy hook
+          │ (production = main,               │ GitHub Actions, только main,
+          │  preview = каждая ветка)          │ после зелёного CI
+          └───────────────────────────────────┘
 ```
 
 Игра офлайн-first (GDD §16.2): клиент работает без API, сервер хранит копию
@@ -71,14 +72,16 @@ Biome → typecheck → test → validate:levels → build API (tsup) → build 
 
 ## CD — `.github/workflows/deploy.yml`
 
-Только push в `main`. Сначала полный CI, затем параллельно:
+Только push в `main`. Сначала полный CI, затем **api → Render**: `POST` на Deploy Hook.
+Render собирает `apps/api/Dockerfile` сам (`render.yaml`, `runtime: docker`,
+`autoDeploy: false` — деплой только после CI). Job в environment `production`.
 
-- **web → Cloudflare**: артефакт `web-dist` → `wrangler deploy` (Workers Static Assets,
-  конфиг в `wrangler.toml`, SPA-фолбэк на `index.html`).
-- **api → Render**: `POST` на Deploy Hook. Render собирает `apps/api/Dockerfile` сам
-  (`render.yaml`, `runtime: docker`, `autoDeploy: false` — деплой только после CI).
-
-Оба job'а в environment `production` — там можно включить required reviewers.
+**Веб — Cloudflare Pages по Git-интеграции**, вне GitHub Actions: production собирается
+с `main`, preview — с каждой ветки (`<ветка>.dead-spin.pages.dev`) и виден в проверках PR.
+Настройки проекта Pages (дашборд → Workers & Pages → dead-spin → Settings):
+- Build command `pnpm --filter @dead-spin/game build`, output `apps/game/dist`, Node 22;
+- Environment variables (production **и** preview): `VITE_API_BASE=https://dead-spin-api.onrender.com`.
+Без переменной клиент обращается к `/api` относительно pages.dev и получает 404.
 
 ### Секреты и переменные репозитория
 
@@ -86,8 +89,6 @@ Settings → Secrets and variables → Actions.
 
 | Тип | Имя | Откуда |
 |---|---|---|
-| secret | `CLOUDFLARE_API_TOKEN` | Cloudflare → My Profile → API Tokens → шаблон «Edit Cloudflare Workers» |
-| secret | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare → Workers & Pages → справа Account ID |
 | secret | `RENDER_DEPLOY_HOOK_URL` | Render → dead-spin-api → Settings → Deploy Hook |
 | variable | `VITE_API_BASE` | публичный URL API, `https://dead-spin-api.onrender.com`, без слеша |
 
@@ -97,7 +98,7 @@ Settings → Secrets and variables → Actions.
 |---|---|
 | `DATABASE_URL` | Neon pooled connection string, `?sslmode=require` |
 | `JWT_SECRET` | ≥ 32 байт, `generateValue: true` в blueprint |
-| `CORS_ORIGINS` | origin веб-клиента через запятую, например `https://dead-spin.<account>.workers.dev` |
+| `CORS_ORIGINS` | `https://dead-spin.pages.dev` для прода; `*` допустимо — API на Bearer-токене без cookies, а preview-домены Pages меняются с каждой веткой |
 | `SENTRY_DSN`, `POSTHOG_KEY`, `POSTHOG_HOST` | опционально, пусто = выключено |
 
 `PORT` инжектит Render; `APP_VERSION` попадает в образ из `GIT_SHA` при сборке.
@@ -118,8 +119,8 @@ Settings → Secrets and variables → Actions.
 1. **Neon**: проект `dead-spin`, регион EU → pooled connection string.
 2. **Render**: New → Blueprint → репозиторий → `render.yaml` → заполнить `DATABASE_URL`,
    `CORS_ORIGINS`. После создания сервиса: Settings → Deploy Hook → в секрет репозитория.
-3. **Cloudflare**: Workers & Pages → создать Worker `dead-spin` (имя из `wrangler.toml`);
-   API-токен и Account ID → в секреты. Первый деплой — push в `main`.
+3. **Cloudflare Pages**: Workers & Pages → Create → Pages → Connect to Git → репозиторий;
+   build command / output / Node и `VITE_API_BASE` — см. раздел CD. Первый деплой — push в `main`.
 4. **GitHub**: Settings → Environments → `production`; Branches → protection для `main`
    (require CI, require PR).
 5. **UptimeRobot** (по желанию): пинг `/healthz` раз в 5 мин, чтобы free-инстанс не засыпал.
