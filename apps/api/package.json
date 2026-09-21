@@ -19,19 +19,19 @@
 		"@dead-spin/db": "workspace:*",
 		"@dead-spin/levels": "workspace:*",
 		"@dead-spin/shared": "workspace:*",
-		"@hono/node-server": "^1.13.2",
-		"@sentry/node": "^10.52.0",
-		"drizzle-orm": "^0.36.0",
-		"hono": "^4.6.5",
+		"@hono/node-server": "^1.19.17",
+		"@sentry/node": "^10.75.0",
+		"drizzle-orm": "^0.45.2",
+		"hono": "^4.13.8",
 		"postgres": "^3.4.4",
-		"posthog-node": "^5.33.4",
+		"posthog-node": "^5.52.4",
 		"zod": "^3.23.8"
 	},
 	"devDependencies": {
-		"@types/node": "^22.7.5",
-		"drizzle-kit": "^0.28.0",
+		"@types/node": "^22.20.3",
+		"drizzle-kit": "^0.31.10",
 		"tsup": "^8.5.1",
-		"tsx": "^4.19.1",
+		"tsx": "^4.23.13",
 		"typescript": "^5.6.3",
 		"vitest": "^2.1.2"
 	}
