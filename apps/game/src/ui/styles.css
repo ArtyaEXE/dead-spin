@@ -1,3 +1,5 @@
+@import './tokens.css';
+
 /* Road Rage — оригинальный шрифт. Файл скопирован из space/public/font/ */
 @font-face {
 	font-family: "Road Rage";
