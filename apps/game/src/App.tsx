@@ -107,7 +107,7 @@ export default function App() {
 							<img class="preload-logo" src="/dead-spin-logo-shadow.png" alt="Dead Spin" />
 							<img class="preload-gear" src="/icons/icon-loading.png" alt="" />
 							<div class="preload-bar">
-								<div class="preload-bar-fill" style={{width: `${preloadPct()}%`}} />
+								<div class="preload-bar-fill" style={{transform: `scaleX(${preloadPct() / 100})`}} />
 							</div>
 							<div class="preload-pct">{preloadPct()}%</div>
 						</div>

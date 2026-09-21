@@ -5,6 +5,7 @@ import {profileStore, useProfile} from '../stores/profile';
 import {localDate} from '../lib/persist';
 import {t} from '../i18n';
 import {AchievementsOverlay} from './Achievements';
+import {Icon, RoundBtn} from './Icon';
 
 /**
  * MainMenu — стартовый экран: логотип и крутящаяся кнопка Play.
@@ -31,12 +32,12 @@ export function MainMenu(props: {onPlay: () => void; onSettings: () => void; onS
 	return (
 		<div class="mm-root">
 			<div class="mm-top">
-				<img class="mm-shop pressable" src={shipSrc()} alt="Shop" onClick={props.onShop} />
+				<img class="mm-shop pressable" src={shipSrc()} alt={t('a11y.shop')} onClick={props.onShop} />
 				<div class="panel">
 					<img class="icon-inline" src="/icons/coins-icon.png" alt="" />
 					{profile().profile.coins}
 				</div>
-				<img class="mm-cog pressable" src="/btn-cog.png" alt="Settings" onClick={props.onSettings} />
+				<RoundBtn icon="cog" label={t('a11y.settings')} size="md" onClick={props.onSettings} />
 			</div>
 
 			<img class="mm-logo" src="/dead-spin-logo-shadow.png" alt="Dead Spin" />
@@ -49,15 +50,26 @@ export function MainMenu(props: {onPlay: () => void; onSettings: () => void; onS
 				</div>
 			</Show>
 
-			<Show when={claimed()}>{(r) => <div class="daily-toast">✅ {t('daily.claimed', {n: r()})}</div>}</Show>
+			<Show when={claimed()}>
+				{(r) => (
+					<div class="daily-toast">
+						<Icon name="check" /> {t('daily.claimed', {n: r()})}
+					</div>
+				)}
+			</Show>
 
-			<div class="mm-play pressable" onClick={props.onPlay}>
-				<img src="/btn-play.png" alt="Play" />
+			<div class="mm-play">
+				<RoundBtn icon="play" label={t('a11y.play')} size="xl" tone="goal" onClick={props.onPlay} />
 			</div>
 
 			<div class="mm-footer">
-				<button type="button" class="mm-trophy pressable" onClick={() => setShowAchievements(true)}>
-					<img src="/icons/trophy-icon.png" alt="achievements" />
+				<button
+					type="button"
+					class="mm-trophy pressable"
+					aria-label={t('a11y.achievements')}
+					onClick={() => setShowAchievements(true)}
+				>
+					<img src="/icons/trophy-icon.png" alt="" />
 				</button>
 			</div>
 

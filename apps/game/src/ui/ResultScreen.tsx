@@ -2,6 +2,7 @@ import {For, Show, createEffect, onCleanup} from 'solid-js';
 import {getNextLevelNumber} from '@dead-spin/levels';
 import type {Rating} from '@dead-spin/shared';
 import {t} from '../i18n';
+import {RoundBtn} from './Icon';
 import {useProgress} from '../stores/progress';
 import {audio} from '../game/audio';
 
@@ -118,24 +119,25 @@ export function ResultScreen(props: {
 				</Show>
 
 				<div class="result-buttons">
-					<img src="/btn-close.png" alt="Exit" onClick={props.onExit} />
+					<RoundBtn icon="close" label={t('a11y.exit')} size="md" onClick={props.onExit} />
 
 					<Show
 						when={props.result === 'pause'}
 						fallback={
-							<img
-								class="primary"
-								classList={{dim: !(props.result === 'win' && nextNumber() !== null)}}
-								src="/btn-right.png"
-								alt="Next"
-								onClick={() => props.result === 'win' && nextNumber() !== null && props.onNext()}
+							<RoundBtn
+								icon="right"
+								label={t('a11y.next')}
+								size="lg"
+								tone="goal"
+								disabled={!(props.result === 'win' && nextNumber() !== null)}
+								onClick={() => props.onNext()}
 							/>
 						}
 					>
-						<img class="primary" src="/btn-play.png" alt="Resume" onClick={props.onResume} />
+						<RoundBtn icon="play" label={t('a11y.resume')} size="lg" tone="goal" onClick={props.onResume} />
 					</Show>
 
-					<img src="/btn-replay.png" alt="Retry" onClick={props.onRetry} />
+					<RoundBtn icon="replay" label={t('a11y.retry')} size="md" onClick={props.onRetry} />
 				</div>
 			</div>
 		</div>

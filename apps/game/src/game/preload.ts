@@ -11,19 +11,6 @@ import {getAllComicImages} from '../ui/comics';
  */
 
 const UI_IMAGES = [
-	'/btn-booster.png',
-	'/btn-close.png',
-	'/btn-cog.png',
-	'/btn-left.png',
-	'/btn-minus.png',
-	'/btn-pause.png',
-	'/btn-play.png',
-	'/btn-plus.png',
-	'/btn-replay.png',
-	'/btn-right.png',
-	'/btn-sound-off.png',
-	'/btn-sound-on.png',
-	'/btn-star.png',
 	'/dead-spin-logo-shadow.png',
 	'/dead-spin-logo.png',
 	'/dashboard-big.png',

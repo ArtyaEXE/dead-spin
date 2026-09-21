@@ -1,6 +1,7 @@
 import {For} from 'solid-js';
 import {audioStore, useAudio} from '../stores/audio';
 import {LOCALES, getLocale, setLocale, t} from '../i18n';
+import {RoundBtn} from './Icon';
 
 /**
  * Экран настроек: громкость музыки и эффектов, язык интерфейса, версия,
@@ -13,9 +14,9 @@ export function Settings(props: {onBack: () => void}) {
 	return (
 		<div class="settings-root">
 			<div class="levels-top">
-				<img class="pressable" src="/btn-close.png" style={{height: '60px'}} alt="Back" onClick={props.onBack} />
+				<RoundBtn icon="close" label={t('a11y.back')} size="md" onClick={props.onBack} />
 				<div class="world-title">{t('settings.title')}</div>
-				<div style={{width: '60px'}} />
+				<div style={{width: '52px'}} />
 			</div>
 
 			<div class="settings-center">

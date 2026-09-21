@@ -2,6 +2,7 @@ import {For} from 'solid-js';
 import {ACHIEVEMENTS, ACHIEVEMENT_KEYS} from '@dead-spin/shared';
 import {useProfile} from '../stores/profile';
 import {getLocale, t} from '../i18n';
+import {RoundBtn} from './Icon';
 
 /**
  * Экран ачивок — overlay поверх MainMenu. Показывает все ачивки:
@@ -32,7 +33,7 @@ export function AchievementsOverlay(props: {onClose: () => void}) {
 					<div class="ach-count">
 						{unlockedCount()} / {items().length}
 					</div>
-					<img class="pressable ach-close" src="/btn-close.png" alt="" onClick={props.onClose} />
+					<RoundBtn icon="close" label={t('a11y.close')} size="sm" onClick={props.onClose} />
 				</div>
 
 				<div class="ach-grid">

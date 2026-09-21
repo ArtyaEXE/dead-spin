@@ -2,6 +2,8 @@ import {For, Show, createEffect, createMemo, createSignal} from 'solid-js';
 import {LEVEL_COUNT} from '@dead-spin/shared';
 import {getLevelByNumber, getPreviousLevelNumber} from '@dead-spin/levels';
 import {useAuth} from '../stores/auth';
+import {t} from '../i18n';
+import {RoundBtn} from './Icon';
 import {useProgress, progressStore} from '../stores/progress';
 
 const WORLD_NAMES = ['CERES', 'PALLAS', 'JUNO', 'VESTA', 'EUNOMIA'] as const;
@@ -75,7 +77,7 @@ export function Levels(props: {onBack: () => void; onPlay: (levelNumber: number)
 	return (
 		<div class="levels-root">
 			<div class="levels-top">
-				<img class="pressable" src="/btn-close.png" style={{height: '60px'}} alt="Close" onClick={props.onBack} />
+				<RoundBtn icon="close" label={t('a11y.close')} size="md" onClick={props.onBack} />
 
 				<div class="world-title">{WORLD_NAMES[worldIndex()]}</div>
 			</div>
@@ -133,24 +135,18 @@ export function Levels(props: {onBack: () => void; onPlay: (levelNumber: number)
 			</div>
 
 			<div class="levels-bottom">
-				<img
-					class="pressable"
-					src="/btn-left.png"
-					style={{height: '60px', opacity: worldIndex() === 0 ? 0.35 : 1}}
-					alt="Prev world"
-					onClick={prevWorld}
-				/>
+				<RoundBtn icon="left" label={t('a11y.prevWorld')} size="md" disabled={worldIndex() === 0} onClick={prevWorld} />
 
 				<div class="total-stars">
 					<img src="/star.png" alt="" />
 					<div>{summary()}</div>
 				</div>
 
-				<img
-					class="pressable"
-					src="/btn-right.png"
-					style={{height: '60px', opacity: worldIndex() === WORLD_COUNT - 1 ? 0.35 : 1}}
-					alt="Next world"
+				<RoundBtn
+					icon="right"
+					label={t('a11y.nextWorld')}
+					size="md"
+					disabled={worldIndex() === WORLD_COUNT - 1}
 					onClick={nextWorld}
 				/>
 			</div>
