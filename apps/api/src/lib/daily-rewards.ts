@@ -4,7 +4,9 @@ import {dailyRewards, users} from '../db/schema';
 
 
 /**
- * Daily check-in: первый запрос юзера в новый UTC-день начисляет бонус.
+ * Daily check-in: первый запрос юзера в новый день начисляет бонус.
+ * День — местный для клиента: он присылает свою дату, сервер принимает её,
+ * если она в пределах ±1 суток от UTC-сегодня (иначе fallback на UTC).
  * Идея — дать тривиальный повод вернуться завтра. Стрик копится; на
  * пропуске одного дня сбрасывается на 1.
  *
@@ -34,6 +36,16 @@ function todayUtc(): string {
 }
 
 
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Местная дата клиента, если правдоподобна; иначе UTC. */
+function resolveDay(clientDate?: string): string {
+	const utc = todayUtc();
+	if (!clientDate || !DATE_RE.test(clientDate)) return utc;
+	return Math.abs(dayDiff(clientDate, utc)) <= 1 ? clientDate : utc;
+}
+
+
 function dayDiff(a: string, b: string): number {
 	const ta = Date.UTC(+a.slice(0, 4), +a.slice(5, 7) - 1, +a.slice(8, 10));
 	const tb = Date.UTC(+b.slice(0, 4), +b.slice(5, 7) - 1, +b.slice(8, 10));
@@ -50,13 +62,13 @@ export type ClaimResult =
  * Состояние дневного бонуса без претензии на claim. Используется UI'ем
  * («можно/нельзя забрать сегодня; если нельзя — какой будет следующий»).
  */
-export async function getDailyState(userId: string): Promise<{
+export async function getDailyState(userId: string, clientDate?: string): Promise<{
 	canClaim: boolean;
 	streakDays: number;
 	nextReward: RewardKind;
 }> {
 	const [row] = await db.select().from(dailyRewards).where(eq(dailyRewards.userId, userId)).limit(1);
-	const today = todayUtc();
+	const today = resolveDay(clientDate);
 	if (!row) {
 		return {canClaim: true, streakDays: 0, nextReward: rewardForStreak(1)};
 	}
@@ -69,8 +81,8 @@ export async function getDailyState(userId: string): Promise<{
 }
 
 
-export async function claimDaily(userId: string): Promise<ClaimResult> {
-	const today = todayUtc();
+export async function claimDaily(userId: string, clientDate?: string): Promise<ClaimResult> {
+	const today = resolveDay(clientDate);
 	const [row] = await db.select().from(dailyRewards).where(eq(dailyRewards.userId, userId)).limit(1);
 
 	let streakDays: number;

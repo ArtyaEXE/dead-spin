@@ -50,7 +50,10 @@ progressRoutes.get('/', requireAuth, async (c) => {
 const LevelCompleteSchema = z.object({
 	level: z.number().int().min(1).max(MAX_LEVEL_NUMBER),
 	stars: z.number().int().min(STARS_MIN).max(STARS_MAX),
-	timeMs: z.number().int().min(MIN_LEVEL_TIME_MS).max(MAX_LEVEL_TIME_MS),
+	// Нижней границы нет: клир быстрее MIN_LEVEL_TIME_MS — не ошибка, а
+	// аномалия, которую помечаем в аналитике. Раньше он отбрасывался с 400,
+	// и лучшие игроки теряли результат.
+	timeMs: z.number().int().min(1).max(MAX_LEVEL_TIME_MS),
 	fuelSpent: z.number().int().min(0).max(1_000_000),
 	// Ghost-запись прохождения (event-based, см. shared/ghost.ts).
 	// Сервер сохраняет её, если побит глобальный рекорд уровня.
@@ -86,18 +89,17 @@ progressRoutes.post('/level-complete', requireAuth, async (c) => {
 			.limit(1);
 
 		if (existing) {
-			if (stars > existing.stars) {
+			// Три показателя улучшаются независимо (см. GDD §9): рост звёзд не
+			// должен стирать лучшее время, а быстрый заход — терять звёзды.
+			const bestStars = Math.max(existing.stars, stars);
+			const bestTime = Math.min(existing.timeMs, timeMs);
+			const bestFuel = Math.min(existing.fuelSpent, fuelSpent);
+			if (bestStars !== existing.stars || bestTime !== existing.timeMs || bestFuel !== existing.fuelSpent) {
 				await tx.update(progressLevels)
-					.set({stars, timeMs, fuelSpent, updatedAt: sql`now()`})
-					.where(and(eq(progressLevels.userId, userId), eq(progressLevels.level, level)));
-				return stars - existing.stars;
-			}
-			if (stars === existing.stars && timeMs < existing.timeMs) {
-				await tx.update(progressLevels)
-					.set({timeMs, fuelSpent, updatedAt: sql`now()`})
+					.set({stars: bestStars, timeMs: bestTime, fuelSpent: bestFuel, updatedAt: sql`now()`})
 					.where(and(eq(progressLevels.userId, userId), eq(progressLevels.level, level)));
 			}
-			return 0;
+			return bestStars - existing.stars;
 		}
 
 		// Нет рекорда по этому уровню — проверяем, что предыдущий пройден.
@@ -140,6 +142,7 @@ progressRoutes.post('/level-complete', requireAuth, async (c) => {
 		event: 'level_complete',
 		properties: {
 			level, stars, timeMs, fuelSpent, newStars,
+			suspicious_fast: timeMs < MIN_LEVEL_TIME_MS,
 		},
 	});
 

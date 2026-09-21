@@ -32,19 +32,21 @@ export const progressStore = createStore<ProgressState>((set, get) => ({
 
 	recordLocal(level, stars, timeMs, fuelSpent) {
 		const existing = get().levels[level];
-		if (existing && (stars < existing.stars ||
-			(stars === existing.stars && timeMs >= existing.timeMs))) return;
+		// Три показателя улучшаются независимо: медленный заход на 3★ не должен
+		// стирать лучшее время, а быстрый на 1★ — не должен терять звёзды.
+		const bestStars = existing ? Math.max(existing.stars, stars) : stars;
+		const bestTime = existing ? Math.min(existing.timeMs, timeMs) : timeMs;
+		const bestFuel = existing ? Math.min(existing.fuelSpent, fuelSpent) : fuelSpent;
+		if (existing && bestStars === existing.stars && bestTime === existing.timeMs && bestFuel === existing.fuelSpent) return;
 
-		const newSummary = existing
-			? get().summaryStars + Math.max(0, stars - existing.stars)
-			: get().summaryStars + stars;
+		const newSummary = get().summaryStars + (bestStars - (existing?.stars ?? 0));
 
 		const entry: ProgressLevel = {
 			userId: existing?.userId ?? '',
 			level,
-			stars,
-			timeMs,
-			fuelSpent,
+			stars: bestStars,
+			timeMs: bestTime,
+			fuelSpent: bestFuel,
 			updatedAt: new Date().toISOString(),
 		};
 

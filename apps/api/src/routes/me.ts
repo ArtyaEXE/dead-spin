@@ -44,7 +44,7 @@ meRoutes.delete('/progress', requireAuth, async (c) => {
  * «забрать» или «уже сегодня собрал»; превью следующей награды).
  */
 meRoutes.get('/daily', requireAuth, async (c) => {
-	const state = await getDailyState(c.var.user.id);
+	const state = await getDailyState(c.var.user.id, c.req.query('date'));
 	return c.json(state);
 });
 
@@ -56,7 +56,9 @@ meRoutes.get('/daily', requireAuth, async (c) => {
  */
 meRoutes.post('/daily', requireAuth, async (c) => {
 	const userId = c.var.user.id;
-	const result = await claimDaily(userId);
+	const body = await c.req.json().catch(() => null) as {date?: unknown} | null;
+	const clientDate = typeof body?.date === 'string' ? body.date : undefined;
+	const result = await claimDaily(userId, clientDate);
 
 	if (result.claimed) {
 		track({

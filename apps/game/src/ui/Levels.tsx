@@ -17,6 +17,10 @@ const WORLD_BG: Record<number, string> = {
 	4: '/eunomia-1.jpg',
 };
 
+// Показываем только миры, у которых есть уровни. Иначе игрок с первого
+// экрана видит 45 залоченных кнопок несуществующего контента.
+const WORLD_COUNT = Math.ceil(LEVEL_COUNT / 15);
+
 
 type LevelCell = {number: number; stars: number; available: boolean; exists: boolean} | null;
 
@@ -106,7 +110,7 @@ export function Levels(props: {onBack: () => void; onPlay: (levelNumber: number)
 	const summary = () => progress().summaryStars;
 
 	const prevWorld = () => setWorldIndex(w => Math.max(0, w - 1));
-	const nextWorld = () => setWorldIndex(w => Math.min(4, w + 1));
+	const nextWorld = () => setWorldIndex(w => Math.min(WORLD_COUNT - 1, w + 1));
 
 	return (
 		<div class="levels-root">
@@ -175,7 +179,7 @@ export function Levels(props: {onBack: () => void; onPlay: (levelNumber: number)
 				<img
 					class="pressable"
 					src="/btn-right.png"
-					style={{height: '60px', opacity: worldIndex() === 4 ? 0.35 : 1}}
+					style={{height: '60px', opacity: worldIndex() === WORLD_COUNT - 1 ? 0.35 : 1}}
 					alt="Next world"
 					onClick={nextWorld}
 				/>

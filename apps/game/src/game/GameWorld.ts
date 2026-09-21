@@ -82,6 +82,13 @@ export class GameWorld {
 	private zoom = 1;
 	private paused = false;
 
+	// Состояние игрока на предыдущем физическом шаге — для интерполяции
+	// в draw(alpha). Без неё на 120 Гц два кадра подряд рисуют одно и то же
+	// положение, и корабль «дрожит».
+	private prevX = 0;
+	private prevY = 0;
+	private prevR = 0;
+
 	// Анимации входа/выхода из дыры: на старте корабль "вылетает" из дыры
 	// (разворачивается и увеличивается в размере, крутясь); на финише —
 	// засасывается в дыру (скручивается и сжимается в точку).
@@ -120,7 +127,9 @@ export class GameWorld {
 			backgroundColor: 0x19130f,
 			antialias: true,
 			autoDensity: true,
-			resolution: window.devicePixelRatio || 1,
+			// Потолок 2: на DPR 3 fill-rate вырастает в 9 раз при antialias, а
+			// визуально разница с 2 на 6-дюймовом экране неразличима.
+			resolution: Math.min(window.devicePixelRatio || 1, 2),
 		});
 		host.appendChild(this.app.canvas);
 
@@ -141,7 +150,7 @@ export class GameWorld {
 
 		this.loop = createLoop(
 			(dt) => this.step(dt),
-			() => this.draw(),
+			(alpha) => this.draw(alpha),
 		);
 		this.loop.start();
 	}
@@ -166,19 +175,22 @@ export class GameWorld {
 		this.callbacks.onStarsChange(this.collected);
 		this.callbacks.onTimeChange(0);
 
+		// Рестарт — основное действие игрока, поэтому сцену не пересобираем.
+		// Стены (два полноуровневых TilingSprite + маска), декорации, маркеры и
+		// световой слой не имеют состояния — остаются. Пересоздаём только то,
+		// что stateful: врагов и взрывы; дымы и звёзды сбрасываем на месте.
 		for (const e of this.enemies) e.destroy();
 		this.enemies = [];
 		for (const ex of this.explosions) ex.destroy();
 		this.explosions = [];
-		this.smokes?.destroy();
-		this.smokes = null;
-		this.decorations?.destroy();
-		this.decorations = null;
-		this.lightLayer?.destroy();
-		this.lightLayer = null;
+		this.smokes?.clear();
+		const now = performance.now();
+		for (const s of this.stars) {
+			s.container.visible = true;
+			s.spawnAt = now;
+		}
 
-		this.world.removeChildren();
-		this.buildScene();
+		this.buildEnemies();
 		this.resetPlayer();
 		this.resetRecorder();
 		this.refreshGhost();
@@ -323,7 +335,13 @@ export class GameWorld {
 			}
 			if (enemy) {
 				this.enemies.push(enemy);
-				this.world.addChild(enemy.container);
+				// При первой сборке спрайта игрока ещё нет — добавляем в конец;
+				// при рестарте вставляем под игрока, чтобы не оказаться над светом.
+				if (this.playerSprite) {
+					this.world.addChildAt(enemy.container, this.world.getChildIndex(this.playerSprite.container));
+				} else {
+					this.world.addChild(enemy.container);
+				}
 			}
 		}
 	}
@@ -398,11 +416,21 @@ export class GameWorld {
 	setPaused(paused: boolean): void { this.paused = paused; }
 
 
+	private snapPrev(): void {
+		this.prevX = this.player.x;
+		this.prevY = this.player.y;
+		this.prevR = this.player.r;
+	}
+
+
 	private step(dt: number): void {
-		if (this.result || this.paused) return;
-		// Во время анимаций появления/засасывания физика заморожена,
-		// столкновения не считаются, таймер не тикает.
-		if (this.animState !== 'running') return;
+		// На паузе/результате/анимациях физика стоит — prev должен совпадать с
+		// текущим, иначе draw(alpha) будет качать корабль между устаревшими точками.
+		if (this.result || this.paused || this.animState !== 'running') {
+			this.snapPrev();
+			return;
+		}
+		this.snapPrev();
 
 		let r = this.player.r + this.player.vr * dt;
 		while (r < -180) r += 360;
@@ -414,8 +442,9 @@ export class GameWorld {
 		this.player.x += this.player.vx * dt;
 		this.player.y += this.player.vy * dt;
 
-		this.time += Math.round(dt * 1000);
-		this.callbacks.onTimeChange(this.time);
+		// Копим в float: Math.round(1000/60)=17 давало 1020 мс на секунду.
+		this.time += dt * 1000;
+		this.callbacks.onTimeChange(Math.floor(this.time));
 
 		// Призрак движется в реальном игровом времени; pause/result обработаны
 		// выше — в step() мы доходим только в running-state, поэтому тут
@@ -521,7 +550,7 @@ export class GameWorld {
 		this.result = {
 			type,
 			stars: this.collected,
-			timeMs: this.time,
+			timeMs: Math.round(this.time),
 			fuelSpent: Math.max(0, this.initialFuel - this.fuel),
 		};
 		this.recorder?.add(type, this.time, this.player);
@@ -580,8 +609,18 @@ export class GameWorld {
 	}
 
 
-	private draw(): void {
+	private draw(alpha: number): void {
 		const now = performance.now();
+
+		// Интерполированное положение между предыдущим и текущим физическим
+		// шагом. В running-состоянии рисуем его; в анимациях — точное.
+		const a = Math.max(0, Math.min(1, alpha));
+		let dr = this.player.r - this.prevR;
+		if (dr > 180) dr -= 360;
+		if (dr < -180) dr += 360;
+		const ix = this.prevX + (this.player.x - this.prevX) * a;
+		const iy = this.prevY + (this.player.y - this.prevY) * a;
+		const ir = this.prevR + dr * a;
 
 		if (this.animState === 'spawn') {
 			const elapsed = now - this.animStart;
@@ -619,8 +658,8 @@ export class GameWorld {
 				this.finish('win');
 			}
 		} else if (this.playerSprite.container.visible) {
-			this.playerSprite.container.position.set(this.player.x, this.player.y);
-			this.playerSprite.container.rotation = (this.player.r * Math.PI) / 180;
+			this.playerSprite.container.position.set(ix, iy);
+			this.playerSprite.container.rotation = (ir * Math.PI) / 180;
 			this.tickBoosterFlame(now);
 		}
 
@@ -636,7 +675,9 @@ export class GameWorld {
 			}
 		}
 
-		this.camera.follow({x: this.player.x, y: this.player.y}, this.zoom);
+		const camX = this.animState === 'running' ? ix : this.player.x;
+		const camY = this.animState === 'running' ? iy : this.player.y;
+		this.camera.follow({x: camX, y: camY}, this.zoom);
 
 		if (this.walls) {
 			// Параллакс задней стены. tilePosition применяет ОБРАТНЫЙ сдвиг
@@ -645,8 +686,8 @@ export class GameWorld {
 			// чуть заметнее разрыв между задником и стенами пещеры чем при 0.07.
 			const k = 0.15;
 			this.walls.innerCave.tilePosition.set(
-				this.player.x * k,
-				this.player.y * k,
+				camX * k,
+				camY * k,
 			);
 		}
 	}

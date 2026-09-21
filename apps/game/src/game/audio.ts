@@ -59,7 +59,8 @@ let sfxGain: GainNode | null = null;
 
 const bufferCache = new Map<string, AudioBuffer>();
 
-let currentMusicSource: AudioBufferSourceNode | null = null;
+let currentMusicEl: HTMLAudioElement | null = null;
+let currentMusicNode: MediaElementAudioSourceNode | null = null;
 let currentMusicTrackGain: GainNode | null = null;
 let currentMusicKey: number | null = null;
 let musicPlaying = false;
@@ -125,17 +126,31 @@ function init(): void {
 
 	// Resume AudioContext на первый user-gesture — политика autoplay браузера.
 	const resumeOnGesture = (): void => {
-		if (ctx && ctx.state === 'suspended') void ctx.resume();
+		if (ctx && ctx.state !== 'running') void ctx.resume();
+		resumeMusic();
 	};
 	document.addEventListener('touchstart', resumeOnGesture, {once: true});
 	document.addEventListener('click', resumeOnGesture, {once: true});
 
-	// Пауза при скрытой вкладке.
+	// Пауза при скрытой вкладке / свёрнутом приложении.
 	document.addEventListener('visibilitychange', () => {
 		if (!ctx) return;
-		if (document.visibilityState === 'hidden') void ctx.suspend();
-		else void ctx.resume();
+		if (document.visibilityState === 'hidden') {
+			void ctx.suspend();
+			currentMusicEl?.pause();
+		} else {
+			void ctx.resume();
+			resumeMusic();
+		}
 	});
+
+	// iOS: звонок, Siri, будильник переводят контекст в 'interrupted' —
+	// visibilitychange при этом может не прийти. Следим за состоянием сами.
+	ctx.onstatechange = () => {
+		if (!ctx) return;
+		if ((ctx.state as string) === 'interrupted') currentMusicEl?.pause();
+		else if (ctx.state === 'running' && document.visibilityState === 'visible') resumeMusic();
+	};
 }
 
 
@@ -145,7 +160,7 @@ function play(name: keyof typeof SOUNDS | string, volume?: number): void {
 	if (!ctx || !sfxGain) return;
 	const s = audioStore.getState();
 	if (!s.sfxEnabled) return;
-	if (ctx.state === 'suspended') void ctx.resume();
+	if (ctx.state !== 'running') void ctx.resume();
 
 	const url = SOUNDS[name];
 	if (!url) return;
@@ -221,6 +236,12 @@ function loop(name: keyof typeof SOUNDS | string): LoopHandle | null {
 
 
 /// MUSIC ///
+//
+// Музыка НЕ декодируется в AudioBuffer: 9 треков по 5–11 минут в PCM —
+// это 0.75–1.5 ГБ, гарантированный OOM в WKWebView. Трек играет через
+// <audio> (ОС декодирует потоково), а в граф WebAudio входит через
+// MediaElementAudioSourceNode — так сохраняется общий musicGain и
+// регулировка громкости из настроек.
 
 function getRandomMusicKey(exclude: number | null): number {
 	const filtered = exclude !== null ? MUSIC_KEYS.filter(k => k !== exclude) : MUSIC_KEYS;
@@ -228,39 +249,56 @@ function getRandomMusicKey(exclude: number | null): number {
 }
 
 
-async function playMusicTrack(key: number): Promise<void> {
-	if (!ctx || !musicGain) return;
-
-	if (currentMusicSource) {
-		try {
-			currentMusicSource.stop();
-			currentMusicSource.disconnect();
-		} catch { /* noop */ }
+function teardownMusicElement(): void {
+	if (currentMusicNode) {
+		try { currentMusicNode.disconnect(); } catch { /* noop */ }
+		currentMusicNode = null;
 	}
+	if (currentMusicTrackGain) {
+		try { currentMusicTrackGain.disconnect(); } catch { /* noop */ }
+		currentMusicTrackGain = null;
+	}
+	if (currentMusicEl) {
+		currentMusicEl.onended = null;
+		currentMusicEl.onerror = null;
+		currentMusicEl.pause();
+		currentMusicEl.removeAttribute('src');
+		currentMusicEl.load();
+		currentMusicEl = null;
+	}
+}
+
+
+function playMusicTrack(key: number): void {
+	if (!ctx || !musicGain) return;
+	teardownMusicElement();
 
 	const track = MUSIC[key]!;
-	const buffer = await getBuffer(track.url);
-	if (!musicPlaying || !ctx || !musicGain) return;
+	const el = new Audio(track.url);
+	el.preload = 'auto';
 
-	currentMusicKey = key;
-
-	const source = ctx.createBufferSource();
-	source.buffer = buffer;
-
+	const node = ctx.createMediaElementSource(el);
 	const trackGain = ctx.createGain();
 	trackGain.gain.value = track.volume;
-	source.connect(trackGain);
+	node.connect(trackGain);
 	trackGain.connect(musicGain);
 
-	source.onended = () => {
-		if (!musicPlaying) return;
-		const nextKey = getRandomMusicKey(key);
-		void playMusicTrack(nextKey);
+	const next = (): void => {
+		if (!musicPlaying || currentMusicEl !== el) return;
+		playMusicTrack(getRandomMusicKey(key));
 	};
+	el.onended = next;
+	// Битый или недоступный файл — идём к следующему треку, а не молчим.
+	el.onerror = next;
 
-	source.start(0);
-	currentMusicSource = source;
+	currentMusicEl = el;
+	currentMusicNode = node;
 	currentMusicTrackGain = trackGain;
+	currentMusicKey = key;
+
+	void el.play().catch(() => {
+		// Autoplay заблокирован — повторим на первом жесте (см. init).
+	});
 }
 
 
@@ -269,48 +307,37 @@ function playMusic(): void {
 	if (musicPlaying) return;
 	const s = audioStore.getState();
 	if (!s.musicEnabled) return;
-	if (ctx.state === 'suspended') void ctx.resume();
+	if (ctx.state !== 'running') void ctx.resume();
 
 	musicPlaying = true;
-	const key = getRandomMusicKey(currentMusicKey);
-	void playMusicTrack(key);
+	playMusicTrack(getRandomMusicKey(currentMusicKey));
 }
 
 
 function stopMusic(): void {
 	musicPlaying = false;
-	if (currentMusicSource) {
-		currentMusicSource.onended = null;
-		try {
-			currentMusicSource.stop();
-			currentMusicSource.disconnect();
-		} catch { /* noop */ }
-		currentMusicSource = null;
-	}
-	currentMusicTrackGain = null;
+	teardownMusicElement();
 	currentMusicKey = null;
 }
 
 
 function pauseMusic(): void {
-	if (currentMusicTrackGain) currentMusicTrackGain.disconnect();
+	currentMusicEl?.pause();
 }
 
 
 function resumeMusic(): void {
-	if (currentMusicTrackGain && musicPlaying && musicGain) {
-		currentMusicTrackGain.connect(musicGain);
+	if (musicPlaying && currentMusicEl?.paused) {
+		void currentMusicEl.play().catch(() => { /* повторим на следующем жесте */ });
 	}
 }
 
 
 async function prewarm(): Promise<void> {
 	if (!ctx) return;
-	const urls = [
-		...Object.values(SOUNDS),
-		...Object.values(MUSIC).map(m => m.url),
-	];
-	await Promise.all(urls.map(url => getBuffer(url).catch(() => null)));
+	// Только SFX — это около минуты звука, ≈14 МБ PCM. Музыка не декодируется
+	// заранее вообще: она стримится через <audio> по мере воспроизведения.
+	await Promise.all(Object.values(SOUNDS).map(url => getBuffer(url).catch(() => null)));
 }
 
 

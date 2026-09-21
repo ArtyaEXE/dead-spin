@@ -38,6 +38,8 @@ export interface SmokeSystem {
 	container: Container;
 	add: (point: Point, size?: number, duration?: number, move?: Point) => void;
 	tick: (now: number) => void;
+	/** Убрать все живые клубы, контейнер оставить (рестарт уровня). */
+	clear: () => void;
 	destroy: () => void;
 }
 
@@ -126,6 +128,10 @@ export function createSmokeSystem(explosionFrames: Texture[]): SmokeSystem {
 					sprite.position.set(cx, cy);
 				}
 			}
+		},
+		clear() {
+			for (const sm of active) for (const s of sm.sprites) s.destroy();
+			active.length = 0;
 		},
 		destroy() {
 			for (const sm of active) for (const s of sm.sprites) s.destroy();

@@ -117,6 +117,14 @@ export async function loginDevice() {
 }
 
 
+/** Местная дата YYYY-MM-DD — дейлик считает «новый день» по часам игрока. */
+function localDate(): string {
+	const d = new Date();
+	const p = (n: number): string => String(n).padStart(2, '0');
+	return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+
 export const api = {
 	me: () => request('GET', '/me', MeResponseSchema),
 
@@ -135,8 +143,8 @@ export const api = {
 	globalGhost: (level: number) =>
 		request('GET', `/leaderboard/${level}/ghost`, GhostResponseSchema),
 
-	dailyState: () => request('GET', '/me/daily', DailyStateResponseSchema),
-	claimDaily: () => request('POST', '/me/daily', DailyClaimResponseSchema, {}),
+	dailyState: () => request('GET', `/me/daily?date=${localDate()}`, DailyStateResponseSchema),
+	claimDaily: () => request('POST', '/me/daily', DailyClaimResponseSchema, {date: localDate()}),
 	achievements: () => request('GET', '/me/achievements', AchievementsResponseSchema),
 
 	markTutorialSeen: (key: string) =>
