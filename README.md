@@ -51,6 +51,9 @@ pnpm --filter @dead-spin/api dev          # запустить API на :3001
 
 # Уровни
 pnpm --filter @dead-spin/levels exec tsx scripts/generate-pallas.ts   # перегенерировать PALLAS (L16–L30)
+pnpm --filter @dead-spin/levels exec tsx scripts/tune-curve.ts        # звёзды с прямой + мины в пустые уровни
+pnpm --filter @dead-spin/levels exec tsx scripts/inject-par.ts        # пересчитать fuelTank/par по маршрутам
+pnpm optimize:assets                                                  # пережать картинки под размеры отрисовки
 ```
 
 ## Эндпоинты API
@@ -71,7 +74,7 @@ pnpm --filter @dead-spin/levels exec tsx scripts/generate-pallas.ts   # пере
 ## Статус
 
 Ветка `standalone`: вся связь с Telegram и встроенный редактор удалены (2026-09-21).
-Typecheck: 6 пакетов. 56 тестов зелёные (47 engine + 9 api). 30/30 уровней валидны.
+Typecheck: 6 пакетов. 74 теста зелёные (47 engine + 27 api). 30/30 уровней валидны (6 с предупреждением по крюку).
 
 | Пакет | Назначение | Тесты |
 |---|---|---|
@@ -79,10 +82,10 @@ Typecheck: 6 пакетов. 56 тестов зелёные (47 engine + 9 api).
 | `@dead-spin/engine` | Физика, векторы, chunks, B-spline, fixed-timestep, heat мины | 47 |
 | `@dead-spin/db` | Drizzle-схема | — |
 | `@dead-spin/levels` | 30 JSON + loader + генератор | — |
-| `@dead-spin/api` | Hono + Drizzle + JWT + device auth | 9 |
+| `@dead-spin/api` | Hono + Drizzle + JWT + device auth | 27 |
 | `@dead-spin/game` | Клиент | — |
 
-**Следующий этап:** GDD §19, этап A — фундамент (см. §17 «Известные проблемы»).
+**Этап A (фундамент) завершён 2026-09-21. Следующий:** GDD §19, этап B — режимы (бесконечный, испытание дня, continue, призрак себя, near-miss).
 
 Легаси-документы `DEPLOY.md` и `SMOKE_TEST.md` описывают Telegram-альфу и будут
 переписаны на этапе C (обёртка).

@@ -1,7 +1,7 @@
 import {For} from 'solid-js';
 import {ACHIEVEMENTS, ACHIEVEMENT_KEYS} from '@dead-spin/shared';
 import {useProfile} from '../stores/profile';
-import {authStore} from '../stores/auth';
+import {getLocale, t} from '../i18n';
 
 
 /**
@@ -13,12 +13,6 @@ import {authStore} from '../stores/auth';
  */
 export function AchievementsOverlay(props: {onClose: () => void}) {
 	const profile = useProfile();
-
-	const locale = (): 'ru' | 'en' => {
-		const u = authStore.getState().user;
-		const l = u?.locale ?? (typeof navigator !== 'undefined' ? navigator.language : 'en');
-		return l.startsWith('ru') ? 'ru' : 'en';
-	};
 
 	const items = () => ACHIEVEMENT_KEYS.map((key) => ({
 		key,
@@ -33,7 +27,7 @@ export function AchievementsOverlay(props: {onClose: () => void}) {
 				<div class="ach-header">
 					<div class="ach-title">
 						<img class="icon-inline" src="/icons/trophy-icon.png" alt="" />
-						Достижения
+						{t('achievements.title')}
 					</div>
 					<div class="ach-count">
 						{unlockedCount()} / {items().length}
@@ -51,7 +45,7 @@ export function AchievementsOverlay(props: {onClose: () => void}) {
 										: <img src="/icons/lock-icon.png" alt="locked" />}
 								</div>
 								<div class="ach-name">
-									{locale() === 'ru' ? a.ru : a.en}
+									{getLocale() === 'ru' ? a.ru : a.en}
 								</div>
 							</div>
 						)}

@@ -1223,3 +1223,17 @@ html, body, #root {
 	color: #7a6647;
 }
 .result-rating .hit { color: var(--gold, #ffe082); }
+
+
+/* Переключатель языка в настройках. */
+.lang-row { justify-content: center; gap: 10px; }
+.lang-btn {
+	background: #2a2014;
+	border: 1px solid #4a3a22;
+	color: #7a6647;
+	padding: 6px 18px;
+	border-radius: 6px;
+	font-size: 14px;
+	letter-spacing: 2px;
+}
+.lang-btn.active { color: var(--gold, #ffe082); border-color: var(--gold, #ffe082); }

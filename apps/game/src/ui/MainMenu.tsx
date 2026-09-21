@@ -3,6 +3,7 @@ import {getActiveSkinId, getSkinById} from '../stores/skin';
 import {progressStore} from '../stores/progress';
 import {profileStore, useProfile} from '../stores/profile';
 import {localDate} from '../lib/persist';
+import {t} from '../i18n';
 import {AchievementsOverlay} from './Achievements';
 
 
@@ -45,15 +46,15 @@ export function MainMenu(props: {onPlay: () => void; onSettings: () => void; onS
 			<Show when={profile() && daily().canClaim}>
 				<div class="daily-banner pressable" onClick={claim}>
 					<img class="icon-inline" src="/icons/daily-gift-icon.png" alt="" />
-					Забрать бонус: +{daily().nextReward} монет
-					<span class="daily-streak">день {daily().streakDays + 1}</span>
+					{t('daily.claim', {n: daily().nextReward})}
+					<span class="daily-streak">{t('daily.day', {n: daily().streakDays + 1})}</span>
 				</div>
 			</Show>
 
 			<Show when={claimed()}>
 				{(r) => (
 					<div class="daily-toast">
-						✅ +{r()} монет
+						✅ {t('daily.claimed', {n: r()})}
 					</div>
 				)}
 			</Show>

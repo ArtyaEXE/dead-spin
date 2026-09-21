@@ -1,6 +1,7 @@
 import {For, Show, createEffect, onCleanup} from 'solid-js';
 import {getNextLevelNumber} from '@dead-spin/levels';
 import type {Rating} from '@dead-spin/shared';
+import {t} from '../i18n';
 import {useProgress} from '../stores/progress';
 import {audio} from '../game/audio';
 
@@ -99,12 +100,12 @@ export function ResultScreen(props: {
 					<Show when={props.rating}>
 						{(rt) => (
 							<div class="result-rating">
-								<span class="hit">финиш</span>
+								<span class="hit">{t('rating.finish')}</span>
 								<span classList={{hit: rt().parHit}}>
-									время {printTimer(props.timeMs, true)}{props.parTimeMs !== null ? ` / ${printTimer(props.parTimeMs, true)}` : ''}
+									{t('rating.time')} {printTimer(props.timeMs, true)}{props.parTimeMs !== null ? ` / ${printTimer(props.parTimeMs, true)}` : ''}
 								</span>
 								<span classList={{hit: rt().fullClear}}>
-									{props.collected}/3 и топливо{props.parFuel !== null ? ` ≤ ${(props.parFuel / 1000).toFixed(1)}k` : ''}
+									{t('rating.fullClear', {c: props.collected})}{props.parFuel !== null ? ` ≤ ${(props.parFuel / 1000).toFixed(1)}k` : ''}
 								</span>
 							</div>
 						)}
