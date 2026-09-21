@@ -216,9 +216,3 @@ export const PendingPushResponseSchema = z.object({
 	push: PendingPushSchema.nullable(),
 });
 export type PendingPushResponse = z.infer<typeof PendingPushResponseSchema>;
-
-
-export const EditorAccessResponseSchema = z.object({
-	isEditor: z.boolean(),
-});
-export type EditorAccessResponse = z.infer<typeof EditorAccessResponseSchema>;

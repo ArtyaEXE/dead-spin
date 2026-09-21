@@ -21,10 +21,7 @@ import {ChallengePushOverlay} from './ChallengePushOverlay';
  * Daily-плашка (если бонус доступен сегодня) — над Play. Тап забирает,
  * показывает анимированный баннер и обновляет fuel/coins в auth-сторе.
  */
-export function MainMenu(props: {
-	onPlay: () => void; onSettings: () => void; onShop: () => void;
-	showEditor?: boolean; onEditor?: () => void;
-}) {
+export function MainMenu(props: {onPlay: () => void; onSettings: () => void; onShop: () => void}) {
 	const shipSrc = (): string =>
 		getSkinById(getActiveSkinId(progressStore.getState().summaryStars)).src;
 	const liveFuel = useLiveFuel();
@@ -186,9 +183,6 @@ export function MainMenu(props: {
 				<button class="mm-trophy pressable" onClick={() => setShowAchievements(true)}>
 					<img src="/icons/trophy-icon.png" alt="achievements" />
 				</button>
-				<Show when={props.showEditor}>
-					<button class="mm-editor pressable" onClick={() => props.onEditor?.()}>EDITOR</button>
-				</Show>
 			</div>
 
 			<Show when={showAchievements()}>

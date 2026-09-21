@@ -125,15 +125,6 @@ export const allowlist = pgTable('allowlist', {
 
 
 /**
- * editor_admins — кому разрешён доступ к редактору уровней.
- */
-export const editorAdmins = pgTable('editor_admins', {
-	tgId: text('tg_id').primaryKey().references(() => allowlist.tgId, {onDelete: 'cascade'}),
-	addedAt: timestamp('added_at', {withTimezone: true}).notNull().defaultNow(),
-});
-
-
-/**
  * daily_rewards — daily login bonus per юзер. UTC-дата по аналогии со
  * стриками. Стрик копит за подряд-играющих, на пропуске сбрасывается.
  *

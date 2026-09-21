@@ -2,7 +2,7 @@ import {Hono} from 'hono';
 import {z} from 'zod';
 import {eq, sql} from 'drizzle-orm';
 import {db} from '../db/client';
-import {progresses, progressLevels, groupProgressLevels, users, editorAdmins} from '../db/schema';
+import {progresses, progressLevels, groupProgressLevels, users} from '../db/schema';
 import {badRequest} from '../lib/errors';
 import {requireAuth, type AuthedEnv} from '../middleware/auth';
 import {getDailyState, claimDaily} from '../lib/daily-rewards';
@@ -15,19 +15,6 @@ export const meRoutes = new Hono<AuthedEnv>();
 meRoutes.get('/', requireAuth, (c) => {
 	const user = c.var.user;
 	return c.json({user});
-});
-
-
-/**
- * GET /me/editor-access — является ли текущий юзер редактор-админом.
- * Гейт для доступа к редактору уровней (таблица editor_admins по tg_id).
- */
-meRoutes.get('/editor-access', requireAuth, async (c) => {
-	const [row] = await db.select({tgId: editorAdmins.tgId})
-		.from(editorAdmins)
-		.where(eq(editorAdmins.tgId, c.var.user.tgId))
-		.limit(1);
-	return c.json({isEditor: Boolean(row)});
 });
 
 

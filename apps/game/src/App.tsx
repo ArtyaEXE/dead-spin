@@ -1,4 +1,4 @@
-import {createEffect, createSignal, lazy, Match, Show, Suspense, Switch, onMount} from 'solid-js';
+import {createEffect, createSignal, Match, Show, Switch, onMount} from 'solid-js';
 import {authStore, useAuth} from './stores/auth';
 import {progressStore, useProgress} from './stores/progress';
 import {groupStore} from './stores/group';
@@ -12,11 +12,8 @@ import {MusicPlayer} from './ui/MusicPlayer';
 import {ComicPlayer} from './ui/ComicPlayer';
 import {getComic} from './ui/comics';
 import {Shop} from './ui/Shop';
-// Редактор — модер-инструмент, lazy-загрузка чтобы не раздувать бандл игрока.
-const Editor = lazy(() => import('./editor/Editor').then(m => ({default: m.Editor})));
 import {audio} from './game/audio';
 import {preloadAll} from './game/preload';
-import {api} from './net/client';
 import {getLevelByNumber} from '@dead-spin/levels';
 
 
@@ -25,7 +22,6 @@ type Route =
 	| {name: 'settings'}
 	| {name: 'shop'}
 	| {name: 'levels'}
-	| {name: 'editor'}
 	| {name: 'intro'; level: number; comicId: string}
 	| {name: 'outro'; nextLevel: number; comicId: string}
 	| {name: 'game'; level: number};
@@ -49,7 +45,6 @@ export default function App() {
 	const [musicPlay, setMusicPlay] = createSignal(false);
 	const [preloadDone, setPreloadDone] = createSignal(false);
 	const [preloadPct, setPreloadPct] = createSignal(0);
-	const [isEditor, setIsEditor] = createSignal(false);
 
 	onMount(() => {
 		groupStore.getState().hydrate();
@@ -114,15 +109,6 @@ export default function App() {
 		void preloadAll((done, total) => {
 			setPreloadPct(Math.floor((done / total) * 100));
 		}).then(() => setPreloadDone(true));
-
-		// Проверяем editor-доступ (показать кнопку EDITOR в меню). Также
-		// поддерживаем deep-entry через ?editor=1 (сам Editor гейтит доступ).
-		void api.editorAccess().then((r) => {
-			setIsEditor(r.isEditor);
-			if (r.isEditor && new URLSearchParams(window.location.search).get('editor') === '1') {
-				setRoute({name: 'editor'});
-			}
-		}).catch(() => {});
 	});
 
 	const startLevel = (level: number): void => {
@@ -171,8 +157,6 @@ export default function App() {
 							onPlay={() => { setMusicPlay(true); setRoute({name: 'levels'}); }}
 							onSettings={() => setRoute({name: 'settings'})}
 							onShop={() => setRoute({name: 'shop'})}
-							showEditor={isEditor()}
-							onEditor={() => setRoute({name: 'editor'})}
 						/>
 					</Match>
 
@@ -182,12 +166,6 @@ export default function App() {
 
 					<Match when={route().name === 'shop'}>
 						<Shop onBack={() => setRoute({name: 'main'})} />
-					</Match>
-
-					<Match when={route().name === 'editor'}>
-						<Suspense fallback={<div class="ed-gate">Загрузка редактора…</div>}>
-							<Editor onExit={() => setRoute({name: 'main'})} />
-						</Suspense>
 					</Match>
 
 					<Match when={route().name === 'levels'}>

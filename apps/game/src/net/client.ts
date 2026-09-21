@@ -10,7 +10,7 @@ import {
 	DailyStateResponseSchema, DailyClaimResponseSchema,
 	AchievementsResponseSchema, SpendCoinsResponseSchema,
 	ActiveChallengeResponseSchema, SetSkinResponseSchema, SimpleOkSchema,
-	PendingPushResponseSchema, EditorAccessResponseSchema,
+	PendingPushResponseSchema,
 } from './schemas';
 
 
@@ -158,8 +158,6 @@ export const api = {
 	activeChallenge: () => request('GET', '/challenges/active', ActiveChallengeResponseSchema),
 
 	pendingPush: () => request('GET', '/challenges/pending-push', PendingPushResponseSchema),
-
-	editorAccess: () => request('GET', '/me/editor-access', EditorAccessResponseSchema),
 
 	spendCoins: (amount: number, reason: string) =>
 		request('POST', '/me/spend-coins', SpendCoinsResponseSchema, {amount, reason}),
