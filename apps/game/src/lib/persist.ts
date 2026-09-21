@@ -1,6 +1,5 @@
 import type {ZodType, ZodTypeDef} from 'zod';
 
-
 /**
  * Единственная точка записи на устройство. Сейчас — localStorage: в
  * установленном приложении (Capacitor / WKWebView) он не подвержен
@@ -10,7 +9,6 @@ import type {ZodType, ZodTypeDef} from 'zod';
  * Всё под try/catch: в приватном режиме или при заблокированном хранилище
  * игра должна работать, просто без сохранения.
  */
-
 
 // Input-тип схемы намеренно unknown: схемы с .default() имеют вход ≠ выход,
 // и без этого TS не выводит T.
@@ -25,7 +23,6 @@ export function loadJson<T>(key: string, schema: ZodType<T, ZodTypeDef, unknown>
 	}
 }
 
-
 export function saveJson(key: string, value: unknown): void {
 	try {
 		localStorage.setItem(key, JSON.stringify(value));
@@ -33,7 +30,6 @@ export function saveJson(key: string, value: unknown): void {
 		/* нет места или хранилище недоступно — играем без сохранения */
 	}
 }
-
 
 /** Местная дата YYYY-MM-DD — «новый день» в игре наступает по часам игрока. */
 export function localDate(now: Date = new Date()): string {

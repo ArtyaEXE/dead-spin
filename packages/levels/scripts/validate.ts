@@ -4,7 +4,6 @@ import {fileURLToPath} from 'node:url';
 import {LevelSchema, type Level} from '@dead-spin/shared';
 import {pointInPoly, distToPolygonEdge, type GenPoint} from '../src/generate';
 
-
 /**
  * Валидация уровней: схема + дизайн-инварианты (GDD §8.3, память
  * feedback_level_design §5).
@@ -15,7 +14,6 @@ import {pointInPoly, distToPolygonEdge, type GenPoint} from '../src/generate';
  * WARN — цели по кривой, которые не ломают игру, но ухудшают её:
  *   крюк ниже цели (≥1.35 с L4, ≥1.6 с L10), нет par-порогов.
  */
-
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const dataDir = join(__dirname, '..', 'src', 'data');
@@ -50,11 +48,17 @@ function checkDesign(n: number, l: Level): {errors: string[]; warns: string[]; h
 	const warns: string[] = [];
 	const stars: P[] = [l.star1, l.star2, l.star3];
 
-	for (const [name, p] of [['start', l.startPoint], ['finish', l.finishPoint]] as const) {
+	for (const [name, p] of [
+		['start', l.startPoint],
+		['finish', l.finishPoint],
+	] as const) {
 		if (!inCave(p, l)) errors.push(`${name} вне пещеры`);
 	}
 	stars.forEach((s, i) => {
-		if (!inCave(s, l)) { errors.push(`★${i + 1} вне пещеры`); return; }
+		if (!inCave(s, l)) {
+			errors.push(`★${i + 1} вне пещеры`);
+			return;
+		}
 		const wc = wallClearance(s, l);
 		// Допуск 0.5 px — рукотворные уровни ставили звёзды ровно на границе.
 		if (wc < STAR_WALL - 0.5) errors.push(`★${i + 1} ↔ стена ${wc.toFixed(0)} < ${STAR_WALL}`);
@@ -71,7 +75,8 @@ function checkDesign(n: number, l: Level): {errors: string[]; warns: string[]; h
 		}
 	});
 
-	const path = dist(l.startPoint, l.star1) + dist(l.star1, l.star2) + dist(l.star2, l.star3) + dist(l.star3, l.finishPoint);
+	const path =
+		dist(l.startPoint, l.star1) + dist(l.star1, l.star2) + dist(l.star2, l.star3) + dist(l.star3, l.finishPoint);
 	const hook = path / Math.max(1, dist(l.startPoint, l.finishPoint));
 	const tgt = hookTarget(n);
 	if (tgt > 0 && hook < tgt) warns.push(`крюк ${hook.toFixed(2)} < ${tgt}`);
@@ -80,14 +85,12 @@ function checkDesign(n: number, l: Level): {errors: string[]; warns: string[]; h
 	return {errors, warns, hook};
 }
 
-
 function naturalSortByNumber(a: string, b: string): number {
 	return Number(a.replace(/\.json$/, '')) - Number(b.replace(/\.json$/, ''));
 }
 
-
 const files = readdirSync(dataDir)
-	.filter(f => /^\d+\.json$/.test(f))
+	.filter((f) => /^\d+\.json$/.test(f))
 	.sort(naturalSortByNumber);
 
 console.log(`Validating ${files.length} level file(s) in ${dataDir}\n`);
@@ -110,18 +113,30 @@ for (const file of files) {
 
 	const L = result.data;
 	const d = checkDesign(n, L);
-	const enemies = L.enemies.reduce((acc, e) => { acc[e.name] = (acc[e.name] ?? 0) + 1; return acc; }, {} as Record<string, number>);
-	const enemyStr = Object.entries(enemies).map(([k, v]) => `${k}×${v}`).join(' ') || '—';
+	const enemies = L.enemies.reduce(
+		(acc, e) => {
+			acc[e.name] = (acc[e.name] ?? 0) + 1;
+			return acc;
+		},
+		{} as Record<string, number>,
+	);
+	const enemyStr =
+		Object.entries(enemies)
+			.map(([k, v]) => `${k}×${v}`)
+			.join(' ') || '—';
 	const status = d.errors.length ? 'FAIL' : d.warns.length ? 'WARN' : 'OK  ';
 	console.log(
 		`  ${status} ${file.padEnd(8)} res=${L.res.x}x${L.res.y}  крюк=${d.hook.toFixed(2)}  ` +
-		`враги: ${enemyStr.padEnd(18)} deco=${L.decorations.length}  bak=${L.fuelTank ?? '—'}`
+			`враги: ${enemyStr.padEnd(18)} deco=${L.decorations.length}  bak=${L.fuelTank ?? '—'}`,
 	);
 	for (const e of d.errors) console.log(`    ✗ ${e}`);
 	for (const w of d.warns) console.log(`    ⚠ ${w}`);
 
 	if (d.errors.length) failed++;
-	else { passed++; if (d.warns.length) warned++; }
+	else {
+		passed++;
+		if (d.warns.length) warned++;
+	}
 }
 
 console.log(`\n${passed} passed (${warned} with warnings), ${failed} failed`);

@@ -1,6 +1,5 @@
-import {Container, Sprite, Texture} from 'pixi.js';
+import {Container, Sprite, type Texture} from 'pixi.js';
 import type {Point} from '@dead-spin/shared';
-
 
 export type StarSprite = {
 	id: string;
@@ -12,10 +11,8 @@ export type StarSprite = {
 	baseScale: number;
 };
 
-
 // Чуть меньше корабля (80px) — ~55px визуально.
 const STAR_SIZE = 55;
-
 
 /**
  * Спрайт звезды из star.png. `baseScale` считается один раз из native-размера
@@ -34,7 +31,6 @@ export function createStar(id: string, pos: Point, tex: Texture): StarSprite {
 	return {id, container, sprite, pos, radius: 20, spawnAt: performance.now(), baseScale};
 }
 
-
 /**
  * "floatAndScale" — вечная плавная анимация звезды. Повторяет CSS-keyframes
  * из Game.svelte:556-563: Y ±10px, scale 1.0→1.1, rotate −3°…+7°.
@@ -50,7 +46,7 @@ export function animateStar(star: StarSprite, now: number): void {
 	if (sinceSpawn < spawnDur) {
 		const t = sinceSpawn / spawnDur;
 		const overshoot = 1.10158;
-		baseScale = 1 + (overshoot + 1) * Math.pow(t - 1, 3) + overshoot * Math.pow(t - 1, 2);
+		baseScale = 1 + (overshoot + 1) * (t - 1) ** 3 + overshoot * (t - 1) ** 2;
 	}
 
 	// sin²(π·phase) — плавная волна 0→1→0 без излома посередине.
@@ -66,7 +62,6 @@ export function animateStar(star: StarSprite, now: number): void {
 	star.sprite.scale.set(star.baseScale * scale);
 	star.sprite.rotation = (rotDeg * Math.PI) / 180;
 }
-
 
 // Старое имя — reexport для обратной совместимости в GameWorld.
 export const animateStarSpawn = animateStar;

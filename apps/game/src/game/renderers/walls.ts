@@ -1,13 +1,11 @@
-import {ColorMatrixFilter, Container, Graphics, Texture, TilingSprite} from 'pixi.js';
+import {ColorMatrixFilter, Container, Graphics, type Texture, TilingSprite} from 'pixi.js';
 import type {Level, Point} from '@dead-spin/shared';
-
 
 export type WallsLayer = {
 	container: Container;
 	/** cave2-тайл внутри каверны — у него сдвигаем tilePosition ради параллакса. */
 	innerCave: TilingSprite;
 };
-
 
 /**
  * Рендер стен — повторяет логику space/imports/ui/game/Canvas.svelte:
@@ -43,7 +41,7 @@ export function createWallsLayer(level: Level, cave1: Texture, cave2: Texture): 
 	const innerCave = new TilingSprite({texture: cave2, width: w, height: h});
 	innerCave.position.set(-pad, -pad);
 	innerCave.tileTransform.scale.set(0.8, 0.8);
-	innerCave.tint = 0xC0C0C0;
+	innerCave.tint = 0xc0c0c0;
 
 	const polyMask = new Graphics();
 	for (const polygon of level.walls) {
@@ -76,13 +74,11 @@ export function createWallsLayer(level: Level, cave1: Texture, cave2: Texture): 
 	return {container, innerCave};
 }
 
-
 function polyPath(g: Graphics, polygon: readonly Point[]): void {
 	g.moveTo(polygon[0]!.x, polygon[0]!.y);
 	for (let i = 1; i < polygon.length; i++) g.lineTo(polygon[i]!.x, polygon[i]!.y);
 	g.closePath();
 }
-
 
 function rimPath(g: Graphics, polygon: readonly Point[]): void {
 	for (let i = 0; i < polygon.length; i++) {
@@ -99,5 +95,3 @@ function rimPath(g: Graphics, polygon: readonly Point[]): void {
 		g.lineTo(p2.x + ox, p2.y + oy);
 	}
 }
-
-

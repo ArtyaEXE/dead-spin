@@ -1,6 +1,5 @@
 import type {Level} from './level';
 
-
 /**
  * Рейтинг прохождения — три независимых условия, каждое даёт звезду.
  * Это то, за чем игрок возвращается на пройденный уровень (см. GDD §9):
@@ -18,12 +17,10 @@ import type {Level} from './level';
  * был виден сразу, а не давал звёзды бесплатно.
  */
 
-
 export const DEFAULT_FUEL_TANK = 4000;
 /** Ниже этой доли бака включается алярм низкого топлива. */
 export const LOW_FUEL_FRACTION = 0.2;
 export const STARS_PER_LEVEL = 3;
-
 
 export type RunOutcome = {
 	/** Сколько звёзд-предметов подобрано за заход (0..3). */
@@ -40,23 +37,15 @@ export type Rating = {
 	fullClear: boolean;
 };
 
-
 export function levelFuelTank(level: Pick<Level, 'fuelTank'>): number {
 	return level.fuelTank ?? DEFAULT_FUEL_TANK;
 }
 
-
-export function computeRating(
-	level: Pick<Level, 'parTimeMs' | 'parFuel'>,
-	run: RunOutcome,
-): Rating {
+export function computeRating(level: Pick<Level, 'parTimeMs' | 'parFuel'>, run: RunOutcome): Rating {
 	if (run.usedContinue) return {stars: 1, parHit: false, fullClear: false};
 
 	const parHit = level.parTimeMs !== undefined && run.timeMs <= level.parTimeMs;
-	const fullClear =
-		level.parFuel !== undefined &&
-		run.collected >= STARS_PER_LEVEL &&
-		run.fuelSpent <= level.parFuel;
+	const fullClear = level.parFuel !== undefined && run.collected >= STARS_PER_LEVEL && run.fuelSpent <= level.parFuel;
 
 	return {
 		stars: 1 + (parHit ? 1 : 0) + (fullClear ? 1 : 0),
@@ -64,7 +53,6 @@ export function computeRating(
 		fullClear,
 	};
 }
-
 
 /**
  * Слияние нового результата с сохранённым рекордом. Флаги липкие: раз

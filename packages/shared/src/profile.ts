@@ -2,7 +2,6 @@ import {z} from 'zod';
 import {ACHIEVEMENT_KEYS, type AchievementKey} from './achievements';
 import {LEVEL_COUNT} from './constants';
 
-
 /**
  * Профиль игрока — то, что живёт на устройстве и является источником
  * истины (GDD §16.2). Сервер получает снимок целиком через PUT /me/profile
@@ -15,7 +14,6 @@ import {LEVEL_COUNT} from './constants';
  * Вся логика здесь чистая — одинаково работает на клиенте и в тестах.
  */
 
-
 export const SKIN_IDS = ['prospector', 'wanderer', 'engineer', 'veteran', 'asteroid-king'] as const;
 export type SkinId = (typeof SKIN_IDS)[number];
 
@@ -24,18 +22,16 @@ export type SkinId = (typeof SKIN_IDS)[number];
  * (GDD §12.2). Раньше дублировались хардкодом в двух местах.
  */
 export const SKIN_STAR_THRESHOLDS: Record<SkinId, number> = {
-	'prospector': 0,
-	'wanderer': 12,
-	'engineer': 30,
-	'veteran': 55,
+	prospector: 0,
+	wanderer: 12,
+	engineer: 30,
+	veteran: 55,
 	'asteroid-king': 85,
 };
 export const ALL_SKINS_STARS = Math.max(...Object.values(SKIN_STAR_THRESHOLDS));
 
-
 export const TUTORIAL_KEYS = ['controls', 'mine', 'stone', 'worm'] as const;
 export type TutorialKey = (typeof TUTORIAL_KEYS)[number];
-
 
 const DateStr = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
@@ -49,7 +45,6 @@ export const DailyStateSchema = z.object({
 });
 export type DailyState = z.infer<typeof DailyStateSchema>;
 
-
 export const ProfileSchema = z.object({
 	v: z.literal(1),
 	coins: z.number().int().nonnegative(),
@@ -60,7 +55,6 @@ export const ProfileSchema = z.object({
 	daily: DailyStateSchema,
 });
 export type Profile = z.infer<typeof ProfileSchema>;
-
 
 export function defaultProfile(): Profile {
 	return {
@@ -73,21 +67,26 @@ export function defaultProfile(): Profile {
 	};
 }
 
-
 // ─── Дейлик (GDD §12.1) ─────────────────────────────────────────────
 
 export function dailyRewardForStreak(streakDays: number): number {
 	switch (streakDays) {
-		case 1: return 20;
-		case 2: return 30;
-		case 3: return 40;
-		case 4: return 50;
-		case 5: return 60;
-		case 6: return 80;
-		default: return 100;
+		case 1:
+			return 20;
+		case 2:
+			return 30;
+		case 3:
+			return 40;
+		case 4:
+			return 50;
+		case 5:
+			return 60;
+		case 6:
+			return 80;
+		default:
+			return 100;
 	}
 }
-
 
 export function dayDiff(a: string, b: string): number {
 	const ta = Date.UTC(+a.slice(0, 4), +a.slice(5, 7) - 1, +a.slice(8, 10));
@@ -95,12 +94,10 @@ export function dayDiff(a: string, b: string): number {
 	return Math.round((ta - tb) / 86_400_000);
 }
 
-
 /** Эффективное «сегодня»: не раньше максимальной виденной даты. */
 function effectiveToday(d: DailyState, today: string): string {
 	return d.maxSeenDate && dayDiff(today, d.maxSeenDate) < 0 ? d.maxSeenDate : today;
 }
-
 
 export function dailyState(
 	profile: Profile,
@@ -116,7 +113,6 @@ export function dailyState(
 	const next = diff === 1 ? d.streakDays + 1 : 1;
 	return {canClaim: true, streakDays: next - 1, nextReward: dailyRewardForStreak(next)};
 }
-
 
 export function claimDaily(
 	profile: Profile,
@@ -145,11 +141,9 @@ export function claimDaily(
 	};
 }
 
-
 // ─── Ачивки (GDD §12.3) ─────────────────────────────────────────────
 
 export type LevelRecordLike = {stars: number; timeMs: number; fuelSpent: number};
-
 
 /**
  * Пересчёт ачивок после победы. `lastRun` — только что сыгранный заход
@@ -164,7 +158,7 @@ export function evaluateAchievements(
 ): {profile: Profile; unlocked: AchievementKey[]} {
 	const rows = Object.values(levels);
 	const cleared = rows.length;
-	const perfect = rows.filter(r => r.stars >= 3).length;
+	const perfect = rows.filter((r) => r.stars >= 3).length;
 	const totalStars = rows.reduce((s, r) => s + r.stars, 0);
 
 	const conditions: Record<AchievementKey, boolean> = {
@@ -188,7 +182,6 @@ export function evaluateAchievements(
 	return unlocked.length > 0 ? {profile: {...profile, achievements: next}, unlocked} : {profile, unlocked};
 }
 
-
 // ─── Слияние с серверной копией ──────────────────────────────────────
 
 /**
@@ -210,7 +203,7 @@ export function mergeProfiles(local: Profile, remote: Profile | null): Profile {
 		v: 1,
 		coins: Math.max(local.coins, remote.coins),
 		selectedSkin: local.selectedSkin,
-		seenTutorials: TUTORIAL_KEYS.filter(k => seen.has(k)),
+		seenTutorials: TUTORIAL_KEYS.filter((k) => seen.has(k)),
 		achievements,
 		daily: remoteLater ? remote.daily : local.daily,
 	};

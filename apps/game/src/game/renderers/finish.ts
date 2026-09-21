@@ -1,6 +1,5 @@
-import {Container, Sprite, Texture} from 'pixi.js';
+import {Container, Sprite, type Texture} from 'pixi.js';
 import type {Point} from '@dead-spin/shared';
-
 
 /**
  * Tint hole-спрайта по миру. Pixi tint мультипликативный: белый = без
@@ -9,19 +8,17 @@ import type {Point} from '@dead-spin/shared';
  * холодный голубой, для VESTA — в красноватый, и т.д.
  */
 const WORLD_HOLE_TINT: Record<number, number> = {
-	0: 0xA0C0DD,  // CERES — ледяной голубой
-	1: 0xC8A0D0,  // PALLAS — фиолетово-органический
-	2: 0xFFFFFF,  // JUNO — нейтральный (охра hole уже совпадает)
-	3: 0xD0A0A0,  // VESTA — красноватый геотермальный
-	4: 0xD0D0D0,  // EUNOMIA — бледный серый
+	0: 0xa0c0dd, // CERES — ледяной голубой
+	1: 0xc8a0d0, // PALLAS — фиолетово-органический
+	2: 0xffffff, // JUNO — нейтральный (охра hole уже совпадает)
+	3: 0xd0a0a0, // VESTA — красноватый геотермальный
+	4: 0xd0d0d0, // EUNOMIA — бледный серый
 };
-
 
 function holeTint(levelNumber: number): number {
 	const worldIdx = Math.floor((levelNumber - 1) / 15);
-	return WORLD_HOLE_TINT[worldIdx] ?? 0xFFFFFF;
+	return WORLD_HOLE_TINT[worldIdx] ?? 0xffffff;
 }
-
 
 export function createStartMarker(pos: Point, tex: Texture, levelNumber: number): Container {
 	const c = new Container();
@@ -35,7 +32,6 @@ export function createStartMarker(pos: Point, tex: Texture, levelNumber: number)
 	c.addChild(sprite);
 	return c;
 }
-
 
 export function createFinishMarker(pos: Point, tex: Texture, levelNumber: number): Container {
 	const c = new Container();

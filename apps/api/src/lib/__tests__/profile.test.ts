@@ -1,9 +1,14 @@
 import {describe, it, expect} from 'vitest';
 import {
-	defaultProfile, dailyState, claimDaily, evaluateAchievements, mergeProfiles, ProfileSchema,
-	ALL_SKINS_STARS, LEVEL_COUNT,
+	defaultProfile,
+	dailyState,
+	claimDaily,
+	evaluateAchievements,
+	mergeProfiles,
+	ProfileSchema,
+	ALL_SKINS_STARS,
+	LEVEL_COUNT,
 } from '@dead-spin/shared';
-
 
 describe('дейлик', () => {
 	it('первый клейм — день 1, 20 монет', () => {
@@ -53,7 +58,6 @@ describe('дейлик', () => {
 	});
 });
 
-
 describe('ачивки', () => {
 	const run = (stars: number, timeMs: number, fuelSpent: number) => ({stars, timeMs, fuelSpent});
 
@@ -64,7 +68,9 @@ describe('ачивки', () => {
 
 	it('быстрый и экономный заход даёт speedrunner и fuel_efficient', () => {
 		const r = evaluateAchievements(defaultProfile(), {1: run(3, 9_000, 300)}, run(3, 9_000, 300), 't');
-		expect(r.unlocked).toEqual(expect.arrayContaining(['first_clear', 'first_3stars', 'speedrunner', 'fuel_efficient']));
+		expect(r.unlocked).toEqual(
+			expect.arrayContaining(['first_clear', 'first_3stars', 'speedrunner', 'fuel_efficient']),
+		);
 	});
 
 	it('выданное не выдаётся повторно', () => {
@@ -83,11 +89,22 @@ describe('ачивки', () => {
 	});
 });
 
-
 describe('слияние профилей', () => {
 	it('монеты — максимум, ачивки и туториалы — объединение, скин — локальный', () => {
-		const local = {...defaultProfile(), coins: 50, selectedSkin: 'wanderer' as const, seenTutorials: ['controls' as const], achievements: {first_clear: 'b'}};
-		const remote = {...defaultProfile(), coins: 120, selectedSkin: 'engineer' as const, seenTutorials: ['mine' as const], achievements: {first_clear: 'a', speedrunner: 'c'}};
+		const local = {
+			...defaultProfile(),
+			coins: 50,
+			selectedSkin: 'wanderer' as const,
+			seenTutorials: ['controls' as const],
+			achievements: {first_clear: 'b'},
+		};
+		const remote = {
+			...defaultProfile(),
+			coins: 120,
+			selectedSkin: 'engineer' as const,
+			seenTutorials: ['mine' as const],
+			achievements: {first_clear: 'a', speedrunner: 'c'},
+		};
 		const m = mergeProfiles(local, remote);
 		expect(m.coins).toBe(120);
 		expect(m.selectedSkin).toBe('wanderer');

@@ -1,7 +1,6 @@
 import type {Body} from '@dead-spin/engine';
 import type {GhostRecording, GhostEvent, GhostEventType} from '@dead-spin/shared';
 
-
 /**
  * Recorder — фиксирует ключевые события прохождения для последующего
  * воспроизведения как ghost в групповом контексте. Порт `Tries.js` из
@@ -12,7 +11,6 @@ import type {GhostRecording, GhostEvent, GhostEventType} from '@dead-spin/shared
  * (gravity + linear vr) — поэтому ~10–30 событий за прохождение
  * достаточно для гладкого replay'а, и одна запись весит ~1 КБ.
  */
-
 
 export class Recorder {
 	private events: GhostEvent[] = [];
@@ -26,9 +24,14 @@ export class Recorder {
 
 	add(type: GhostEventType, time: number, p: Body): void {
 		this.events.push({
-			type, time,
-			x: p.x, y: p.y, r: p.r,
-			vx: p.vx, vy: p.vy, vr: p.vr,
+			type,
+			time,
+			x: p.x,
+			y: p.y,
+			r: p.r,
+			vx: p.vx,
+			vy: p.vy,
+			vr: p.vr,
 		});
 	}
 

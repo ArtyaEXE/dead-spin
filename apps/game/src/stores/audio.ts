@@ -1,13 +1,11 @@
 import {createStore} from 'zustand/vanilla';
 import {createSolidStoreAdapter} from './solid';
 
-
 /**
  * Persisted-stores настроек звука — аналог audio-store.js в оригинале.
  * Значения хранятся в localStorage под теми же ключами `ako_*`, что и в
  * оригинальном проекте (совместимость данных).
  */
-
 
 type AudioState = {
 	masterVolume: number;
@@ -23,12 +21,13 @@ type AudioState = {
 	setSfxEnabled: (v: boolean) => void;
 };
 
-
 function persistedNumber(key: string, def: number, min: number, max: number): number {
 	try {
 		const raw = JSON.parse(localStorage.getItem(key) ?? 'null');
 		if (typeof raw === 'number' && raw >= min && raw <= max) return raw;
-	} catch { /* noop */ }
+	} catch {
+		/* noop */
+	}
 	localStorage.setItem(key, JSON.stringify(def));
 	return def;
 }
@@ -37,11 +36,12 @@ function persistedBool(key: string, def: boolean): boolean {
 	try {
 		const raw = JSON.parse(localStorage.getItem(key) ?? 'null');
 		if (typeof raw === 'boolean') return raw;
-	} catch { /* noop */ }
+	} catch {
+		/* noop */
+	}
 	localStorage.setItem(key, JSON.stringify(def));
 	return def;
 }
-
 
 export const audioStore = createStore<AudioState>((set) => ({
 	masterVolume: persistedNumber('ako_masterVolume', 1, 0, 1),
@@ -74,6 +74,5 @@ export const audioStore = createStore<AudioState>((set) => ({
 		set({sfxEnabled: v});
 	},
 }));
-
 
 export const useAudio = createSolidStoreAdapter(audioStore);

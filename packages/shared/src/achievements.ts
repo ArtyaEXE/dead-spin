@@ -51,8 +51,6 @@ export const ACHIEVEMENTS = {
 	},
 } as const;
 
-
 export type AchievementKey = keyof typeof ACHIEVEMENTS;
-
 
 export const ACHIEVEMENT_KEYS = Object.keys(ACHIEVEMENTS) as AchievementKey[];

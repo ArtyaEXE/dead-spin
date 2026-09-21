@@ -1,6 +1,5 @@
 import {worldLabel} from '../game/worlds';
 
-
 /**
  * Нижний "dashboard-big" бар: имя мира/уровня, пауза, зум ±, и кнопка буста.
  *
@@ -32,12 +31,7 @@ export function BottomBar(props: {
 				</div>
 			</div>
 
-			<img
-				class="bottombar-boost"
-				src="/btn-booster.png"
-				alt="Boost"
-				onPointerDown={onBoostDown}
-			/>
+			<img class="bottombar-boost" src="/btn-booster.png" alt="Boost" onPointerDown={onBoostDown} />
 		</div>
 	);
 }

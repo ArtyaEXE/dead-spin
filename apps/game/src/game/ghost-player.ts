@@ -1,7 +1,6 @@
 import {Container, Sprite, type Texture} from 'pixi.js';
 import type {GhostEvent, GhostRecording} from '@dead-spin/shared';
 
-
 /**
  * Призрак — translucent-копия корабля лидера, проигрывает запись Tries.
  * Воспроизведение детерминистично:
@@ -16,12 +15,9 @@ import type {GhostEvent, GhostRecording} from '@dead-spin/shared';
  * game-time (не wall-time), поэтому замораживается на pause тоже.
  */
 
-
 type GhostBody = {x: number; y: number; r: number; vx: number; vy: number; vr: number};
 
-
 const BOOST_FLAME_MS = 280;
-
 
 export class GhostPlayer {
 	readonly container: Container;
@@ -38,7 +34,9 @@ export class GhostPlayer {
 	private finished = false;
 
 	constructor(
-		rec: GhostRecording, shipTex: Texture, boosterTex: Texture,
+		rec: GhostRecording,
+		shipTex: Texture,
+		boosterTex: Texture,
 		nozzle: {x: number; y: number} = {x: -2, y: 40},
 	) {
 		if (rec.events.length === 0) throw new Error('GhostPlayer: empty recording');
@@ -83,8 +81,12 @@ export class GhostPlayer {
 		// 1) Применяем все event'ы, у которых time уже наступил.
 		while (this.nextEventIdx < this.events.length && this.events[this.nextEventIdx]!.time <= timeMs) {
 			const ev = this.events[this.nextEventIdx]!;
-			this.body.x = ev.x; this.body.y = ev.y; this.body.r = ev.r;
-			this.body.vx = ev.vx; this.body.vy = ev.vy; this.body.vr = ev.vr;
+			this.body.x = ev.x;
+			this.body.y = ev.y;
+			this.body.r = ev.r;
+			this.body.vx = ev.vx;
+			this.body.vy = ev.vy;
+			this.body.vr = ev.vr;
 			this.lastTimeMs = ev.time;
 			this.nextEventIdx++;
 

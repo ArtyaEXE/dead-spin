@@ -1,17 +1,15 @@
 import type {Point} from '@dead-spin/shared';
 import type {Stroke} from './vector';
 
-
 export type Circle = Point & {radius: number};
 
 export type Body = Circle & {
-	r: number;    // rotation, degrees; 0 = pointing up
+	r: number; // rotation, degrees; 0 = pointing up
 	vx: number;
 	vy: number;
-	vr: number;   // angular velocity, deg/sec
+	vr: number; // angular velocity, deg/sec
 	speed: number;
 };
-
 
 export function resolveCollision(a: Circle, b: Circle): boolean {
 	const dx = b.x - a.x;
@@ -19,7 +17,6 @@ export function resolveCollision(a: Circle, b: Circle): boolean {
 	const distance = Math.sqrt(dx * dx + dy * dy);
 	return distance < a.radius + b.radius;
 }
-
 
 /**
  * Прилагает силу вдоль "носа" тела (угол r, 0° = вверх).
@@ -31,7 +28,6 @@ export function applyForce(body: Body, f: number): void {
 	body.vy += -f * Math.cos(rad);
 	body.speed = Math.hypot(body.vx, body.vy);
 }
-
 
 function distancePointToSegment(point: Point, segmentStart: Point, segmentEnd: Point): number {
 	const A = point.x - segmentStart.x;
@@ -64,11 +60,9 @@ function distancePointToSegment(point: Point, segmentStart: Point, segmentEnd: P
 	return Math.sqrt(dx * dx + dy * dy);
 }
 
-
 function checkCircleSegmentCollision(circle: Circle, segmentStart: Point, segmentEnd: Point): boolean {
 	return distancePointToSegment(circle, segmentStart, segmentEnd) < circle.radius;
 }
-
 
 export function checkMazeCollision(circle: Circle, mazeWalls: readonly Stroke[]): boolean {
 	for (const wall of mazeWalls) {
@@ -77,23 +71,18 @@ export function checkMazeCollision(circle: Circle, mazeWalls: readonly Stroke[])
 	return false;
 }
 
-
 /**
  * Свип-коллизия: проверяет столкновение круга, движущегося со скоростью (vx,vy),
  * со списком отрезков стен. Движение разбивается на шаги размером радиуса/2
  * чтобы круг не "прошивал" стены между кадрами.
  */
-export function checkMovingCircle(
-	circle: Body,
-	mazeWalls: readonly Stroke[],
-	deltaTime: number
-): boolean {
+export function checkMovingCircle(circle: Body, mazeWalls: readonly Stroke[], deltaTime: number): boolean {
 	const vx = circle.vx;
 	const vy = circle.vy;
 	const speed = Math.sqrt(vx * vx + vy * vy);
 	if (speed === 0) return false;
 
-	const steps = Math.ceil((speed * deltaTime / circle.radius) * 2);
+	const steps = Math.ceil(((speed * deltaTime) / circle.radius) * 2);
 
 	for (let i = 0; i <= steps; i++) {
 		const t = i / steps;
@@ -107,7 +96,6 @@ export function checkMovingCircle(
 
 	return false;
 }
-
 
 export const Physics = {
 	resolveCollision,

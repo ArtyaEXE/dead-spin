@@ -2,11 +2,7 @@ import {createEffect, For, Show} from 'solid-js';
 import {progressStore, useProgress} from '../stores/progress';
 import {useAuth} from '../stores/auth';
 import {useProfile} from '../stores/profile';
-import {
-	SKINS, getActiveSkinId, setSelectedSkinId, isSkinUnlocked,
-	type SkinId, type SkinDef,
-} from '../stores/skin';
-
+import {SKINS, getActiveSkinId, setSelectedSkinId, isSkinUnlocked, type SkinId, type SkinDef} from '../stores/skin';
 
 /**
  * Магазин скинов ракеты. Открывается из главного меню.
@@ -21,7 +17,7 @@ export function Shop(props: {onBack: () => void}) {
 	// `active` — фактически применяющийся скин. Если звёзд не хватает —
 	// fallback на prospector (см. stores/skin.ts:getActiveSkinId).
 	const active = (): SkinId => {
-		profile();   // dependency на profile.selectedSkin
+		profile(); // dependency на profile.selectedSkin
 		return getActiveSkinId(progress().summaryStars);
 	};
 
@@ -29,7 +25,10 @@ export function Shop(props: {onBack: () => void}) {
 	// если App-уровневый refresh не успел или упал.
 	createEffect(() => {
 		if (auth().status === 'authed') {
-			void progressStore.getState().refresh().catch(() => {});
+			void progressStore
+				.getState()
+				.refresh()
+				.catch(() => {});
 		}
 	});
 
@@ -79,11 +78,10 @@ export function Shop(props: {onBack: () => void}) {
 								</div>
 								<div class="shop-card-info">
 									<div class="shop-card-name">{skin.name}</div>
-									<Show when={!unlocked()} fallback={
-										<div class="shop-card-state">
-											{isSelected() ? 'SELECTED' : 'TAP'}
-										</div>
-									}>
+									<Show
+										when={!unlocked()}
+										fallback={<div class="shop-card-state">{isSelected() ? 'SELECTED' : 'TAP'}</div>}
+									>
 										<div class="shop-card-cost">
 											<img src="/star.png" alt="" />
 											{progress().summaryStars}/{skin.requiredStars}

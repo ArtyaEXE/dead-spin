@@ -13,7 +13,6 @@ import {
 	updateSplineMovement,
 } from '../vector';
 
-
 describe('getDistanceBtwPoints', () => {
 	it('returns 0 for the same point', () => {
 		expect(getDistanceBtwPoints({x: 10, y: 20}, {x: 10, y: 20})).toBe(0);
@@ -29,7 +28,6 @@ describe('getDistanceBtwPoints', () => {
 		expect(getDistanceBtwPoints(a, b)).toBeCloseTo(getDistanceBtwPoints(b, a), 10);
 	});
 });
-
 
 describe('getNearestPointByCoords', () => {
 	const points = [
@@ -55,7 +53,6 @@ describe('getNearestPointByCoords', () => {
 	});
 });
 
-
 describe('getAngle', () => {
 	it('returns 0° for a point directly above', () => {
 		// y-axis inverted: "up" on screen = smaller y
@@ -74,7 +71,6 @@ describe('getAngle', () => {
 		expect(getAngle({x: 0, y: 0}, {x: -100, y: 0})).toBeCloseTo(270, 5);
 	});
 });
-
 
 describe('pointsToStrokes / strokesToPoints', () => {
 	it('produces closed polyline with N strokes for N points', () => {
@@ -106,7 +102,6 @@ describe('pointsToStrokes / strokesToPoints', () => {
 	});
 });
 
-
 describe('chunks', () => {
 	it('computes chunk coords deterministically', () => {
 		expect(getChunkCoordsByPoint({x: 0, y: 0})).toBe('0,0');
@@ -124,7 +119,7 @@ describe('chunks', () => {
 
 	it('getNearStrokesByPoint returns relevant strokes only', () => {
 		const strokes = [
-			{s: {x: 10, y: 10}, e: {x: 50, y: 50}},       // chunk 0,0
+			{s: {x: 10, y: 10}, e: {x: 50, y: 50}}, // chunk 0,0
 			{s: {x: 5000, y: 5000}, e: {x: 5100, y: 5100}}, // far away
 		];
 		const chunks = splitWallStrokesToChunks(strokes);
@@ -133,7 +128,6 @@ describe('chunks', () => {
 		expect(near[0]!.s).toEqual({x: 10, y: 10});
 	});
 });
-
 
 describe('closed B-spline', () => {
 	const square = [
@@ -155,7 +149,7 @@ describe('closed B-spline', () => {
 		expect(state.totalLength).toBeGreaterThan(0);
 
 		// Move for more than one full loop; should remain within bounds
-		const pose = updateSplineMovement(state, state.totalLength / 1000 * 1.5);
+		const pose = updateSplineMovement(state, (state.totalLength / 1000) * 1.5);
 		expect(Number.isFinite(pose.x)).toBe(true);
 		expect(Number.isFinite(pose.y)).toBe(true);
 		expect(pose.r).toBeGreaterThanOrEqual(0);

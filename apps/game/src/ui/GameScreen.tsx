@@ -13,8 +13,6 @@ import {BottomBar} from './BottomBar';
 import {ResultScreen, type ResultKind} from './ResultScreen';
 import {TutorialOverlay, computeTutorialQueue, markSeen} from './Tutorial';
 
-
-
 function fmtTime(ms: number): string {
 	const totalSec = Math.floor(ms / 1000);
 	const m = Math.floor(totalSec / 60);
@@ -22,19 +20,13 @@ function fmtTime(ms: number): string {
 	return `${m}:${String(s).padStart(2, '0')}`;
 }
 
-
 const ZOOM_STEP = 0.2;
 // Задержка показа overlay ResultScreen — соответствует оригинальному
 // `delay: result === 'pause' ? 0 : 500` в ResultScreen.svelte.
 // Shake и взрыв при этом работают сразу, overlay появляется после.
 const RESULT_OVERLAY_DELAY_MS = 500;
 
-
-export function GameScreen(props: {
-	levelNumber: number;
-	onExit: () => void;
-	onSwitchLevel: (n: number) => void;
-}) {
+export function GameScreen(props: {levelNumber: number; onExit: () => void; onSwitchLevel: (n: number) => void}) {
 	let hostRef: HTMLDivElement | undefined;
 	let world: GameWorld | null = null;
 
@@ -54,11 +46,7 @@ export function GameScreen(props: {
 	const [shake, setShake] = createSignal(false);
 	// Low-fuel alarm: красная пульсация вокруг экрана + sirens, когда топлива мало
 	// и нет финального оверлея/паузы.
-	const isLowFuel = (): boolean =>
-		fuel() < fuelTank() * LOW_FUEL_FRACTION &&
-		!result() &&
-		!pause() &&
-		fuel() > 0;
+	const isLowFuel = (): boolean => fuel() < fuelTank() * LOW_FUEL_FRACTION && !result() && !pause() && fuel() > 0;
 	let alarmHandle: LoopHandle | null = null;
 	createEffect(() => {
 		if (isLowFuel()) {
@@ -98,13 +86,14 @@ export function GameScreen(props: {
 
 				// Показ overlay откладываем, чтобы была видна анимация взрыва.
 				if (overlayTimer !== null) clearTimeout(overlayTimer);
-				overlayTimer = window.setTimeout(
-					() => setShowOverlay(true),
-					RESULT_OVERLAY_DELAY_MS,
-				);
+				overlayTimer = window.setTimeout(() => setShowOverlay(true), RESULT_OVERLAY_DELAY_MS);
 
 				if (r.type === 'win') {
-					const rt = computeRating(levelDef() ?? {}, {collected: r.collected, timeMs: r.timeMs, fuelSpent: r.fuelSpent});
+					const rt = computeRating(levelDef() ?? {}, {
+						collected: r.collected,
+						timeMs: r.timeMs,
+						fuelSpent: r.fuelSpent,
+					});
 					setRating(rt);
 					progressStore.getState().recordLocal(levelNumber, {...rt, timeMs: r.timeMs, fuelSpent: r.fuelSpent});
 					track('level_win', {
@@ -118,10 +107,11 @@ export function GameScreen(props: {
 					});
 					// Ачивки считаются на устройстве, результат уходит через очередь:
 					// без сети он не потеряется, а дойдёт при следующем подключении.
-					profileStore.getState().evaluateAfterLevel(
-						progressStore.getState().levels,
-						{stars: rt.stars, timeMs: r.timeMs, fuelSpent: r.fuelSpent},
-					);
+					profileStore.getState().evaluateAfterLevel(progressStore.getState().levels, {
+						stars: rt.stars,
+						timeMs: r.timeMs,
+						fuelSpent: r.fuelSpent,
+					});
 					const recording = world?.getRecording() ?? null;
 					syncStore.getState().enqueueLevelComplete({
 						level: levelNumber,
@@ -137,7 +127,6 @@ export function GameScreen(props: {
 						fuel_spent: r.fuelSpent,
 					});
 				}
-
 			},
 		});
 		void world.mount(hostRef, fuelTank()).then(() => {
@@ -186,7 +175,10 @@ export function GameScreen(props: {
 	});
 
 	const retry = () => {
-		if (overlayTimer !== null) { clearTimeout(overlayTimer); overlayTimer = null; }
+		if (overlayTimer !== null) {
+			clearTimeout(overlayTimer);
+			overlayTimer = null;
+		}
 		setResult(null);
 		setRating(null);
 		setShowOverlay(false);
@@ -219,7 +211,9 @@ export function GameScreen(props: {
 				{(g) => (
 					<div class="ghost-badge">
 						<img class="icon-inline" src="/icons/ghost-icon.png" alt="" />
-						<b>{g().username}</b> — {g().stars}<img class="icon-inline" src="/star.png" alt="" style={{height: '1em'}} /> <code>{fmtTime(g().timeMs)}</code>
+						<b>{g().username}</b> — {g().stars}
+						<img class="icon-inline" src="/star.png" alt="" style={{height: '1em'}} />{' '}
+						<code>{fmtTime(g().timeMs)}</code>
 					</div>
 				)}
 			</Show>

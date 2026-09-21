@@ -1,7 +1,6 @@
 import {Container, Sprite, type Texture} from 'pixi.js';
 import type {Point} from '@dead-spin/shared';
 
-
 type Smoke = {
 	/** Один спрайт на кадр, индекс совпадает с индексом кадра в пуле. */
 	sprites: Sprite[];
@@ -20,7 +19,6 @@ type Smoke = {
 	driftStart: number;
 };
 
-
 const DRIFT_MS = 1500;
 /**
  * Потолок одновременно живых клубов. Дым эмитится на каждый тап буста,
@@ -34,7 +32,6 @@ const MAX_ACTIVE = 40;
 function easeOut(t: number): number {
 	return 1 - (1 - t) * (1 - t);
 }
-
 
 /**
  * Дымные клубы — 3 кадра из explosion-spritesheet (индексы 8, 10, 11 в оригинале
@@ -56,15 +53,12 @@ export interface SmokeSystem {
 	destroy: () => void;
 }
 
-
 export function createSmokeSystem(explosionFrames: Texture[]): SmokeSystem {
 	const container = new Container();
 	const active: Smoke[] = [];
 
 	// Используем кадры 9, 11, 12 — как в Smokes.svelte:30-33
-	const frameTextures = [explosionFrames[8], explosionFrames[10], explosionFrames[11]].filter(
-		(t): t is Texture => !!t,
-	);
+	const frameTextures = [explosionFrames[8], explosionFrames[10], explosionFrames[11]].filter((t): t is Texture => !!t);
 	// Пул по кадрам: у каждого слота своя текстура, поэтому спрайты не взаимозаменяемы.
 	const pools: Sprite[][] = frameTextures.map(() => []);
 
@@ -161,9 +155,7 @@ export function createSmokeSystem(explosionFrames: Texture[]): SmokeSystem {
 					// scale 0.3→1.5, alpha 0→0.5→0 — оба с ease-out, как в оригинальном CSS animation.
 					const anim = 0.3 + eased * 1.2;
 					sprite.scale.set(sm.baseScales[fi]! * anim);
-					sprite.alpha = phase < 0.2
-						? (phase / 0.2) * 0.5
-						: 0.5 * (1 - easeOut((phase - 0.2) / 0.8));
+					sprite.alpha = phase < 0.2 ? (phase / 0.2) * 0.5 : 0.5 * (1 - easeOut((phase - 0.2) / 0.8));
 					sprite.position.set(cx, cy);
 				}
 			}
@@ -179,7 +171,6 @@ export function createSmokeSystem(explosionFrames: Texture[]): SmokeSystem {
 		},
 	};
 }
-
 
 function randRange(min: number, max: number): number {
 	return min + Math.random() * (max - min);

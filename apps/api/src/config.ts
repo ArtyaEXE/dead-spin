@@ -1,6 +1,5 @@
 import {z} from 'zod';
 
-
 const EnvSchema = z.object({
 	NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
 	PORT: z.coerce.number().int().positive().default(3001),
@@ -23,9 +22,7 @@ const EnvSchema = z.object({
 	POSTHOG_HOST: z.string().default('https://eu.i.posthog.com'),
 });
 
-
 export type Env = z.infer<typeof EnvSchema>;
-
 
 function devDefaults(raw: Record<string, string | undefined>): Record<string, string | undefined> {
 	if ((raw['NODE_ENV'] ?? 'development') !== 'development') return raw;
@@ -36,20 +33,17 @@ function devDefaults(raw: Record<string, string | undefined>): Record<string, st
 	};
 }
 
-
 function parseEnv(): Env {
 	const raw = devDefaults(process.env);
 	const result = EnvSchema.safeParse(raw);
 	if (!result.success) {
-		const issues = result.error.issues.map(i => `  • ${i.path.join('.')}: ${i.message}`).join('\n');
+		const issues = result.error.issues.map((i) => `  • ${i.path.join('.')}: ${i.message}`).join('\n');
 		throw new Error(`Invalid environment variables:\n${issues}`);
 	}
 	return result.data;
 }
 
-
 export const env: Env = parseEnv();
-
 
 export const isProd = env.NODE_ENV === 'production';
 export const isDev = env.NODE_ENV === 'development';

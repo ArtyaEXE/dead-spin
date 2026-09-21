@@ -2,7 +2,6 @@ import {For} from 'solid-js';
 import {audioStore, useAudio} from '../stores/audio';
 import {LOCALES, getLocale, setLocale, t} from '../i18n';
 
-
 /**
  * Экран настроек: громкость музыки и эффектов, язык интерфейса, версия,
  * ссылка на политику конфиденциальности.
@@ -31,7 +30,9 @@ export function Settings(props: {onBack: () => void}) {
 						<input
 							type="range"
 							class="volume-slider"
-							min="0" max="1" step="0.05"
+							min="0"
+							max="1"
+							step="0.05"
 							value={a().musicVolume}
 							onInput={(e) => s.setMusicVolume(Number(e.currentTarget.value))}
 						/>
@@ -45,7 +46,9 @@ export function Settings(props: {onBack: () => void}) {
 						<input
 							type="range"
 							class="volume-slider"
-							min="0" max="1" step="0.05"
+							min="0"
+							max="1"
+							step="0.05"
 							value={a().sfxVolume}
 							onInput={(e) => s.setSfxVolume(Number(e.currentTarget.value))}
 						/>
@@ -58,18 +61,25 @@ export function Settings(props: {onBack: () => void}) {
 						<For each={LOCALES}>
 							{(l) => (
 								<button
+									type="button"
 									class="lang-btn pressable"
 									classList={{active: getLocale() === l}}
 									onClick={() => setLocale(l)}
-								>{l.toUpperCase()}</button>
+								>
+									{l.toUpperCase()}
+								</button>
 							)}
 						</For>
 					</div>
 				</div>
 
 				<div class="settings-meta">
-					<div class="settings-version">{t('settings.build')} {__APP_VERSION__}</div>
-					<a class="settings-link" href="/privacy.html" target="_blank" rel="noreferrer">{t('settings.privacy')}</a>
+					<div class="settings-version">
+						{t('settings.build')} {__APP_VERSION__}
+					</div>
+					<a class="settings-link" href="/privacy.html" target="_blank" rel="noreferrer">
+						{t('settings.privacy')}
+					</a>
 				</div>
 			</div>
 		</div>

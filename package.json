@@ -8,13 +8,27 @@
 		"node": ">=22.0.0"
 	},
 	"scripts": {
+		"setup": "node scripts/setup.mjs",
+		"dev": "pnpm -r --parallel --stream --filter @dead-spin/api --filter @dead-spin/game run dev",
+		"build": "pnpm -r run build",
 		"typecheck": "pnpm -r run typecheck",
 		"test": "pnpm -r run test",
+		"check": "biome check .",
+		"check:fix": "biome check --write .",
+		"format": "biome format --write .",
 		"validate:levels": "pnpm --filter @dead-spin/levels run validate",
-		"optimize:assets": "tsx apps/game/scripts/optimize-assets.ts"
+		"optimize:assets": "tsx apps/game/scripts/optimize-assets.ts",
+		"db:up": "docker compose up -d postgres",
+		"db:down": "docker compose down",
+		"db:migrate": "pnpm --filter @dead-spin/api run db:migrate",
+		"db:studio": "pnpm --filter @dead-spin/api run db:studio",
+		"ci": "pnpm check && pnpm typecheck && pnpm test && pnpm validate:levels && pnpm build",
+		"prepare": "lefthook install"
 	},
 	"devDependencies": {
+		"@biomejs/biome": "^2.5.14",
 		"@types/node": "^22.7.5",
+		"lefthook": "^2.1.14",
 		"sharp": "^0.35.4",
 		"tsx": "^4.19.1",
 		"typescript": "^5.6.3"

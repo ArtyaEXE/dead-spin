@@ -26,7 +26,6 @@ import {fileURLToPath} from 'node:url';
 import {LevelSchema, type Level} from '@dead-spin/shared';
 import {pointInPoly, distToPolygonEdge, type GenPoint} from '../src/generate';
 
-
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const dataDir = join(__dirname, '..', 'src', 'data');
 
@@ -49,7 +48,6 @@ const MINE_MINE = 260;
 /** Сколько мин добавить в уровни без врагов. */
 const MINES_FOR_EMPTY: Record<number, number> = {3: 1, 4: 1, 5: 2, 6: 2, 16: 1, 17: 2, 18: 2};
 
-
 type P = GenPoint;
 const dist = (a: P, b: P): number => Math.hypot(b.x - a.x, b.y - a.y);
 
@@ -60,7 +58,9 @@ function hookTarget(n: number): number {
 }
 
 function chain(l: Level, stars: [P, P, P]): number {
-	return dist(l.startPoint, stars[0]) + dist(stars[0], stars[1]) + dist(stars[1], stars[2]) + dist(stars[2], l.finishPoint);
+	return (
+		dist(l.startPoint, stars[0]) + dist(stars[0], stars[1]) + dist(stars[1], stars[2]) + dist(stars[2], l.finishPoint)
+	);
 }
 
 function hookOf(l: Level, stars: [P, P, P]): number {
@@ -91,7 +91,6 @@ function starOk(p: P, idx: number, stars: [P, P, P], l: Level): boolean {
 	}
 	return true;
 }
-
 
 function spreadStars(n: number, l: Level): {changed: boolean; before: number; after: number} {
 	const target = hookTarget(n);
@@ -124,11 +123,12 @@ function spreadStars(n: number, l: Level): {changed: boolean; before: number; af
 
 	const changed = hook > before + MIN_GAIN;
 	if (changed) {
-		l.star1 = stars[0]; l.star2 = stars[1]; l.star3 = stars[2];
+		l.star1 = stars[0];
+		l.star2 = stars[1];
+		l.star3 = stars[2];
 	}
 	return {changed, before, after: hook};
 }
-
 
 function mineOk(p: P, l: Level, placed: P[]): boolean {
 	if (!inCave(p, l) || wallClearance(p, l) < MINE_WALL) return false;
@@ -146,7 +146,8 @@ function addMines(n: number, l: Level): number {
 	// Кандидаты — точки на сегментах маршрута; предпочитаем середину сегмента.
 	const cands: {p: P; clr: number}[] = [];
 	for (let i = 0; i < route.length - 1; i++) {
-		const a = route[i]!, b = route[i + 1]!;
+		const a = route[i]!,
+			b = route[i + 1]!;
 		for (let t = 0.3; t <= 0.7001; t += 0.05) {
 			const p = {x: Math.round(a.x + (b.x - a.x) * t), y: Math.round(a.y + (b.y - a.y) * t)};
 			if (!inCave(p, l)) continue;
@@ -165,13 +166,14 @@ function addMines(n: number, l: Level): number {
 	return placed.length;
 }
 
-
-const files = readdirSync(dataDir).filter(f => /^\d+\.json$/.test(f)).sort((a, b) => parseInt(a) - parseInt(b));
+const files = readdirSync(dataDir)
+	.filter((f) => /^\d+\.json$/.test(f))
+	.sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
 
 console.log('lvl  крюк до → после  цель   мин+  враги  сдвиг ★ (px)');
 let touched = 0;
 for (const file of files) {
-	const n = parseInt(file);
+	const n = parseInt(file, 10);
 	const full = join(dataDir, file);
 	const raw = JSON.parse(readFileSync(full, 'utf8')) as Record<string, unknown>;
 	const l = LevelSchema.parse(raw);
@@ -181,7 +183,9 @@ for (const file of files) {
 	const mines = addMines(n, l);
 
 	if (s.changed || mines > 0) {
-		raw['star1'] = l.star1; raw['star2'] = l.star2; raw['star3'] = l.star3;
+		raw['star1'] = l.star1;
+		raw['star2'] = l.star2;
+		raw['star3'] = l.star3;
 		raw['enemies'] = l.enemies;
 		LevelSchema.parse(raw);
 		writeFileSync(full, JSON.stringify(raw, null, 2) + '\n', 'utf8');
@@ -193,7 +197,7 @@ for (const file of files) {
 	const flag = tgt > 0 && s.after < tgt ? ' ⚠' : '';
 	console.log(
 		`${String(n).padStart(3)}  ${s.before.toFixed(2)} → ${s.after.toFixed(2)}   ${tgt ? tgt.toFixed(2) : '  —'}` +
-		`   ${String(mines).padStart(2)}    ${String(l.enemies.length).padStart(3)}    ${moves.join('/')}${flag}`,
+			`   ${String(mines).padStart(2)}    ${String(l.enemies.length).padStart(3)}    ${moves.join('/')}${flag}`,
 	);
 }
 console.log(`\nизменено уровней: ${touched}. ⚠ — цель по крюку не достигнута в пределах MAX_MOVE=${MAX_MOVE}.`);

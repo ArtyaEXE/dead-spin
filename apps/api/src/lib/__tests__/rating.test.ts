@@ -1,7 +1,6 @@
 import {describe, it, expect} from 'vitest';
 import {computeRating, mergeRecord, levelFuelTank, DEFAULT_FUEL_TANK} from '@dead-spin/shared';
 
-
 const level = {parTimeMs: 15_000, parFuel: 1_500, fuelTank: 3_000};
 
 describe('computeRating', () => {
@@ -44,7 +43,6 @@ describe('computeRating', () => {
 	});
 });
 
-
 describe('mergeRecord', () => {
 	it('первый рекорд берётся как есть', () => {
 		const m = mergeRecord(null, {stars: 2, parHit: true, fullClear: false, timeMs: 12_000, fuelSpent: 2_000});
@@ -65,7 +63,6 @@ describe('mergeRecord', () => {
 		expect(m).toEqual({stars: 3, ...existing});
 	});
 });
-
 
 describe('levelFuelTank', () => {
 	it('берёт бак уровня или дефолт', () => {

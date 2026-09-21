@@ -15,7 +15,6 @@ import {audio} from './game/audio';
 import {preloadAll} from './game/preload';
 import {getLevelByNumber} from '@dead-spin/levels';
 
-
 type Route =
 	| {name: 'main'}
 	| {name: 'settings'}
@@ -25,15 +24,21 @@ type Route =
 	| {name: 'outro'; nextLevel: number; comicId: string}
 	| {name: 'game'; level: number};
 
-
 const OUTRO_SEEN_KEY = (id: string): string => `comic-outro-seen-${id}`;
 function isOutroSeen(id: string): boolean {
-	try { return localStorage.getItem(OUTRO_SEEN_KEY(id)) === '1'; } catch { return false; }
+	try {
+		return localStorage.getItem(OUTRO_SEEN_KEY(id)) === '1';
+	} catch {
+		return false;
+	}
 }
 function markOutroSeen(id: string): void {
-	try { localStorage.setItem(OUTRO_SEEN_KEY(id), '1'); } catch {/* noop */}
+	try {
+		localStorage.setItem(OUTRO_SEEN_KEY(id), '1');
+	} catch {
+		/* noop */
+	}
 }
-
 
 export default function App() {
 	const auth = useAuth();
@@ -62,7 +67,10 @@ export default function App() {
 	createEffect(() => {
 		if (auth().status !== 'authed') return;
 		profileStore.getState().mergeRemote(auth().user?.profile ?? null);
-		void progressStore.getState().refresh().catch(() => {});
+		void progressStore
+			.getState()
+			.refresh()
+			.catch(() => {});
 		void syncStore.getState().flush();
 	});
 
@@ -98,14 +106,19 @@ export default function App() {
 						<div class="preload-root">
 							<img class="preload-logo" src="/dead-spin-logo-shadow.png" alt="Dead Spin" />
 							<img class="preload-gear" src="/icons/icon-loading.png" alt="" />
-							<div class="preload-bar"><div class="preload-bar-fill" style={{width: `${preloadPct()}%`}} /></div>
+							<div class="preload-bar">
+								<div class="preload-bar-fill" style={{width: `${preloadPct()}%`}} />
+							</div>
 							<div class="preload-pct">{preloadPct()}%</div>
 						</div>
 					</Match>
 
 					<Match when={route().name === 'main'}>
 						<MainMenu
-							onPlay={() => { setMusicPlay(true); setRoute({name: 'levels'}); }}
+							onPlay={() => {
+								setMusicPlay(true);
+								setRoute({name: 'levels'});
+							}}
 							onSettings={() => setRoute({name: 'settings'})}
 							onShop={() => setRoute({name: 'shop'})}
 						/>
@@ -120,10 +133,7 @@ export default function App() {
 					</Match>
 
 					<Match when={route().name === 'levels'}>
-						<Levels
-							onBack={() => setRoute({name: 'main'})}
-							onPlay={startLevel}
-						/>
+						<Levels onBack={() => setRoute({name: 'main'})} onPlay={startLevel} />
 					</Match>
 
 					<Match when={route().name === 'intro'}>
@@ -137,12 +147,7 @@ export default function App() {
 									setRoute({name: 'game', level: r.level});
 									return null;
 								}
-								return (
-									<ComicPlayer
-										comic={comic}
-										onFinish={() => setRoute({name: 'game', level: r.level})}
-									/>
-								);
+								return <ComicPlayer comic={comic} onFinish={() => setRoute({name: 'game', level: r.level})} />;
 							}}
 						</Show>
 					</Match>
@@ -158,12 +163,7 @@ export default function App() {
 									setRoute({name: 'game', level: r.nextLevel});
 									return null;
 								}
-								return (
-									<ComicPlayer
-										comic={comic}
-										onFinish={() => setRoute({name: 'game', level: r.nextLevel})}
-									/>
-								);
+								return <ComicPlayer comic={comic} onFinish={() => setRoute({name: 'game', level: r.nextLevel})} />;
 							}}
 						</Show>
 					</Match>
@@ -177,11 +177,7 @@ export default function App() {
 						*/}
 						<Show when={route().name === 'game' ? (route() as {name: 'game'; level: number}).level : null} keyed>
 							{(level) => (
-								<GameScreen
-									levelNumber={level}
-									onExit={() => setRoute({name: 'levels'})}
-									onSwitchLevel={switchLevel}
-								/>
+								<GameScreen levelNumber={level} onExit={() => setRoute({name: 'levels'})} onSwitchLevel={switchLevel} />
 							)}
 						</Show>
 					</Match>

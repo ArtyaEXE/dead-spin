@@ -5,7 +5,6 @@ import {api, ApiError, getToken} from '../net/client';
 import {authStore} from './auth';
 import {loadJson, saveJson} from '../lib/persist';
 
-
 /**
  * Очередь отложенной синхронизации (GDD §16.2). Устройство — источник
  * истины; всё, что нужно донести до сервера, кладётся сюда и уходит,
@@ -16,13 +15,11 @@ import {loadJson, saveJson} from '../lib/persist';
  * в очереди всегда не больше одного — последний.
  */
 
-
 const KEY = 'dead-spin.sync.v1';
 /** После сбоя не долбим сервер чаще, чем раз в это время. */
 const RETRY_AFTER_MS = 10_000;
 /** Фоновый тик на случай, если событий online/visibility не было. */
 const TICK_MS = 30_000;
-
 
 const LevelCompleteOp = z.object({
 	id: z.string(),
@@ -46,7 +43,6 @@ const QueueSchema = z.array(OpSchema);
 type Op = z.infer<typeof OpSchema>;
 type LevelCompleteBody = z.infer<typeof LevelCompleteOp>['body'];
 
-
 type SyncState = {
 	queue: Op[];
 	flushing: boolean;
@@ -57,11 +53,9 @@ type SyncState = {
 	init: () => void;
 };
 
-
 function newId(): string {
 	return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
-
 
 export const syncStore = createStore<SyncState>((set, get) => {
 	const persist = (queue: Op[]): void => {
@@ -81,7 +75,7 @@ export const syncStore = createStore<SyncState>((set, get) => {
 
 		enqueueProfile(profile) {
 			// Держим только последний снимок — предыдущие уже неактуальны.
-			const rest = get().queue.filter(op => op.kind !== 'profile');
+			const rest = get().queue.filter((op) => op.kind !== 'profile');
 			persist([...rest, {id: newId(), kind: 'profile', body: profile}]);
 			void get().flush();
 		},
@@ -124,7 +118,9 @@ export const syncStore = createStore<SyncState>((set, get) => {
 		},
 
 		init() {
-			const kick = (): void => { void get().flush(); };
+			const kick = (): void => {
+				void get().flush();
+			};
 			window.addEventListener('online', kick);
 			document.addEventListener('visibilitychange', () => {
 				if (document.visibilityState === 'visible') kick();

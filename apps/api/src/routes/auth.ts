@@ -6,9 +6,7 @@ import {users, progresses} from '../db/schema';
 import {signUserToken} from '../lib/jwt';
 import {badRequest} from '../lib/errors';
 
-
 export const authRoutes = new Hono();
-
 
 /**
  * POST /auth/device
@@ -29,12 +27,10 @@ const BodySchema = z.object({
 	locale: z.string().min(2).max(16).optional(),
 });
 
-
 /** Ник по умолчанию — читаемый и стабильный для конкретного устройства. */
 function defaultUsername(deviceId: string): string {
 	return `pilot_${deviceId.replace(/-/g, '').slice(0, 6)}`;
 }
-
 
 authRoutes.post('/device', async (c) => {
 	const t0 = Date.now();
@@ -46,21 +42,18 @@ authRoutes.post('/device', async (c) => {
 	const {deviceId} = parsed.data;
 	const locale = parsed.data.locale ?? 'en';
 
-	const [existing] = await db.select().from(users)
-		.where(eq(users.deviceId, deviceId))
-		.limit(1);
+	const [existing] = await db.select().from(users).where(eq(users.deviceId, deviceId)).limit(1);
 
 	let userId: string;
 
 	if (existing) {
 		userId = existing.id;
 		if (existing.locale !== locale) {
-			await db.update(users)
-				.set({locale, updatedAt: sql`now()`})
-				.where(eq(users.id, userId));
+			await db.update(users).set({locale, updatedAt: sql`now()`}).where(eq(users.id, userId));
 		}
 	} else {
-		const [inserted] = await db.insert(users)
+		const [inserted] = await db
+			.insert(users)
 			.values({deviceId, username: defaultUsername(deviceId), locale})
 			.returning({id: users.id});
 		userId = inserted!.id;

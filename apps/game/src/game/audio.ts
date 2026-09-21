@@ -1,6 +1,5 @@
 import {audioStore} from '../stores/audio';
 
-
 /**
  * Аудио-движок: полный WebAudio API с кэшем декодированных AudioBuffer'ов.
  * Порт [audio.js](space/imports/lib/client/audio.js) из оригинала 1:1.
@@ -11,21 +10,19 @@ import {audioStore} from '../stores/audio';
  * множественных SFX без glitch'ей.
  */
 
-
 const SOUNDS: Record<string, string> = {
-	'booster':      '/effects/gameplay/booster.mp3',
-	'star-catch':   '/effects/gameplay/star-catch.mp3',
-	'explosion1':   '/effects/explosion/explosion1.mp3',
-	'explosion2':   '/effects/explosion/explosion2.mp3',
-	'explosion3':   '/effects/explosion/explosion3.mp3',
-	'rocket1':      '/effects/rocket/rocket1.mp3',
-	'rocket2':      '/effects/rocket/rocket2.mp3',
+	booster: '/effects/gameplay/booster.mp3',
+	'star-catch': '/effects/gameplay/star-catch.mp3',
+	explosion1: '/effects/explosion/explosion1.mp3',
+	explosion2: '/effects/explosion/explosion2.mp3',
+	explosion3: '/effects/explosion/explosion3.mp3',
+	rocket1: '/effects/rocket/rocket1.mp3',
+	rocket2: '/effects/rocket/rocket2.mp3',
 	'stone-impact': '/enemies/stone/stone-impact.mp3',
-	'worm':         '/enemies/worm/worm.mp3',
-	'ship-alarm':   '/comics/ship-alarm.mp3',
-	'low-fuel':     '/effects/gameplay/low-fuel-alarm.mp3',
+	worm: '/enemies/worm/worm.mp3',
+	'ship-alarm': '/comics/ship-alarm.mp3',
+	'low-fuel': '/effects/gameplay/low-fuel-alarm.mp3',
 };
-
 
 const MUSIC: Record<number, {url: string; volume: number}> = {
 	1: {url: '/music/music1.mp3', volume: 0.3},
@@ -41,14 +38,12 @@ const MUSIC: Record<number, {url: string; volume: number}> = {
 
 const MUSIC_KEYS = Object.keys(MUSIC).map(Number);
 
-
 export type LoopHandle = {
 	setVolume: (v: number) => void;
 	pause: () => void;
 	resume: () => void;
 	stop: () => void;
 };
-
 
 /// STATE ///
 
@@ -65,7 +60,6 @@ let currentMusicTrackGain: GainNode | null = null;
 let currentMusicKey: number | null = null;
 let musicPlaying = false;
 
-
 /// BUFFER CACHE ///
 
 async function getBuffer(url: string): Promise<AudioBuffer> {
@@ -79,7 +73,6 @@ async function getBuffer(url: string): Promise<AudioBuffer> {
 	bufferCache.set(url, audioBuffer);
 	return audioBuffer;
 }
-
 
 /// INIT ///
 
@@ -153,7 +146,6 @@ function init(): void {
 	};
 }
 
-
 /// SFX: ONE-SHOT ///
 
 function play(name: keyof typeof SOUNDS | string, volume?: number): void {
@@ -182,7 +174,6 @@ function play(name: keyof typeof SOUNDS | string, volume?: number): void {
 		source.start(0);
 	});
 }
-
 
 /// SFX: LOOP ///
 
@@ -226,14 +217,18 @@ function loop(name: keyof typeof SOUNDS | string): LoopHandle | null {
 		stop() {
 			stopped = true;
 			if (source) {
-				try { source.stop(); source.disconnect(); } catch { /* already stopped */ }
+				try {
+					source.stop();
+					source.disconnect();
+				} catch {
+					/* already stopped */
+				}
 			}
 			gainNode.disconnect();
 			source = null;
 		},
 	};
 }
-
 
 /// MUSIC ///
 //
@@ -244,18 +239,25 @@ function loop(name: keyof typeof SOUNDS | string): LoopHandle | null {
 // регулировка громкости из настроек.
 
 function getRandomMusicKey(exclude: number | null): number {
-	const filtered = exclude !== null ? MUSIC_KEYS.filter(k => k !== exclude) : MUSIC_KEYS;
+	const filtered = exclude !== null ? MUSIC_KEYS.filter((k) => k !== exclude) : MUSIC_KEYS;
 	return filtered[Math.floor(Math.random() * filtered.length)]!;
 }
 
-
 function teardownMusicElement(): void {
 	if (currentMusicNode) {
-		try { currentMusicNode.disconnect(); } catch { /* noop */ }
+		try {
+			currentMusicNode.disconnect();
+		} catch {
+			/* noop */
+		}
 		currentMusicNode = null;
 	}
 	if (currentMusicTrackGain) {
-		try { currentMusicTrackGain.disconnect(); } catch { /* noop */ }
+		try {
+			currentMusicTrackGain.disconnect();
+		} catch {
+			/* noop */
+		}
 		currentMusicTrackGain = null;
 	}
 	if (currentMusicEl) {
@@ -267,7 +269,6 @@ function teardownMusicElement(): void {
 		currentMusicEl = null;
 	}
 }
-
 
 function playMusicTrack(key: number): void {
 	if (!ctx || !musicGain) return;
@@ -301,7 +302,6 @@ function playMusicTrack(key: number): void {
 	});
 }
 
-
 function playMusic(): void {
 	if (!ctx) return;
 	if (musicPlaying) return;
@@ -313,33 +313,30 @@ function playMusic(): void {
 	playMusicTrack(getRandomMusicKey(currentMusicKey));
 }
 
-
 function stopMusic(): void {
 	musicPlaying = false;
 	teardownMusicElement();
 	currentMusicKey = null;
 }
 
-
 function pauseMusic(): void {
 	currentMusicEl?.pause();
 }
 
-
 function resumeMusic(): void {
 	if (musicPlaying && currentMusicEl?.paused) {
-		void currentMusicEl.play().catch(() => { /* повторим на следующем жесте */ });
+		void currentMusicEl.play().catch(() => {
+			/* повторим на следующем жесте */
+		});
 	}
 }
-
 
 async function prewarm(): Promise<void> {
 	if (!ctx) return;
 	// Только SFX — это около минуты звука, ≈14 МБ PCM. Музыка не декодируется
 	// заранее вообще: она стримится через <audio> по мере воспроизведения.
-	await Promise.all(Object.values(SOUNDS).map(url => getBuffer(url).catch(() => null)));
+	await Promise.all(Object.values(SOUNDS).map((url) => getBuffer(url).catch(() => null)));
 }
-
 
 export const audio = {
 	init,

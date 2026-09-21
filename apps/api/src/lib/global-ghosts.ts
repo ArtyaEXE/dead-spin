@@ -1,8 +1,7 @@
 import {eq, sql} from 'drizzle-orm';
 import {db} from '../db/client';
-import {globalGhosts, progressLevels, users} from '../db/schema';
+import {globalGhosts} from '../db/schema';
 import type {GhostRecording} from '@dead-spin/shared';
-
 
 /**
  * Обновляет global ghost, если текущий результат — новый абсолютный рекорд
@@ -30,13 +29,13 @@ export async function upsertGlobalGhost(args: {
 			.where(eq(globalGhosts.level, args.level))
 			.limit(1);
 
-		const isBetter = !current
-			|| args.stars > current.stars
-			|| (args.stars === current.stars && args.timeMs < current.timeMs);
+		const isBetter =
+			!current || args.stars > current.stars || (args.stars === current.stars && args.timeMs < current.timeMs);
 
 		if (!isBetter) return;
 
-		await db.insert(globalGhosts)
+		await db
+			.insert(globalGhosts)
 			.values({
 				level: args.level,
 				userId: args.userId,

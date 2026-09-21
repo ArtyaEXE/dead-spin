@@ -2,15 +2,12 @@ import {sign, verify} from 'hono/jwt';
 import {env} from '../config';
 import {DAY} from '@dead-spin/shared';
 
-
 export type JWTPayload = {
-	sub: string;       // users.id
+	sub: string; // users.id
 	exp: number;
 };
 
-
 const ALG = 'HS256' as const;
-
 
 export async function signUserToken(userId: string): Promise<string> {
 	const payload: JWTPayload = {
@@ -20,15 +17,10 @@ export async function signUserToken(userId: string): Promise<string> {
 	return sign(payload, env.JWT_SECRET, ALG);
 }
 
-
 export async function verifyUserToken(token: string): Promise<JWTPayload | null> {
 	try {
 		const payload = await verify(token, env.JWT_SECRET, ALG);
-		if (
-			typeof payload === 'object' &&
-			payload !== null &&
-			typeof (payload as JWTPayload).sub === 'string'
-		) {
+		if (typeof payload === 'object' && payload !== null && typeof (payload as JWTPayload).sub === 'string') {
 			return payload as unknown as JWTPayload;
 		}
 		return null;

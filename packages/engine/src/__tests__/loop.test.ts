@@ -1,10 +1,8 @@
 import {describe, expect, it} from 'vitest';
 import {createLoop} from '../loop';
 
-
 // Ref-объект обходит narrowing TS в callbacks-замыканиях.
 type PendingRef = {cb: (() => void) | null};
-
 
 describe('createLoop (fixed timestep)', () => {
 	it('calls update exactly once per fixedDt of elapsed time', () => {
@@ -19,8 +17,13 @@ describe('createLoop (fixed timestep)', () => {
 			{
 				fixedDt: 1 / 60,
 				now: () => currentTime,
-				scheduler: (cb) => { pending.cb = cb; return 1; },
-				cancel: () => { pending.cb = null; },
+				scheduler: (cb) => {
+					pending.cb = cb;
+					return 1;
+				},
+				cancel: () => {
+					pending.cb = null;
+				},
 			},
 		);
 
@@ -39,14 +42,21 @@ describe('createLoop (fixed timestep)', () => {
 		const pending: PendingRef = {cb: null};
 
 		const loop = createLoop(
-			() => { updateCount++; },
+			() => {
+				updateCount++;
+			},
 			() => {},
 			{
 				fixedDt: 1 / 60,
 				maxFrameTime: 0.25,
 				now: () => currentTime,
-				scheduler: (cb) => { pending.cb = cb; return 1; },
-				cancel: () => { pending.cb = null; },
+				scheduler: (cb) => {
+					pending.cb = cb;
+					return 1;
+				},
+				cancel: () => {
+					pending.cb = null;
+				},
 			},
 		);
 
@@ -63,13 +73,20 @@ describe('createLoop (fixed timestep)', () => {
 		const pending: PendingRef = {cb: null};
 
 		const loop = createLoop(
-			() => { updates++; },
+			() => {
+				updates++;
+			},
 			() => {},
 			{
 				fixedDt: 1 / 60,
 				now: () => currentTime,
-				scheduler: (cb) => { pending.cb = cb; return 1; },
-				cancel: () => { pending.cb = null; },
+				scheduler: (cb) => {
+					pending.cb = cb;
+					return 1;
+				},
+				cancel: () => {
+					pending.cb = null;
+				},
 			},
 		);
 

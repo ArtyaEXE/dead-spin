@@ -1,6 +1,5 @@
 import posthog from 'posthog-js';
 
-
 /**
  * Клиентская аналитика. Без `VITE_POSTHOG_KEY` — no-op. Это даёт
  * безопасный default: проект собирается и работает без PostHog'а;
@@ -12,9 +11,7 @@ import posthog from 'posthog-js';
  *   - точные координаты (только структурированные события игры)
  */
 
-
 let enabled = false;
-
 
 export function initAnalytics(): void {
 	const key = import.meta.env['VITE_POSTHOG_KEY'] as string | undefined;
@@ -33,12 +30,10 @@ export function initAnalytics(): void {
 	console.log('PostHog analytics initialized');
 }
 
-
 export function identify(userId: string, traits?: Record<string, unknown>): void {
 	if (!enabled) return;
 	posthog.identify(userId, traits);
 }
-
 
 export function track(event: string, properties?: Record<string, unknown>): void {
 	if (!enabled) return;

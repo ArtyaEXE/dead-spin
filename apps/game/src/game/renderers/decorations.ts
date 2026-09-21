@@ -2,7 +2,6 @@ import {Assets, Container, Sprite, type Texture} from 'pixi.js';
 import type {Decoration} from '@dead-spin/shared';
 import {loadDecoTexture} from '../decorations-cache';
 
-
 /**
  * Декорации уровня — 3 типа:
  *  - static: спрайт /deco/static/{src}.png с поворотом r и scale s
@@ -23,18 +22,15 @@ export interface DecorationsLayer {
 	destroy: () => void;
 }
 
-
 const STOP_BLINK_MS = 600;
 const GRAVITY_BLINK_MS = 510;
 const STOP_BASE_SIZE = 140;
 const GRAVITY_BASE_SIZE = 140;
 
-
 type DecoItem =
 	| {kind: 'static'; sprite: Sprite; pending: Promise<void>}
 	| {kind: 'stop'; sprite: Sprite}
 	| {kind: 'gravity'; sprite: Sprite; angleRad: number};
-
 
 export function createDecorationsLayer(decorations: readonly Decoration[]): DecorationsLayer {
 	const container = new Container();
@@ -49,12 +45,16 @@ export function createDecorationsLayer(decorations: readonly Decoration[]): Deco
 			sprite.scale.set(d.s);
 			container.addChild(sprite);
 
-			const pending = loadDecoTexture(d.src).then((tex: Texture) => {
-				sprite.texture = tex;
-				// Оригинал хранит natural-size картинки (img без width/height),
-				// применяя только transform: scale — делаем то же: width/height
-				// берутся из текстуры, scale — из s.
-			}).catch(() => {/* отсутствующий ассет — просто пропускаем */});
+			const pending = loadDecoTexture(d.src)
+				.then((tex: Texture) => {
+					sprite.texture = tex;
+					// Оригинал хранит natural-size картинки (img без width/height),
+					// применяя только transform: scale — делаем то же: width/height
+					// берутся из текстуры, scale — из s.
+				})
+				.catch(() => {
+					/* отсутствующий ассет — просто пропускаем */
+				});
 
 			items.push({kind: 'static', sprite, pending});
 		} else if (d.name === 'stop') {
@@ -66,7 +66,13 @@ export function createDecorationsLayer(decorations: readonly Decoration[]): Deco
 			sprite.width = size;
 			sprite.height = size;
 			container.addChild(sprite);
-			void Assets.load<Texture>('/icons/deco-stop.png').then(tex => { sprite.texture = tex; sprite.width = size; sprite.height = size; }).catch(() => {});
+			void Assets.load<Texture>('/icons/deco-stop.png')
+				.then((tex) => {
+					sprite.texture = tex;
+					sprite.width = size;
+					sprite.height = size;
+				})
+				.catch(() => {});
 			items.push({kind: 'stop', sprite});
 		} else {
 			const angleRad = (d.r * Math.PI) / 180;
@@ -78,7 +84,13 @@ export function createDecorationsLayer(decorations: readonly Decoration[]): Deco
 			sprite.width = size;
 			sprite.height = size;
 			container.addChild(sprite);
-			void Assets.load<Texture>('/icons/deco-gravity-down.png').then(tex => { sprite.texture = tex; sprite.width = size; sprite.height = size; }).catch(() => {});
+			void Assets.load<Texture>('/icons/deco-gravity-down.png')
+				.then((tex) => {
+					sprite.texture = tex;
+					sprite.width = size;
+					sprite.height = size;
+				})
+				.catch(() => {});
 			items.push({kind: 'gravity', sprite, angleRad});
 		}
 	}
@@ -118,5 +130,3 @@ export function createDecorationsLayer(decorations: readonly Decoration[]): Deco
 		},
 	};
 }
-
-

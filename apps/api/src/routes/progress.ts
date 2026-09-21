@@ -1,5 +1,5 @@
 import {Hono} from 'hono';
-import {and, asc, desc, eq, isNull, sql} from 'drizzle-orm';
+import {and, eq, sql} from 'drizzle-orm';
 import {z} from 'zod';
 import {
 	MAX_LEVEL_NUMBER,
@@ -9,8 +9,6 @@ import {
 	computeRating,
 	mergeRecord,
 	GhostRecordingSchema,
-	isPlausibleRecording,
-	type GhostRecording,
 } from '@dead-spin/shared';
 import {getLevelByNumber, getPreviousLevelNumber} from '@dead-spin/levels';
 import {db} from '../db/client';
@@ -20,9 +18,7 @@ import {badRequest} from '../lib/errors';
 import {track} from '../lib/analytics';
 import {upsertGlobalGhost} from '../lib/global-ghosts';
 
-
 export const progressRoutes = new Hono<AuthedEnv>();
-
 
 /**
  * GET /progress — текущий прогресс игрока: сумма звёзд и рекорды по уровням.
@@ -30,16 +26,9 @@ export const progressRoutes = new Hono<AuthedEnv>();
 progressRoutes.get('/', requireAuth, async (c) => {
 	const userId = c.var.user.id;
 
-	const [summaryRow] = await db
-		.select()
-		.from(progresses)
-		.where(eq(progresses.userId, userId))
-		.limit(1);
+	const [summaryRow] = await db.select().from(progresses).where(eq(progresses.userId, userId)).limit(1);
 
-	const levels = await db
-		.select()
-		.from(progressLevels)
-		.where(eq(progressLevels.userId, userId));
+	const levels = await db.select().from(progressLevels).where(eq(progressLevels.userId, userId));
 
 	return c.json({
 		summaryStars: summaryRow?.summaryStars ?? 0,
@@ -61,7 +50,6 @@ const LevelCompleteSchema = z.object({
 	// Сервер сохраняет её, если побит глобальный рекорд уровня.
 	recording: GhostRecordingSchema.optional(),
 });
-
 
 /**
  * POST /progress/level-complete
@@ -85,7 +73,6 @@ progressRoutes.post('/level-complete', requireAuth, async (c) => {
 
 	const rating = computeRating(levelDef, {collected, timeMs, fuelSpent});
 
-
 	const newStars = await db.transaction(async (tx) => {
 		const [existing] = await tx
 			.select()
@@ -97,11 +84,20 @@ progressRoutes.post('/level-complete', requireAuth, async (c) => {
 			// Флаги рейтинга липкие, время и топливо — минимумы (GDD §9,
 			// mergeRecord): медленная зачистка не стирает лучшее время.
 			const merged = mergeRecord(existing, {...rating, timeMs, fuelSpent});
-			if (merged.stars !== existing.stars || merged.timeMs !== existing.timeMs || merged.fuelSpent !== existing.fuelSpent) {
-				await tx.update(progressLevels)
+			if (
+				merged.stars !== existing.stars ||
+				merged.timeMs !== existing.timeMs ||
+				merged.fuelSpent !== existing.fuelSpent
+			) {
+				await tx
+					.update(progressLevels)
 					.set({
-						stars: merged.stars, parHit: merged.parHit, fullClear: merged.fullClear,
-						timeMs: merged.timeMs, fuelSpent: merged.fuelSpent, updatedAt: sql`now()`,
+						stars: merged.stars,
+						parHit: merged.parHit,
+						fullClear: merged.fullClear,
+						timeMs: merged.timeMs,
+						fuelSpent: merged.fuelSpent,
+						updatedAt: sql`now()`,
 					})
 					.where(and(eq(progressLevels.userId, userId), eq(progressLevels.level, level)));
 			}
@@ -125,7 +121,13 @@ progressRoutes.post('/level-complete', requireAuth, async (c) => {
 		}
 
 		await tx.insert(progressLevels).values({
-			userId, level, stars: rating.stars, parHit: rating.parHit, fullClear: rating.fullClear, timeMs, fuelSpent,
+			userId,
+			level,
+			stars: rating.stars,
+			parHit: rating.parHit,
+			fullClear: rating.fullClear,
+			timeMs,
+			fuelSpent,
 		});
 		return rating.stars;
 	});
@@ -133,7 +135,8 @@ progressRoutes.post('/level-complete', requireAuth, async (c) => {
 	if (newStars > 0) {
 		// Upsert — если строка ещё не создана (баг старой версии auth), вставляем
 		// сразу с этим инкрементом; иначе атомарно обновляем существующую.
-		await db.insert(progresses)
+		await db
+			.insert(progresses)
 			.values({userId, summaryStars: newStars})
 			.onConflictDoUpdate({
 				target: progresses.userId,
@@ -149,12 +152,17 @@ progressRoutes.post('/level-complete', requireAuth, async (c) => {
 		userId,
 		event: 'level_complete',
 		properties: {
-			level, collected, stars: rating.stars, par_hit: rating.parHit, full_clear: rating.fullClear,
-			timeMs, fuelSpent, newStars,
+			level,
+			collected,
+			stars: rating.stars,
+			par_hit: rating.parHit,
+			full_clear: rating.fullClear,
+			timeMs,
+			fuelSpent,
+			newStars,
 			suspicious_fast: timeMs < MIN_LEVEL_TIME_MS,
 		},
 	});
-
 
 	// Global ghost — fire-and-forget. Если текущий результат побил
 	// абсолютный рекорд уровня — перезаписываем запись для single-mode ghost'а.
@@ -162,4 +170,3 @@ progressRoutes.post('/level-complete', requireAuth, async (c) => {
 
 	return c.json({ok: true, newStars, stars: rating.stars, parHit: rating.parHit, fullClear: rating.fullClear});
 });
-

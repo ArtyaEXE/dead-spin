@@ -5,13 +5,11 @@ import {unauthorized} from '../lib/errors';
 import {db} from '../db/client';
 import {users, type User} from '../db/schema';
 
-
 export type AuthedEnv = {
 	Variables: {
 		user: User;
 	};
 };
-
 
 /**
  * requireAuth — извлекает JWT из Authorization: Bearer, верифицирует,

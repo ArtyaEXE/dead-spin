@@ -1,9 +1,6 @@
-
-
 import {getLevelByNumber} from '@dead-spin/levels';
 import {profileStore} from '../stores/profile';
 import type {TutorialKey} from '@dead-spin/shared';
-
 
 /**
  * Однократные туториал-карточки: знакомят игрока с управлением на L1 и с
@@ -16,34 +13,28 @@ import type {TutorialKey} from '@dead-spin/shared';
  * пульсирующий tap-хинт. "controls" показывает две иконки подряд (тап → буст).
  */
 
-
 export type {TutorialKey};
-
 
 type TutorialContent = {
 	primary: string;
 	secondary?: string;
 };
 
-
 const TUTORIALS: Record<TutorialKey, TutorialContent> = {
 	controls: {primary: '/icons/icon-tap.png', secondary: '/icons/icon-boost.png'},
-	mine:     {primary: '/icons/icon-mine-warning.png'},
-	stone:    {primary: '/icons/icon-stone-warning.png'},
-	worm:     {primary: '/icons/icon-worm-warning.png'},
+	mine: {primary: '/icons/icon-mine-warning.png'},
+	stone: {primary: '/icons/icon-stone-warning.png'},
+	worm: {primary: '/icons/icon-worm-warning.png'},
 };
-
 
 function getSeenSet(): Set<string> {
 	return new Set(profileStore.getState().profile.seenTutorials);
 }
 
-
 /** Помечает туториал просмотренным — в профиле устройства, с синхронизацией. */
 export function markSeen(key: TutorialKey): void {
 	profileStore.getState().markTutorialSeen(key);
 }
-
 
 export function computeTutorialQueue(levelNumber: number): TutorialKey[] {
 	const seen = getSeenSet();
@@ -53,14 +44,13 @@ export function computeTutorialQueue(levelNumber: number): TutorialKey[] {
 
 	const level = getLevelByNumber(levelNumber);
 	if (level) {
-		const types = new Set(level.enemies.map(e => e.name));
+		const types = new Set(level.enemies.map((e) => e.name));
 		for (const t of ['mine', 'stone', 'worm'] as const) {
 			if (types.has(t) && !seen.has(t)) queue.push(t);
 		}
 	}
 	return queue;
 }
-
 
 export function TutorialOverlay(props: {tutorial: TutorialKey; onDismiss: () => void}) {
 	const content = () => TUTORIALS[props.tutorial];

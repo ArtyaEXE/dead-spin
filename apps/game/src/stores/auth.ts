@@ -4,7 +4,6 @@ import {api, getToken, setToken, loginDevice} from '../net/client';
 import type {User} from '../net/schemas';
 import {identify, track} from '../analytics';
 
-
 type AuthState = {
 	user: User | null;
 	status: 'idle' | 'loading' | 'authed' | 'error';
@@ -16,7 +15,6 @@ type AuthState = {
 	setUser: (u: User) => void;
 	logout: () => void;
 };
-
 
 export const authStore = createStore<AuthState>((set, get) => ({
 	user: null,
@@ -66,9 +64,13 @@ export const authStore = createStore<AuthState>((set, get) => ({
 		if (get().status !== 'authed') await get().login();
 	},
 
-	setUser(u) { set({user: u}); },
-	logout() { setToken(null); set({user: null, status: 'idle', error: null}); },
+	setUser(u) {
+		set({user: u});
+	},
+	logout() {
+		setToken(null);
+		set({user: null, status: 'idle', error: null});
+	},
 }));
-
 
 export const useAuth = createSolidStoreAdapter(authStore);

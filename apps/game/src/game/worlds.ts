@@ -1,6 +1,5 @@
 const WORLD_NAMES = ['CERES', 'PALLAS', 'JUNO', 'VESTA', 'EUNOMIA'] as const;
 
-
 /**
  * "CERES #3" — имя мира (15 уровней на мир) + номер уровня внутри мира.
  * В оригинале шапка уровня формируется так же: Game.svelte → "CERES #{levelNumber}".

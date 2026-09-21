@@ -1,7 +1,6 @@
 import {Container, Sprite, type Texture} from 'pixi.js';
 import type {Point} from '@dead-spin/shared';
 
-
 /**
  * Взрыв: 13 кадров explosion/1..13.png, запускаемые с интервалом 80мс.
  * Каждый кадр — эффект "explode" (CSS в Explosion.svelte:120-124):
@@ -18,7 +17,6 @@ const SIZE = 300;
 const FRAME_DURATION = 700;
 const FRAME_INTERVAL = 80;
 
-
 export type ExplosionHandle = {
 	container: Container;
 	/** Пока не закончилась — true. Когда false — можно удалить из сцены. */
@@ -26,11 +24,7 @@ export type ExplosionHandle = {
 	destroy: () => void;
 };
 
-
-export function createExplosion(
-	pos: Point,
-	frames: Texture[],
-): ExplosionHandle {
+export function createExplosion(pos: Point, frames: Texture[]): ExplosionHandle {
 	const container = new Container();
 	container.position.set(pos.x, pos.y);
 	const sprites: Sprite[] = [];
@@ -81,6 +75,8 @@ export function createExplosion(
 			const lastStart = (sprites.length - 1) * FRAME_INTERVAL;
 			return anyActive || t < lastStart + FRAME_DURATION;
 		},
-		destroy() { container.destroy({children: true}); },
+		destroy() {
+			container.destroy({children: true});
+		},
 	};
 }

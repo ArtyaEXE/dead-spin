@@ -1,16 +1,13 @@
 import {z} from 'zod';
 
-
 export const PointSchema = z.object({
 	x: z.number().finite(),
 	y: z.number().finite(),
 });
 export type Point = z.infer<typeof PointSchema>;
 
-
 const WallPolygonSchema = z.array(PointSchema).min(3);
 const WallsSchema = z.array(WallPolygonSchema).min(1);
-
 
 const DecorationBaseSchema = z.object({
 	x: z.number().finite(),
@@ -41,7 +38,6 @@ export const DecorationSchema = z.discriminatedUnion('name', [
 ]);
 export type Decoration = z.infer<typeof DecorationSchema>;
 
-
 const WormEnemySchema = z.object({
 	name: z.literal('worm'),
 	x: z.number().finite(),
@@ -67,13 +63,8 @@ const MineEnemySchema = z.object({
 	speed: z.number().nonnegative(),
 });
 
-export const EnemySchema = z.discriminatedUnion('name', [
-	WormEnemySchema,
-	StoneEnemySchema,
-	MineEnemySchema,
-]);
+export const EnemySchema = z.discriminatedUnion('name', [WormEnemySchema, StoneEnemySchema, MineEnemySchema]);
 export type Enemy = z.infer<typeof EnemySchema>;
-
 
 export const LevelSchema = z.object({
 	name: z.string().min(1),
@@ -104,9 +95,7 @@ export const LevelSchema = z.object({
 });
 export type Level = z.infer<typeof LevelSchema>;
 
-
 export const LevelListSchema = z.array(LevelSchema);
-
 
 export function validateLevel(data: unknown): Level {
 	return LevelSchema.parse(data);

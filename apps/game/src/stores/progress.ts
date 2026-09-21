@@ -6,24 +6,20 @@ import {ProgressLevelSchema, type ProgressLevel} from '../net/schemas';
 import {createSolidStoreAdapter} from './solid';
 import {loadJson, saveJson} from '../lib/persist';
 
-
 /**
  * Прогресс по уровням — на устройстве (GDD §16.2). Загружается из хранилища
  * до любого сетевого запроса, поэтому уровни доступны сразу и без сети.
  * Серверная копия при refresh() сливается с локальной по mergeRecord.
  */
 
-
 const KEY = 'dead-spin.progress.v1';
 const LevelsSchema = z.record(z.string(), ProgressLevelSchema);
-
 
 function sumStars(levels: Record<number, ProgressLevel>): number {
 	let s = 0;
 	for (const r of Object.values(levels)) s += r.stars;
 	return s;
 }
-
 
 function loadLevels(): Record<number, ProgressLevel> {
 	const raw = loadJson<Record<string, ProgressLevel>>(KEY, LevelsSchema, () => ({}));
@@ -32,7 +28,6 @@ function loadLevels(): Record<number, ProgressLevel> {
 	return out;
 }
 
-
 type ProgressState = {
 	summaryStars: number;
 	levels: Record<number, ProgressLevel>;
@@ -40,7 +35,6 @@ type ProgressState = {
 	refresh: () => Promise<void>;
 	recordLocal: (level: number, run: Rating & {timeMs: number; fuelSpent: number}) => void;
 };
-
 
 export const progressStore = createStore<ProgressState>((set, get) => ({
 	summaryStars: sumStars(loadLevels()),
@@ -54,8 +48,19 @@ export const progressStore = createStore<ProgressState>((set, get) => ({
 		let changed = false;
 		for (const row of res.levels) {
 			const local = map[row.level];
-			const merged = mergeRecord(local, {stars: row.stars, parHit: row.parHit, fullClear: row.fullClear, timeMs: row.timeMs, fuelSpent: row.fuelSpent});
-			if (!local || merged.stars !== local.stars || merged.timeMs !== local.timeMs || merged.fuelSpent !== local.fuelSpent) {
+			const merged = mergeRecord(local, {
+				stars: row.stars,
+				parHit: row.parHit,
+				fullClear: row.fullClear,
+				timeMs: row.timeMs,
+				fuelSpent: row.fuelSpent,
+			});
+			if (
+				!local ||
+				merged.stars !== local.stars ||
+				merged.timeMs !== local.timeMs ||
+				merged.fuelSpent !== local.fuelSpent
+			) {
 				map[row.level] = {...row, ...merged};
 				changed = true;
 			}
@@ -69,7 +74,13 @@ export const progressStore = createStore<ProgressState>((set, get) => ({
 		const existing = get().levels[level];
 		// Флаги рейтинга липкие, время и топливо — минимумы (см. mergeRecord).
 		const merged = mergeRecord(existing, run);
-		if (existing && merged.stars === existing.stars && merged.timeMs === existing.timeMs && merged.fuelSpent === existing.fuelSpent) return;
+		if (
+			existing &&
+			merged.stars === existing.stars &&
+			merged.timeMs === existing.timeMs &&
+			merged.fuelSpent === existing.fuelSpent
+		)
+			return;
 
 		const entry: ProgressLevel = {
 			userId: existing?.userId ?? '',

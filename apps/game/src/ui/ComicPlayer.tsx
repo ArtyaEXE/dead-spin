@@ -2,7 +2,6 @@ import {createSignal, onCleanup, onMount, Show} from 'solid-js';
 import type {Anchor, Caption, Comic, Panel, SoundCue} from '@dead-spin/shared';
 import {audio} from '../game/audio';
 
-
 /**
  * Универсальный плеер комиксов: проигрывает декларативный Comic
  * (apps/game/src/ui/comics/*.json) — панели с длительностью, шейком или
@@ -20,10 +19,8 @@ import {audio} from '../game/audio';
  * audio.pauseMusic(); восстанавливается на unmount.
  */
 
-
 type Cleanup = () => void;
 type Pausable = {pause: () => void; resume: () => void};
-
 
 const ANCHOR_TO_POSITION: Record<Anchor, string> = {
 	center: '50% 50%',
@@ -37,9 +34,7 @@ const ANCHOR_TO_POSITION: Record<Anchor, string> = {
 	right: '100% 50%',
 };
 
-
 const FADE_MS = 600;
-
 
 export function ComicPlayer(props: {comic: Comic; onFinish: () => void}) {
 	const [idx, setIdx] = createSignal(0);
@@ -56,8 +51,12 @@ export function ComicPlayer(props: {comic: Comic; onFinish: () => void}) {
 		panelPausables = [];
 	}
 
-	function pauseAll(): void { for (const p of panelPausables) p.pause(); }
-	function resumeAll(): void { for (const p of panelPausables) p.resume(); }
+	function pauseAll(): void {
+		for (const p of panelPausables) p.pause();
+	}
+	function resumeAll(): void {
+		for (const p of panelPausables) p.resume();
+	}
 
 	/**
 	 * Pausable setTimeout — корректно сохраняет остаток на pause()/resume().
@@ -69,10 +68,18 @@ export function ComicPlayer(props: {comic: Comic; onFinish: () => void}) {
 		let remaining = ms;
 		const start = (): void => {
 			startedAt = Date.now();
-			id = window.setTimeout(() => { id = null; cb(); }, remaining);
+			id = window.setTimeout(() => {
+				id = null;
+				cb();
+			}, remaining);
 		};
 		start();
-		panelCleanups.push(() => { if (id !== null) { clearTimeout(id); id = null; } });
+		panelCleanups.push(() => {
+			if (id !== null) {
+				clearTimeout(id);
+				id = null;
+			}
+		});
 		panelPausables.push({
 			pause: () => {
 				if (id === null) return;
@@ -94,13 +101,22 @@ export function ComicPlayer(props: {comic: Comic; onFinish: () => void}) {
 	 */
 	function addPausableInterval(cb: () => void, ms: number): {stop: () => void} {
 		let id: number | null = null;
-		const start = (): void => { id = window.setInterval(cb, ms); };
-		const stop = (): void => { if (id !== null) { clearInterval(id); id = null; } };
+		const start = (): void => {
+			id = window.setInterval(cb, ms);
+		};
+		const stop = (): void => {
+			if (id !== null) {
+				clearInterval(id);
+				id = null;
+			}
+		};
 		start();
 		panelCleanups.push(stop);
 		panelPausables.push({
 			pause: stop,
-			resume: () => { if (id === null) start(); },
+			resume: () => {
+				if (id === null) start();
+			},
 		});
 		return {stop};
 	}
@@ -162,7 +178,12 @@ export function ComicPlayer(props: {comic: Comic; onFinish: () => void}) {
 		const duration = k.duration ?? panel.duration;
 		const anim = el.animate(keyframes, {duration, fill: 'forwards'});
 		panelCleanups.push(() => anim.cancel());
-		panelPausables.push({pause: () => anim.pause(), resume: () => { void anim.play(); }});
+		panelPausables.push({
+			pause: () => anim.pause(),
+			resume: () => {
+				void anim.play();
+			},
+		});
 	}
 
 	function enterPanel(i: number): void {
@@ -239,13 +260,16 @@ export function ComicPlayer(props: {comic: Comic; onFinish: () => void}) {
 		<div class="comic-root" classList={{fading: fading()}}>
 			{props.comic.panels.map((p, i) => (
 				<img
-					ref={el => { imgRefs[i] = el; }}
+					ref={(el) => {
+						imgRefs[i] = el;
+					}}
 					src={p.img}
 					class="comic-panel"
 					classList={{
 						[`shake-${p.shake}`]: p.shake !== 'none' && !p.ken,
 						active: idx() === i,
 					}}
+					alt=""
 				/>
 			))}
 
@@ -260,11 +284,11 @@ export function ComicPlayer(props: {comic: Comic; onFinish: () => void}) {
 				<div class="comic-caption">{captionText()}</div>
 			</Show>
 
-			<button class="comic-skip-all pressable" onClick={finishNow} aria-label="Skip">
+			<button type="button" class="comic-skip-all pressable" onClick={finishNow} aria-label="Skip">
 				<img src="/btn-close.png" alt="Skip" />
 			</button>
 
-			<button class="comic-skip pressable" onClick={advance} aria-label="Next">
+			<button type="button" class="comic-skip pressable" onClick={advance} aria-label="Next">
 				<img src="/btn-right.png" alt="Next" />
 			</button>
 		</div>

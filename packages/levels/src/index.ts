@@ -34,23 +34,48 @@ import l28 from './data/28.json' with {type: 'json'};
 import l29 from './data/29.json' with {type: 'json'};
 import l30 from './data/30.json' with {type: 'json'};
 
-
 const raw = [
-	l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15,
-	l16, l17, l18, l19, l20, l21, l22, l23, l24, l25, l26, l27, l28, l29, l30,
+	l1,
+	l2,
+	l3,
+	l4,
+	l5,
+	l6,
+	l7,
+	l8,
+	l9,
+	l10,
+	l11,
+	l12,
+	l13,
+	l14,
+	l15,
+	l16,
+	l17,
+	l18,
+	l19,
+	l20,
+	l21,
+	l22,
+	l23,
+	l24,
+	l25,
+	l26,
+	l27,
+	l28,
+	l29,
+	l30,
 ];
-
 
 export const levels: readonly Level[] = raw.map((data, idx) => {
 	const result = LevelSchema.safeParse(data);
 	if (!result.success) {
 		throw new Error(
-			`Invalid level at index ${idx}: ${result.error.issues.map(i => i.path.join('.') + ' ' + i.message).join('; ')}`
+			`Invalid level at index ${idx}: ${result.error.issues.map((i) => i.path.join('.') + ' ' + i.message).join('; ')}`,
 		);
 	}
 	return result.data;
 });
-
 
 /**
  * Map number → level. Используем `level.name` (там лежит "1"/"16"/...)
@@ -64,16 +89,12 @@ for (const lvl of levels) {
 	byNumber.set(n, lvl);
 }
 
-
 /** Sorted список существующих номеров уровней. UI использует для рендера. */
-export const LEVEL_NUMBERS: readonly number[] =
-	Array.from(byNumber.keys()).sort((a, b) => a - b);
-
+export const LEVEL_NUMBERS: readonly number[] = Array.from(byNumber.keys()).sort((a, b) => a - b);
 
 export function getLevelByNumber(n: number): Level | undefined {
 	return byNumber.get(n);
 }
-
 
 /**
  * Наибольший существующий уровень < n. Используется для gate'а
@@ -88,7 +109,6 @@ export function getPreviousLevelNumber(n: number): number | null {
 	}
 	return best;
 }
-
 
 /**
  * Наименьший существующий уровень > n. Используется UI-кнопкой «Next»

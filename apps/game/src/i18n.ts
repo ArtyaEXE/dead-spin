@@ -2,7 +2,6 @@ import {createSignal} from 'solid-js';
 import {z} from 'zod';
 import {loadJson, saveJson} from './lib/persist';
 
-
 /**
  * Локализация интерфейса игры. Строк немного намеренно — игра общается
  * иконками (GDD §15: «атмосфера ставится цветом и звуком, не текстом»).
@@ -12,19 +11,16 @@ import {loadJson, saveJson} from './lib/persist';
  * Названия ачивок лежат в `@dead-spin/shared` (ru/en) и берутся оттуда.
  */
 
-
 export type Locale = 'ru' | 'en';
 export const LOCALES: readonly Locale[] = ['ru', 'en'];
 
 const KEY = 'dead-spin.locale';
 const LocaleSchema = z.enum(['ru', 'en']);
 
-
 function detect(): Locale {
 	const lang = typeof navigator !== 'undefined' ? navigator.language : 'en';
 	return lang.toLowerCase().startsWith('ru') ? 'ru' : 'en';
 }
-
 
 const [locale, setLocaleSignal] = createSignal<Locale>(loadJson(KEY, LocaleSchema, detect));
 
@@ -35,7 +31,6 @@ export function setLocale(l: Locale): void {
 	setLocaleSignal(l);
 	saveJson(KEY, l);
 }
-
 
 const DICT = {
 	en: {
@@ -79,19 +74,18 @@ const DICT = {
 
 export type MsgKey = keyof typeof DICT.en;
 
-
 /** Форма множественного числа: ru — one/few/other, en — one/other. */
 function pluralForm(l: Locale, n: number): 'one' | 'few' | 'other' {
 	const abs = Math.abs(n);
 	if (l === 'ru') {
-		const m10 = abs % 10, m100 = abs % 100;
+		const m10 = abs % 10,
+			m100 = abs % 100;
 		if (m10 === 1 && m100 !== 11) return 'one';
 		if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return 'few';
 		return 'other';
 	}
 	return abs === 1 ? 'one' : 'other';
 }
-
 
 /** Слово «монет» в нужной форме для числа n. */
 export function coinsWord(n: number): string {
@@ -100,7 +94,6 @@ export function coinsWord(n: number): string {
 	const d = DICT[l] as Record<string, string>;
 	return d[`coins.${form}`] ?? d['coins.other'] ?? '';
 }
-
 
 /**
  * Строка по ключу с подстановкой {var}. `{coins}` подставляется как форма

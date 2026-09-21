@@ -2,11 +2,13 @@ import type {ZodTypeAny} from 'zod';
 import type {GhostRecording, Profile} from '@dead-spin/shared';
 import {API_BASE} from '../config';
 import {
-	LoginResponseSchema, MeResponseSchema, ProgressResponseSchema,
-	LevelCompleteResponseSchema, LeaderboardResponseSchema,
+	LoginResponseSchema,
+	MeResponseSchema,
+	ProgressResponseSchema,
+	LevelCompleteResponseSchema,
+	LeaderboardResponseSchema,
 	GhostResponseSchema,
 } from './schemas';
-
 
 const TOKEN_KEY = 'dead-spin.token';
 
@@ -19,13 +21,15 @@ export function setToken(token: string | null): void {
 	else localStorage.removeItem(TOKEN_KEY);
 }
 
-
 export class ApiError extends Error {
-	constructor(public status: number, public code: string, msg?: string) {
+	constructor(
+		public status: number,
+		public code: string,
+		msg?: string,
+	) {
 		super(msg ?? code);
 	}
 }
-
 
 async function request<S extends ZodTypeAny>(
 	method: 'GET' | 'POST' | 'PUT',
@@ -60,17 +64,21 @@ async function request<S extends ZodTypeAny>(
 	console.log(`[fetch →] ${method} ${url} ${res.status} ${ms}ms`);
 
 	let data: unknown = null;
-	try { data = await res.json(); } catch { /* empty */ }
+	try {
+		data = await res.json();
+	} catch {
+		/* empty */
+	}
 
 	if (!res.ok) {
-		const err = (data && typeof data === 'object' && 'error' in data) ? String((data as {error: unknown}).error) : 'httpError';
+		const err =
+			data && typeof data === 'object' && 'error' in data ? String((data as {error: unknown}).error) : 'httpError';
 		console.warn(`[fetch ✗ HTTP] ${method} ${url} status=${res.status} body=${err}`);
 		throw new ApiError(res.status, err);
 	}
 
 	return schema.parse(data);
 }
-
 
 const DEVICE_KEY = 'dead-spin.deviceId';
 
@@ -88,7 +96,6 @@ function uuid4(): string {
 	return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
 }
 
-
 /**
  * Идентификатор устройства — заменяет Telegram-аккаунт. Генерируется один
  * раз при первом запуске и живёт в localStorage. Учётки как таковой нет:
@@ -103,7 +110,6 @@ export function getDeviceId(): string {
 	return id;
 }
 
-
 export async function loginDevice() {
 	const result = await request('POST', '/auth/device', LoginResponseSchema, {
 		deviceId: getDeviceId(),
@@ -113,22 +119,23 @@ export async function loginDevice() {
 	return result;
 }
 
-
 export const api = {
 	me: () => request('GET', '/me', MeResponseSchema),
 
 	progress: () => request('GET', '/progress', ProgressResponseSchema),
 
 	levelComplete: (body: {
-		level: number; collected: number; timeMs: number; fuelSpent: number;
+		level: number;
+		collected: number;
+		timeMs: number;
+		fuelSpent: number;
 		recording?: GhostRecording;
 	}) => request('POST', '/progress/level-complete', LevelCompleteResponseSchema, body),
 
 	leaderboard: (level: number, limit = 20) =>
 		request('GET', `/leaderboard/${level}?limit=${limit}`, LeaderboardResponseSchema),
 
-	globalGhost: (level: number) =>
-		request('GET', `/leaderboard/${level}/ghost`, GhostResponseSchema),
+	globalGhost: (level: number) => request('GET', `/leaderboard/${level}/ghost`, GhostResponseSchema),
 
 	/** Снимок профиля устройства → серверная копия (см. stores/sync.ts). */
 	putProfile: (profile: Profile) => request('PUT', '/me/profile', MeResponseSchema, profile),

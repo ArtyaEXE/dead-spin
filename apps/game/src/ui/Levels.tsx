@@ -4,7 +4,6 @@ import {getLevelByNumber, getPreviousLevelNumber} from '@dead-spin/levels';
 import {useAuth} from '../stores/auth';
 import {useProgress, progressStore} from '../stores/progress';
 
-
 const WORLD_NAMES = ['CERES', 'PALLAS', 'JUNO', 'VESTA', 'EUNOMIA'] as const;
 const WORLD_BG: Record<number, string> = {
 	0: '/ceres-1.jpg',
@@ -18,9 +17,7 @@ const WORLD_BG: Record<number, string> = {
 // экрана видит 45 залоченных кнопок несуществующего контента.
 const WORLD_COUNT = Math.ceil(LEVEL_COUNT / 15);
 
-
 type LevelCell = {number: number; stars: number; available: boolean; exists: boolean} | null;
-
 
 export function Levels(props: {onBack: () => void; onPlay: (levelNumber: number) => void}) {
 	const auth = useAuth();
@@ -30,7 +27,10 @@ export function Levels(props: {onBack: () => void; onPlay: (levelNumber: number)
 	// Обновляем прогресс при каждом открытии экрана.
 	createEffect(() => {
 		if (auth().status === 'authed') {
-			void progressStore.getState().refresh().catch(() => {});
+			void progressStore
+				.getState()
+				.refresh()
+				.catch(() => {});
 		}
 	});
 
@@ -52,7 +52,7 @@ export function Levels(props: {onBack: () => void; onPlay: (levelNumber: number)
 			let available = false;
 			if (exists) {
 				const prevNum = getPreviousLevelNumber(number);
-				available = prevNum === null || (globalLevels[prevNum] !== undefined);
+				available = prevNum === null || globalLevels[prevNum] !== undefined;
 			}
 
 			const rec = globalLevels[number];
@@ -69,8 +69,8 @@ export function Levels(props: {onBack: () => void; onPlay: (levelNumber: number)
 
 	const summary = () => progress().summaryStars;
 
-	const prevWorld = () => setWorldIndex(w => Math.max(0, w - 1));
-	const nextWorld = () => setWorldIndex(w => Math.min(WORLD_COUNT - 1, w + 1));
+	const prevWorld = () => setWorldIndex((w) => Math.max(0, w - 1));
+	const nextWorld = () => setWorldIndex((w) => Math.min(WORLD_COUNT - 1, w + 1));
 
 	return (
 		<div class="levels-root">
@@ -78,7 +78,6 @@ export function Levels(props: {onBack: () => void; onPlay: (levelNumber: number)
 				<img class="pressable" src="/btn-close.png" style={{height: '60px'}} alt="Close" onClick={props.onBack} />
 
 				<div class="world-title">{WORLD_NAMES[worldIndex()]}</div>
-
 			</div>
 
 			<div class="levels-world">
@@ -98,14 +97,29 @@ export function Levels(props: {onBack: () => void; onPlay: (levelNumber: number)
 													classList={{
 														locked: !c().available,
 														pressable: c().available,
-																	}}
+													}}
 													onClick={() => c().available && props.onPlay(c().number)}
 												>
 													<div>{c().number}</div>
 													<div class="lvl-stars">
-														<img class="lvl-star-1" classList={{'lvl-star-disabled': c().stars < 1}} src="/star.png" alt="" />
-														<img class="lvl-star-2" classList={{'lvl-star-disabled': c().stars < 2}} src="/star.png" alt="" />
-														<img class="lvl-star-3" classList={{'lvl-star-disabled': c().stars < 3}} src="/star.png" alt="" />
+														<img
+															class="lvl-star-1"
+															classList={{'lvl-star-disabled': c().stars < 1}}
+															src="/star.png"
+															alt=""
+														/>
+														<img
+															class="lvl-star-2"
+															classList={{'lvl-star-disabled': c().stars < 2}}
+															src="/star.png"
+															alt=""
+														/>
+														<img
+															class="lvl-star-3"
+															classList={{'lvl-star-disabled': c().stars < 3}}
+															src="/star.png"
+															alt=""
+														/>
 													</div>
 												</div>
 											)}
@@ -140,7 +154,6 @@ export function Levels(props: {onBack: () => void; onPlay: (levelNumber: number)
 					onClick={nextWorld}
 				/>
 			</div>
-
 		</div>
 	);
 }

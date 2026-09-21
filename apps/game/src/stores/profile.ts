@@ -1,13 +1,21 @@
 import {createStore} from 'zustand/vanilla';
 import {
-	ProfileSchema, defaultProfile, dailyState, claimDaily, evaluateAchievements, mergeProfiles,
-	type Profile, type SkinId, type TutorialKey, type LevelRecordLike, type AchievementKey,
+	ProfileSchema,
+	defaultProfile,
+	dailyState,
+	claimDaily,
+	evaluateAchievements,
+	mergeProfiles,
+	type Profile,
+	type SkinId,
+	type TutorialKey,
+	type LevelRecordLike,
+	type AchievementKey,
 } from '@dead-spin/shared';
 import {createSolidStoreAdapter} from './solid';
 import {syncStore} from './sync';
 import {loadJson, saveJson} from '../lib/persist';
 import {track} from '../analytics';
-
 
 /**
  * Профиль игрока на устройстве — монеты, скин, туториалы, дейлик, ачивки.
@@ -15,9 +23,7 @@ import {track} from '../analytics';
  * кладётся снимком в очередь синхронизации; сервер хранит копию.
  */
 
-
 const KEY = 'dead-spin.profile.v1';
-
 
 type ProfileState = {
 	profile: Profile;
@@ -32,7 +38,6 @@ type ProfileState = {
 	/** Слить серверную копию (восстановление на новом устройстве). */
 	mergeRemote: (remote: Profile | null) => void;
 };
-
 
 export const profileStore = createStore<ProfileState>((set, get) => {
 	const commit = (profile: Profile): void => {
@@ -100,6 +105,5 @@ export const profileStore = createStore<ProfileState>((set, get) => {
 		},
 	};
 });
-
 
 export const useProfile = createSolidStoreAdapter(profileStore);

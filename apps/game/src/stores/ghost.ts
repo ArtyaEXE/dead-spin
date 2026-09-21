@@ -3,14 +3,12 @@ import {api, ApiError} from '../net/client';
 import type {GhostResponse} from '../net/schemas';
 import {createSolidStoreAdapter} from './solid';
 
-
 type GhostState = {
 	current: GhostResponse | null;
 	loaded: boolean;
 	load: (level: number) => Promise<void>;
 	clear: () => void;
 };
-
 
 /**
  * Ghost-запись глобального лидера уровня — GET /leaderboard/:level/ghost.
@@ -35,8 +33,9 @@ export const ghostStore = createStore<GhostState>((set) => ({
 		}
 	},
 
-	clear() { set({current: null, loaded: false}); },
+	clear() {
+		set({current: null, loaded: false});
+	},
 }));
-
 
 export const useGhost = createSolidStoreAdapter(ghostStore);

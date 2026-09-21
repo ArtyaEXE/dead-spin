@@ -1,4 +1,4 @@
-import {Sprite, Texture, Container} from 'pixi.js';
+import {Sprite, type Texture, Container} from 'pixi.js';
 import {
 	getDistanceBtwPoints,
 	updateHeat,
@@ -11,9 +11,7 @@ import {
 } from '@dead-spin/engine';
 import type {Enemy} from './types';
 
-
 type MineSetup = {x: number; y: number; r: number; radius: number};
-
 
 /**
  * Мина с магнитным взрывателем. Старая «инстакилл на касание» осталась
@@ -153,6 +151,8 @@ export function createMine(setup: MineSetup, tex: Texture): Enemy {
 			applyHeatFx(state.heat, nowMs);
 			return false;
 		},
-		destroy() { container.destroy({children: true}); },
+		destroy() {
+			container.destroy({children: true});
+		},
 	};
 }

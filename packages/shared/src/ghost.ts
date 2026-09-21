@@ -1,7 +1,6 @@
 import {z} from 'zod';
 import {PointSchema} from './level';
 
-
 /**
  * Запись («ghost») прохождения уровня. Порт `imports/lib/client/tries.js`
  * из Meteor-исходника. Формат event-based, не покадровый:
@@ -18,10 +17,8 @@ import {PointSchema} from './level';
  * 10–30 событий × ~50 байт = ~1 КБ.
  */
 
-
 export const GhostEventTypeSchema = z.enum(['start', 'boost', 'loose', 'win']);
 export type GhostEventType = z.infer<typeof GhostEventTypeSchema>;
-
 
 export const GhostEventSchema = z.object({
 	type: GhostEventTypeSchema,
@@ -35,14 +32,12 @@ export const GhostEventSchema = z.object({
 });
 export type GhostEvent = z.infer<typeof GhostEventSchema>;
 
-
 export const GhostRecordingSchema = z.object({
 	level: z.number().int().positive(),
 	gravity: PointSchema,
 	events: z.array(GhostEventSchema).min(2).max(500),
 });
 export type GhostRecording = z.infer<typeof GhostRecordingSchema>;
-
 
 /**
  * Sanity-проверка записи на стороне сервера. Не ловит ботов с честной

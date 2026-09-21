@@ -1,5 +1,5 @@
 import {Hono} from 'hono';
-import {and, asc, desc, eq, isNull, sql} from 'drizzle-orm';
+import {asc, desc, eq, sql} from 'drizzle-orm';
 import {z} from 'zod';
 import {MAX_LEVEL_NUMBER} from '@dead-spin/shared';
 import {db} from '../db/client';
@@ -7,9 +7,7 @@ import {progressLevels, globalGhosts, users} from '../db/schema';
 import {requireAuth, type AuthedEnv} from '../middleware/auth';
 import {badRequest, notFound} from '../lib/errors';
 
-
 export const leaderboardRoutes = new Hono<AuthedEnv>();
-
 
 const LevelParam = z.object({
 	level: z.coerce.number().int().min(1).max(MAX_LEVEL_NUMBER),
@@ -17,7 +15,6 @@ const LevelParam = z.object({
 const QuerySchema = z.object({
 	limit: z.coerce.number().int().min(1).max(100).default(20),
 });
-
 
 /**
  * GET /leaderboard/:level?limit=20
@@ -64,17 +61,13 @@ leaderboardRoutes.get('/:level', requireAuth, async (c) => {
 	return c.json({
 		level: params.data.level,
 		entries: rows,
-		me: myRank
-			? {rank: Number(myRank.rank), stars: myRank.stars, timeMs: myRank.time_ms}
-			: null,
+		me: myRank ? {rank: Number(myRank.rank), stars: myRank.stars, timeMs: myRank.time_ms} : null,
 	});
 });
-
 
 leaderboardRoutes.get('/', requireAuth, async (_c) => {
 	throw badRequest('levelRequired');
 });
-
 
 /**
  * GET /leaderboard/:level/ghost

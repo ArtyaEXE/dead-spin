@@ -6,7 +6,6 @@ import {localDate} from '../lib/persist';
 import {t} from '../i18n';
 import {AchievementsOverlay} from './Achievements';
 
-
 /**
  * MainMenu — стартовый экран: логотип и крутящаяся кнопка Play.
  * Иконка шестерёнки → Settings; иконка-корабль → Shop (выбор скина).
@@ -16,8 +15,7 @@ import {AchievementsOverlay} from './Achievements';
  */
 export function MainMenu(props: {onPlay: () => void; onSettings: () => void; onShop: () => void}) {
 	const profile = useProfile();
-	const shipSrc = (): string =>
-		getSkinById(getActiveSkinId(progressStore.getState().summaryStars)).src;
+	const shipSrc = (): string => getSkinById(getActiveSkinId(progressStore.getState().summaryStars)).src;
 
 	const daily = () => profileStore.getState().dailyState(localDate());
 	const [claimed, setClaimed] = createSignal<number | null>(null);
@@ -51,20 +49,14 @@ export function MainMenu(props: {onPlay: () => void; onSettings: () => void; onS
 				</div>
 			</Show>
 
-			<Show when={claimed()}>
-				{(r) => (
-					<div class="daily-toast">
-						✅ {t('daily.claimed', {n: r()})}
-					</div>
-				)}
-			</Show>
+			<Show when={claimed()}>{(r) => <div class="daily-toast">✅ {t('daily.claimed', {n: r()})}</div>}</Show>
 
 			<div class="mm-play pressable" onClick={props.onPlay}>
 				<img src="/btn-play.png" alt="Play" />
 			</div>
 
 			<div class="mm-footer">
-				<button class="mm-trophy pressable" onClick={() => setShowAchievements(true)}>
+				<button type="button" class="mm-trophy pressable" onClick={() => setShowAchievements(true)}>
 					<img src="/icons/trophy-icon.png" alt="achievements" />
 				</button>
 			</div>

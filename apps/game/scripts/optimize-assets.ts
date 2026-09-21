@@ -24,18 +24,20 @@ import {join, dirname, extname, basename} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import sharp from 'sharp';
 
-
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PUBLIC = join(__dirname, '..', 'public');
 
 /** Иконки, которые рисуются крупно (130 px и туториальные карточки). */
 const LARGE_ICONS = new Set([
-	'crash-icon.png', 'pause-icon.png',
-	'icon-tap.png', 'icon-boost.png',
-	'icon-mine-warning.png', 'icon-stone-warning.png', 'icon-worm-warning.png',
+	'crash-icon.png',
+	'pause-icon.png',
+	'icon-tap.png',
+	'icon-boost.png',
+	'icon-mine-warning.png',
+	'icon-stone-warning.png',
+	'icon-worm-warning.png',
 ]);
 const SKIP_DIRS = new Set(['music', 'font', 'comics', 'map-ref']);
-
 
 type Rule = {maxSize?: number; toJpeg?: boolean};
 
@@ -53,7 +55,6 @@ function ruleFor(rel: string): Rule | null {
 	return {};
 }
 
-
 function walk(dir: string, out: string[] = []): string[] {
 	for (const e of readdirSync(dir)) {
 		const full = join(dir, e);
@@ -63,14 +64,18 @@ function walk(dir: string, out: string[] = []): string[] {
 	return out;
 }
 
-
 async function main(): Promise<void> {
 	const files = walk(PUBLIC);
-	let before = 0, after = 0, changed = 0;
+	let before = 0,
+		after = 0,
+		changed = 0;
 	const renamed: string[] = [];
 
 	for (const full of files) {
-		const rel = full.slice(PUBLIC.length + 1).split('\\').join('/');
+		const rel = full
+			.slice(PUBLIC.length + 1)
+			.split('\\')
+			.join('/');
 		const rule = ruleFor(rel);
 		if (!rule) continue;
 
@@ -79,7 +84,8 @@ async function main(): Promise<void> {
 		before += inSize;
 
 		let img = sharp(src);
-		if (rule.maxSize) img = img.resize({width: rule.maxSize, height: rule.maxSize, fit: 'inside', withoutEnlargement: true});
+		if (rule.maxSize)
+			img = img.resize({width: rule.maxSize, height: rule.maxSize, fit: 'inside', withoutEnlargement: true});
 
 		let out: Buffer;
 		let outPath = full;
@@ -94,10 +100,15 @@ async function main(): Promise<void> {
 
 		if (out.length < inSize || outPath !== full) {
 			writeFileSync(outPath, out);
-			if (outPath !== full) { unlinkSync(full); renamed.push(`${rel} → ${basename(outPath)}`); }
+			if (outPath !== full) {
+				unlinkSync(full);
+				renamed.push(`${rel} → ${basename(outPath)}`);
+			}
 			after += out.length;
 			changed++;
-			console.log(`${(inSize / 1024).toFixed(0).padStart(6)} → ${(out.length / 1024).toFixed(0).padStart(6)} KB  ${rel}`);
+			console.log(
+				`${(inSize / 1024).toFixed(0).padStart(6)} → ${(out.length / 1024).toFixed(0).padStart(6)} KB  ${rel}`,
+			);
 		} else {
 			after += inSize;
 		}

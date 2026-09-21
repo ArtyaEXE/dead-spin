@@ -22,10 +22,8 @@ import {join, dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {LevelSchema} from '@dead-spin/shared';
 
-
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const dataDir = join(__dirname, '..', 'src', 'data');
-
 
 const PX_PER_BOOST = 120;
 const CRUISE_PX_S = 140;
@@ -34,17 +32,16 @@ const TANK_MULT = 2.0;
 const PAR_TIME_MULT = 1.5;
 const MIN_TANK = 2000;
 
-
 type P = {x: number; y: number};
 const dist = (a: P, b: P): number => Math.hypot(b.x - a.x, b.y - a.y);
-
 
 function roundUpTo(v: number, step: number): number {
 	return Math.ceil(v / step) * step;
 }
 
-
-const files = readdirSync(dataDir).filter(f => /^\d+\.json$/.test(f)).sort((a, b) => parseInt(a) - parseInt(b));
+const files = readdirSync(dataDir)
+	.filter((f) => /^\d+\.json$/.test(f))
+	.sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
 
 console.log('lvl   path   boosts  parFuel  tank   parTime');
 for (const file of files) {
@@ -73,7 +70,7 @@ for (const file of files) {
 
 	console.log(
 		`${lvl.name.padStart(3)}  ${String(Math.round(path)).padStart(5)}  ${String(boosts).padStart(5)}  ` +
-		`${String(parFuel).padStart(7)}  ${String(fuelTank).padStart(5)}  ${String(parTimeMs / 1000).padStart(5)}s`,
+			`${String(parFuel).padStart(7)}  ${String(fuelTank).padStart(5)}  ${String(parTimeMs / 1000).padStart(5)}s`,
 	);
 }
 console.log(`\n${files.length} уровней обновлено.`);
