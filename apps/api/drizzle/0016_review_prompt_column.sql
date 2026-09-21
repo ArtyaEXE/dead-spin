@@ -1,1 +1,0 @@
-ALTER TABLE "users" ADD COLUMN "review_prompt_sent_at" timestamp with time zone;

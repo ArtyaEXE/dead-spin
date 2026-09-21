@@ -1,6 +1,5 @@
 import {createSignal, onCleanup, onMount} from 'solid-js';
 
-
 /**
  * Мини-счётчик FPS — живёт в углу экрана поверх всех UI-слоёв.
  * Меряет частоту `requestAnimationFrame` скользящим окном ~500 мс,

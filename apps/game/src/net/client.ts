@@ -1,18 +1,14 @@
 import type {ZodTypeAny} from 'zod';
-import type {GhostRecording} from '@dead-spin/shared';
+import type {GhostRecording, Profile} from '@dead-spin/shared';
 import {API_BASE} from '../config';
-import {groupStore} from '../stores/group';
-import {isGroupMode} from '../stores/mode';
 import {
-	LoginResponseSchema, MeResponseSchema, ProgressResponseSchema,
-	LevelCompleteResponseSchema, FuelSpendResponseSchema, LeaderboardResponseSchema,
-	GhostResponseSchema, GroupInfoResponseSchema,
-	DailyStateResponseSchema, DailyClaimResponseSchema,
-	AchievementsResponseSchema, SpendCoinsResponseSchema,
-	ActiveChallengeResponseSchema, SetSkinResponseSchema, SimpleOkSchema,
-	PendingPushResponseSchema,
+	LoginResponseSchema,
+	MeResponseSchema,
+	ProgressResponseSchema,
+	LevelCompleteResponseSchema,
+	LeaderboardResponseSchema,
+	GhostResponseSchema,
 } from './schemas';
-
 
 const TOKEN_KEY = 'dead-spin.token';
 
@@ -25,16 +21,18 @@ export function setToken(token: string | null): void {
 	else localStorage.removeItem(TOKEN_KEY);
 }
 
-
 export class ApiError extends Error {
-	constructor(public status: number, public code: string, msg?: string) {
+	constructor(
+		public status: number,
+		public code: string,
+		msg?: string,
+	) {
 		super(msg ?? code);
 	}
 }
 
-
 async function request<S extends ZodTypeAny>(
-	method: 'GET' | 'POST',
+	method: 'GET' | 'POST' | 'PUT',
 	path: string,
 	schema: S,
 	body?: unknown,
@@ -66,10 +64,15 @@ async function request<S extends ZodTypeAny>(
 	console.log(`[fetch →] ${method} ${url} ${res.status} ${ms}ms`);
 
 	let data: unknown = null;
-	try { data = await res.json(); } catch { /* empty */ }
+	try {
+		data = await res.json();
+	} catch {
+		/* empty */
+	}
 
 	if (!res.ok) {
-		const err = (data && typeof data === 'object' && 'error' in data) ? String((data as {error: unknown}).error) : 'httpError';
+		const err =
+			data && typeof data === 'object' && 'error' in data ? String((data as {error: unknown}).error) : 'httpError';
 		console.warn(`[fetch ✗ HTTP] ${method} ${url} status=${res.status} body=${err}`);
 		throw new ApiError(res.status, err);
 	}
@@ -77,88 +80,63 @@ async function request<S extends ZodTypeAny>(
 	return schema.parse(data);
 }
 
+const DEVICE_KEY = 'dead-spin.deviceId';
 
-export async function loginFake(tgId: string, password: string) {
-	const result = await request('POST', '/auth/telegram', LoginResponseSchema, {tgId, password});
-	setToken(result.token);
-	return result;
+function uuid4(): string {
+	const b = new Uint8Array(16);
+	if (typeof crypto !== 'undefined' && 'getRandomValues' in crypto) {
+		crypto.getRandomValues(b);
+	} else {
+		for (let i = 0; i < 16; i++) b[i] = Math.floor(Math.random() * 256);
+	}
+	// Версия 4 и вариант RFC 4122 — сервер валидирует формат через z.uuid().
+	b[6] = (b[6]! & 0x0f) | 0x40;
+	b[8] = (b[8]! & 0x3f) | 0x80;
+	const h = Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
+	return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
 }
-
-
-export async function loginTelegram(initData: string) {
-	const result = await request('POST', '/auth/telegram', LoginResponseSchema, {initData});
-	setToken(result.token);
-	return result;
-}
-
 
 /**
- * Получить group-контекст для API-вызова. Возвращает объект с chatId/hmac
- * только если режим = group И контекст доступен. Иначе null.
+ * Идентификатор устройства — заменяет Telegram-аккаунт. Генерируется один
+ * раз при первом запуске и живёт в localStorage. Учётки как таковой нет:
+ * устройство и есть учётка, экрана логина игрок не видит.
  */
-function groupCtx(): {chatId: number; hmac: string} | null {
-	if (!isGroupMode()) return null;
-	const g = groupStore.getState();
-	if (g.chatId === null || g.hmac === null) return null;
-	return {chatId: g.chatId, hmac: g.hmac};
+export function getDeviceId(): string {
+	let id = localStorage.getItem(DEVICE_KEY);
+	if (!id) {
+		id = typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : uuid4();
+		localStorage.setItem(DEVICE_KEY, id);
+	}
+	return id;
 }
 
+export async function loginDevice() {
+	const result = await request('POST', '/auth/device', LoginResponseSchema, {
+		deviceId: getDeviceId(),
+		locale: (navigator.language || 'en').slice(0, 2),
+	});
+	setToken(result.token);
+	return result;
+}
 
 export const api = {
 	me: () => request('GET', '/me', MeResponseSchema),
 
 	progress: () => request('GET', '/progress', ProgressResponseSchema),
 
-	groupProgress: (chatId: number, hmac: string) =>
-		request('GET', `/progress/group/${chatId}?hmac=${hmac}`, ProgressResponseSchema),
-
 	levelComplete: (body: {
-		level: number; stars: number; timeMs: number; fuelSpent: number;
+		level: number;
+		collected: number;
+		timeMs: number;
+		fuelSpent: number;
 		recording?: GhostRecording;
-	}) => {
-		// В group-режиме: enrichaем chatId+hmac → сервер запишет и в group,
-		// и в global (если new best). Recording (ghost) отправляем всегда
-		// (нужен для global_ghosts в single тоже).
-		const g = groupCtx();
-		const enriched = g
-			? {...body, groupChatId: g.chatId, groupHmac: g.hmac}
-			: body;
-		return request('POST', '/progress/level-complete', LevelCompleteResponseSchema, enriched);
-	},
+	}) => request('POST', '/progress/level-complete', LevelCompleteResponseSchema, body),
 
-	fuelSpend: (amount: number) => request('POST', '/fuel/spend', FuelSpendResponseSchema, {amount}),
+	leaderboard: (level: number, limit = 20) =>
+		request('GET', `/leaderboard/${level}?limit=${limit}`, LeaderboardResponseSchema),
 
-	leaderboard: (level: number, limit = 20) => {
-		const g = groupCtx();
-		const path = g
-			? `/leaderboard/group/${g.chatId}/${level}?limit=${limit}&hmac=${g.hmac}`
-			: `/leaderboard/${level}?limit=${limit}`;
-		return request('GET', path, LeaderboardResponseSchema);
-	},
+	globalGhost: (level: number) => request('GET', `/leaderboard/${level}/ghost`, GhostResponseSchema),
 
-	globalGhost: (level: number) =>
-		request('GET', `/leaderboard/${level}/ghost`, GhostResponseSchema),
-
-	groupGhost: (chatId: number, hmac: string, level: number) =>
-		request('GET', `/leaderboard/group/${chatId}/${level}/ghost?hmac=${hmac}`, GhostResponseSchema),
-
-	groupInfo: (chatId: number, hmac: string) =>
-		request('GET', `/groups/${chatId}/info?hmac=${hmac}`, GroupInfoResponseSchema),
-
-	dailyState: () => request('GET', '/me/daily', DailyStateResponseSchema),
-	claimDaily: () => request('POST', '/me/daily', DailyClaimResponseSchema, {}),
-	achievements: () => request('GET', '/me/achievements', AchievementsResponseSchema),
-
-	markTutorialSeen: (key: string) =>
-		request('POST', '/me/tutorial-seen', SimpleOkSchema, {key}),
-
-	setSkin: (skin: string) =>
-		request('POST', '/me/skin', SetSkinResponseSchema, {skin}),
-
-	activeChallenge: () => request('GET', '/challenges/active', ActiveChallengeResponseSchema),
-
-	pendingPush: () => request('GET', '/challenges/pending-push', PendingPushResponseSchema),
-
-	spendCoins: (amount: number, reason: string) =>
-		request('POST', '/me/spend-coins', SpendCoinsResponseSchema, {amount, reason}),
+	/** Снимок профиля устройства → серверная копия (см. stores/sync.ts). */
+	putProfile: (profile: Profile) => request('PUT', '/me/profile', MeResponseSchema, profile),
 };

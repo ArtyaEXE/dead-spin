@@ -8,8 +8,6 @@ export default defineConfig({
 			NODE_ENV: 'test',
 			DATABASE_URL: 'postgres://test:test@localhost:5432/test',
 			JWT_SECRET: 'test-secret-test-secret-test-secret-test-secret',
-			TEST: '0',
-			TELEGRAM_BOT_TOKEN: 'test-token',
 			CORS_ORIGINS: '*',
 		},
 	},

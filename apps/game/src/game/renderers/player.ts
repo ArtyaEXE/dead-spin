@@ -1,5 +1,4 @@
-import {Container, Sprite, Texture} from 'pixi.js';
-
+import {Container, Sprite, type Texture} from 'pixi.js';
 
 /**
  * Спрайт игрока: корпус ship + огонёк booster сзади.

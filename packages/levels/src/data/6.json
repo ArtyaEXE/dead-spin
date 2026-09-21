@@ -87,7 +87,24 @@
       "src": "ceres/ceres-ice-sheet.png"
     }
   ],
-  "enemies": [],
+  "enemies": [
+    {
+      "name": "mine",
+      "x": 905,
+      "y": 536,
+      "r": 0,
+      "radius": 28,
+      "speed": 0
+    },
+    {
+      "name": "mine",
+      "x": 674,
+      "y": 282,
+      "r": 0,
+      "radius": 28,
+      "speed": 0
+    }
+  ],
   "walls": [
     [
       {
@@ -567,5 +584,8 @@
         "y": 187
       }
     ]
-  ]
+  ],
+  "fuelTank": 6000,
+  "parTimeMs": 37000,
+  "parFuel": 3800
 }

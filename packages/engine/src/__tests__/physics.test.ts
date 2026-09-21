@@ -1,46 +1,34 @@
 import {describe, expect, it} from 'vitest';
-import {
-	resolveCollision,
-	applyForce,
-	checkMazeCollision,
-	checkMovingCircle,
-	type Body,
-} from '../physics';
+import {resolveCollision, applyForce, checkMazeCollision, checkMovingCircle, type Body} from '../physics';
 import {pointsToStrokes} from '../vector';
-
 
 function makeBody(overrides: Partial<Body> = {}): Body {
 	return {
-		x: 0, y: 0, radius: 30,
-		r: 0, vx: 0, vy: 0, vr: 0, speed: 0,
+		x: 0,
+		y: 0,
+		radius: 30,
+		r: 0,
+		vx: 0,
+		vy: 0,
+		vr: 0,
+		speed: 0,
 		...overrides,
 	};
 }
 
-
 describe('resolveCollision', () => {
 	it('returns true when circles overlap', () => {
-		expect(resolveCollision(
-			{x: 0, y: 0, radius: 20},
-			{x: 30, y: 0, radius: 20},
-		)).toBe(true);
+		expect(resolveCollision({x: 0, y: 0, radius: 20}, {x: 30, y: 0, radius: 20})).toBe(true);
 	});
 
 	it('returns false when circles are apart', () => {
-		expect(resolveCollision(
-			{x: 0, y: 0, radius: 10},
-			{x: 100, y: 0, radius: 10},
-		)).toBe(false);
+		expect(resolveCollision({x: 0, y: 0, radius: 10}, {x: 100, y: 0, radius: 10})).toBe(false);
 	});
 
 	it('returns false when circles just touch (strict inequality)', () => {
-		expect(resolveCollision(
-			{x: 0, y: 0, radius: 10},
-			{x: 20, y: 0, radius: 10},
-		)).toBe(false);
+		expect(resolveCollision({x: 0, y: 0, radius: 10}, {x: 20, y: 0, radius: 10})).toBe(false);
 	});
 });
-
 
 describe('applyForce', () => {
 	it('pushes body straight up when r = 0', () => {
@@ -66,12 +54,13 @@ describe('applyForce', () => {
 	});
 });
 
-
 describe('checkMazeCollision', () => {
 	// Квадратный контур 100x100 в координатах (0..100)
 	const square = pointsToStrokes([
-		{x: 0, y: 0}, {x: 100, y: 0},
-		{x: 100, y: 100}, {x: 0, y: 100},
+		{x: 0, y: 0},
+		{x: 100, y: 0},
+		{x: 100, y: 100},
+		{x: 0, y: 100},
 	]);
 
 	it('detects collision when circle touches a wall', () => {
@@ -87,12 +76,13 @@ describe('checkMazeCollision', () => {
 	});
 });
 
-
 describe('checkMovingCircle', () => {
 	// Горизонтальная стена на y=100, x=0..500
 	const wall = pointsToStrokes([
-		{x: 0, y: 100}, {x: 500, y: 100},
-		{x: 500, y: 110}, {x: 0, y: 110},
+		{x: 0, y: 100},
+		{x: 500, y: 100},
+		{x: 500, y: 110},
+		{x: 0, y: 110},
 	]);
 
 	it('returns false when not moving', () => {

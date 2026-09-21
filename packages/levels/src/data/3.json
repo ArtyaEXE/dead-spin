@@ -79,7 +79,16 @@
       "src": "ceres/ceres-frost-pipe.png"
     }
   ],
-  "enemies": [],
+  "enemies": [
+    {
+      "name": "mine",
+      "x": 648,
+      "y": 894,
+      "r": 0,
+      "radius": 28,
+      "speed": 0
+    }
+  ],
   "walls": [
     [
       {
@@ -375,5 +384,8 @@
         "y": 121
       }
     ]
-  ]
+  ],
+  "fuelTank": 4000,
+  "parTimeMs": 25000,
+  "parFuel": 2500
 }

@@ -1,15 +1,8 @@
 import {For, Show, createEffect, createMemo, createSignal} from 'solid-js';
-import {FUEL_CONSUMPTION_PER_BOOST, LEVEL_COUNT} from '@dead-spin/shared';
+import {LEVEL_COUNT} from '@dead-spin/shared';
 import {getLevelByNumber, getPreviousLevelNumber} from '@dead-spin/levels';
-import {useAuth, authStore} from '../stores/auth';
+import {useAuth} from '../stores/auth';
 import {useProgress, progressStore} from '../stores/progress';
-import {useLiveFuel} from '../stores/fuel';
-import {useChallenge} from '../stores/challenge';
-import {useMode, modeStore, type GameMode} from '../stores/mode';
-import {groupStore} from '../stores/group';
-import {api} from '../net/client';
-import {track} from '../analytics';
-
 
 const WORLD_NAMES = ['CERES', 'PALLAS', 'JUNO', 'VESTA', 'EUNOMIA'] as const;
 const WORLD_BG: Record<number, string> = {
@@ -20,39 +13,36 @@ const WORLD_BG: Record<number, string> = {
 	4: '/eunomia-1.jpg',
 };
 
+// Показываем только миры, у которых есть уровни. Иначе игрок с первого
+// экрана видит 45 залоченных кнопок несуществующего контента.
+const WORLD_COUNT = Math.ceil(LEVEL_COUNT / 15);
 
 type LevelCell = {number: number; stars: number; available: boolean; exists: boolean} | null;
-
 
 export function Levels(props: {onBack: () => void; onPlay: (levelNumber: number) => void}) {
 	const auth = useAuth();
 	const progress = useProgress();
 	const [worldIndex, setWorldIndex] = createSignal(0);
 
-	const mode = useMode();
-
-	// Обновляем прогресс при каждом открытии экрана и при переключении
-	// mode (single↔group) — progressStore.refresh загрузит нужный набор.
+	// Обновляем прогресс при каждом открытии экрана.
 	createEffect(() => {
-		const _m = mode().mode; // dependency — ре-фетч при смене
 		if (auth().status === 'authed') {
-			void progressStore.getState().refresh().catch(() => {});
+			void progressStore
+				.getState()
+				.refresh()
+				.catch(() => {});
 		}
 	});
 
 	/**
 	 * 15 уровней мира = 5 рядов по 3.
 	 *
-	 * single: sequential unlock через global progress_levels.
-	 * group:  все глобально-разблокированные уровни available (free select).
-	 *         Звёзды показываются из groupLevels (per-chat рекорд).
+	 * Последовательная разблокировка через progress_levels.
 	 */
 	const levelList = createMemo<LevelCell[][]>(() => {
 		const rows: LevelCell[][] = [[], [], [], [], []];
 		const from = worldIndex() * 15;
 		const globalLevels = progress().levels;
-		const groupLevels = progress().groupLevels;
-		const isGroup = mode().mode === 'group';
 
 		for (let i = 0; i < 15; i++) {
 			const rowIndex = Math.floor(i / 3);
@@ -61,19 +51,11 @@ export function Levels(props: {onBack: () => void; onPlay: (levelNumber: number)
 
 			let available = false;
 			if (exists) {
-				if (isGroup) {
-					// Group: available if globally unlocked (prev level passed in global)
-					const prevNum = getPreviousLevelNumber(number);
-					available = prevNum === null || (globalLevels[prevNum] !== undefined);
-				} else {
-					// Single: sequential unlock
-					const prevNum = getPreviousLevelNumber(number);
-					available = prevNum === null || (globalLevels[prevNum] !== undefined);
-				}
+				const prevNum = getPreviousLevelNumber(number);
+				available = prevNum === null || globalLevels[prevNum] !== undefined;
 			}
 
-			// Stars: in group mode show per-chat record, in single — global
-			const rec = isGroup ? groupLevels?.[number] : globalLevels[number];
+			const rec = globalLevels[number];
 
 			rows[rowIndex]!.push({
 				number,
@@ -85,59 +67,10 @@ export function Levels(props: {onBack: () => void; onPlay: (levelNumber: number)
 		return rows;
 	});
 
-	const liveFuel = useLiveFuel();
-	const fuelK = () => (liveFuel() / 1000).toFixed(2);
-	// Минимум для запуска: ~1 буст × 5 (нужно дать корабли хотя бы стартовать).
-	const MIN_FUEL_TO_START = FUEL_CONSUMPTION_PER_BOOST * 5;
-	const [showLowFuel, setShowLowFuel] = createSignal(false);
-	const [pendingLevel, setPendingLevel] = createSignal<number | null>(null);
-
-	const tryPlay = (n: number): void => {
-		if (liveFuel() < MIN_FUEL_TO_START) {
-			setPendingLevel(n);
-			setShowLowFuel(true);
-			return;
-		}
-		props.onPlay(n);
-	};
-
-	const SKIP_LOW_FUEL_COST = 50;
-
-	const skipFuelGate = async (): Promise<void> => {
-		const u = authStore.getState().user;
-		if (!u || u.coins < SKIP_LOW_FUEL_COST) return;
-		const n = pendingLevel();
-		if (n === null) return;
-		try {
-			const res = await api.spendCoins(SKIP_LOW_FUEL_COST, 'skip_low_fuel');
-			authStore.getState().setUser({...u, coins: res.coins});
-			track('skip_low_fuel', {level: n, coins_spent: SKIP_LOW_FUEL_COST});
-			setShowLowFuel(false);
-			setPendingLevel(null);
-			props.onPlay(n);
-		} catch (e) {
-			console.warn('skip_low_fuel failed:', e);
-		}
-	};
-
-	const userCoins = (): number => auth().user?.coins ?? 0;
-	const canSkip = (): boolean => userCoins() >= SKIP_LOW_FUEL_COST;
 	const summary = () => progress().summaryStars;
 
-	// Подсветка карточки уровня, на котором сейчас активный челлендж — но
-	// только если открыты в той же беседе, где челлендж создан. В DM/чужой
-	// беседе не подсвечиваем — там этот челлендж не играется.
-	const challengeState = useChallenge();
-	const challengeLevel = (): number | null => {
-		const c = challengeState().current;
-		if (!c) return null;
-		const g = groupStore.getState();
-		if (g.chatId !== c.chatId) return null;
-		return c.level;
-	};
-
-	const prevWorld = () => setWorldIndex(w => Math.max(0, w - 1));
-	const nextWorld = () => setWorldIndex(w => Math.min(4, w + 1));
+	const prevWorld = () => setWorldIndex((w) => Math.max(0, w - 1));
+	const nextWorld = () => setWorldIndex((w) => Math.min(WORLD_COUNT - 1, w + 1));
 
 	return (
 		<div class="levels-root">
@@ -145,27 +78,7 @@ export function Levels(props: {onBack: () => void; onPlay: (levelNumber: number)
 				<img class="pressable" src="/btn-close.png" style={{height: '60px'}} alt="Close" onClick={props.onBack} />
 
 				<div class="world-title">{WORLD_NAMES[worldIndex()]}</div>
-
-				<div class="panel">
-					<img class="icon-inline" src="/icons/fuel-icon.png" alt="" />
-					{fuelK()}
-				</div>
 			</div>
-
-			<Show when={mode().hasGroupContext}>
-				<div class="mode-toggle">
-					<div
-						class="mode-toggle__tab"
-						classList={{active: mode().mode === 'single'}}
-						onClick={() => modeStore.getState().setMode('single')}
-					>SINGLE</div>
-					<div
-						class="mode-toggle__tab"
-						classList={{active: mode().mode === 'group'}}
-						onClick={() => modeStore.getState().setMode('group')}
-					>GROUP</div>
-				</div>
-			</Show>
 
 			<div class="levels-world">
 				<div
@@ -184,18 +97,29 @@ export function Levels(props: {onBack: () => void; onPlay: (levelNumber: number)
 													classList={{
 														locked: !c().available,
 														pressable: c().available,
-														'lvl-btn--challenge': challengeLevel() === c().number,
 													}}
-													onClick={() => c().available && tryPlay(c().number)}
+													onClick={() => c().available && props.onPlay(c().number)}
 												>
-													<Show when={challengeLevel() === c().number}>
-														<img class="lvl-btn__challenge-badge" src="/icons/challenge-icon.png" alt="" />
-													</Show>
 													<div>{c().number}</div>
 													<div class="lvl-stars">
-														<img class="lvl-star-1" classList={{'lvl-star-disabled': c().stars < 1}} src="/star.png" alt="" />
-														<img class="lvl-star-2" classList={{'lvl-star-disabled': c().stars < 2}} src="/star.png" alt="" />
-														<img class="lvl-star-3" classList={{'lvl-star-disabled': c().stars < 3}} src="/star.png" alt="" />
+														<img
+															class="lvl-star-1"
+															classList={{'lvl-star-disabled': c().stars < 1}}
+															src="/star.png"
+															alt=""
+														/>
+														<img
+															class="lvl-star-2"
+															classList={{'lvl-star-disabled': c().stars < 2}}
+															src="/star.png"
+															alt=""
+														/>
+														<img
+															class="lvl-star-3"
+															classList={{'lvl-star-disabled': c().stars < 3}}
+															src="/star.png"
+															alt=""
+														/>
 													</div>
 												</div>
 											)}
@@ -225,30 +149,11 @@ export function Levels(props: {onBack: () => void; onPlay: (levelNumber: number)
 				<img
 					class="pressable"
 					src="/btn-right.png"
-					style={{height: '60px', opacity: worldIndex() === 4 ? 0.35 : 1}}
+					style={{height: '60px', opacity: worldIndex() === WORLD_COUNT - 1 ? 0.35 : 1}}
 					alt="Next world"
 					onClick={nextWorld}
 				/>
 			</div>
-
-			<Show when={showLowFuel()}>
-				<div class="lowfuel-overlay" onClick={() => { setShowLowFuel(false); setPendingLevel(null); }}>
-					<div class="lowfuel-card" onClick={(e) => e.stopPropagation()}>
-						<img class="lowfuel-icon" src="/icons/fuel-icon.png" alt="" />
-						<div class="lowfuel-text">{liveFuel()} / {MIN_FUEL_TO_START}</div>
-						<div class="lowfuel-hint">WAIT</div>
-						<button
-							class="lowfuel-skip pressable"
-							classList={{disabled: !canSkip()}}
-							onClick={() => { if (canSkip()) void skipFuelGate(); }}
-						>
-							<img class="icon-inline" src="/icons/coins-icon.png" alt="" /> {SKIP_LOW_FUEL_COST} → играть
-							<span class="lowfuel-skip-balance">{userCoins()} имеется</span>
-						</button>
-						<img class="pressable lowfuel-close" src="/btn-close.png" alt="" onClick={() => { setShowLowFuel(false); setPendingLevel(null); }} />
-					</div>
-				</div>
-			</Show>
 		</div>
 	);
 }

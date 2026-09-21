@@ -1,33 +1,23 @@
 import {createEffect, For, Show} from 'solid-js';
 import {progressStore, useProgress} from '../stores/progress';
 import {useAuth} from '../stores/auth';
-import {useGroup} from '../stores/group';
-import {useLiveFuel} from '../stores/fuel';
-import {
-	SKINS, getActiveSkinId, setSelectedSkinId, isSkinUnlocked,
-	type SkinId, type SkinDef,
-} from '../stores/skin';
-
+import {useProfile} from '../stores/profile';
+import {SKINS, getActiveSkinId, setSelectedSkinId, isSkinUnlocked, type SkinId, type SkinDef} from '../stores/skin';
 
 /**
  * Магазин скинов ракеты. Открывается из главного меню.
  * Пять карточек: PROSPECTOR (бесплатно) + 4 скина по нарастанию ★-цены.
- * Состояние выбранного скина в localStorage (см. stores/skin.ts).
+ * Выбранный скин хранится в профиле устройства (stores/profile.ts).
  */
 export function Shop(props: {onBack: () => void}) {
 	const auth = useAuth();
-	const group = useGroup();
+	const profile = useProfile();
 	const progress = useProgress();
-	const liveFuel = useLiveFuel();
-	const fuelK = () => (liveFuel() / 1000).toFixed(2);
 
-	// `active` — фактически применяющийся скин в текущем контексте.
-	// В DM читает из user.selectedSkin, в группе из group.selectedSkin.
-	// Если в контексте звёзд не хватает — fallback на prospector (см.
-	// stores/skin.ts:getActiveSkinId).
+	// `active` — фактически применяющийся скин. Если звёзд не хватает —
+	// fallback на prospector (см. stores/skin.ts:getActiveSkinId).
 	const active = (): SkinId => {
-		auth();   // dependency на user.selectedSkin
-		group();  // dependency на group.selectedSkin
+		profile(); // dependency на profile.selectedSkin
 		return getActiveSkinId(progress().summaryStars);
 	};
 
@@ -35,7 +25,10 @@ export function Shop(props: {onBack: () => void}) {
 	// если App-уровневый refresh не успел или упал.
 	createEffect(() => {
 		if (auth().status === 'authed') {
-			void progressStore.getState().refresh().catch(() => {});
+			void progressStore
+				.getState()
+				.refresh()
+				.catch(() => {});
 		}
 	});
 
@@ -56,10 +49,6 @@ export function Shop(props: {onBack: () => void}) {
 					<div class="panel">
 						<img src="/star.png" style={{height: '28px', 'margin-right': '6px'}} alt="" />
 						{progress().summaryStars}
-					</div>
-					<div class="panel">
-						<img class="icon-inline" src="/icons/fuel-icon.png" alt="" />
-						{fuelK()}
 					</div>
 				</div>
 			</div>
@@ -89,11 +78,10 @@ export function Shop(props: {onBack: () => void}) {
 								</div>
 								<div class="shop-card-info">
 									<div class="shop-card-name">{skin.name}</div>
-									<Show when={!unlocked()} fallback={
-										<div class="shop-card-state">
-											{isSelected() ? 'SELECTED' : 'TAP'}
-										</div>
-									}>
+									<Show
+										when={!unlocked()}
+										fallback={<div class="shop-card-state">{isSelected() ? 'SELECTED' : 'TAP'}</div>}
+									>
 										<div class="shop-card-cost">
 											<img src="/star.png" alt="" />
 											{progress().summaryStars}/{skin.requiredStars}

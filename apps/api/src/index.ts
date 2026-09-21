@@ -9,12 +9,14 @@ import {initAnalytics} from './lib/analytics';
 import {authRoutes} from './routes/auth';
 import {meRoutes} from './routes/me';
 import {progressRoutes} from './routes/progress';
-import {fuelRoutes} from './routes/fuel';
 import {leaderboardRoutes} from './routes/leaderboard';
-import {groupsRoutes} from './routes/groups';
-import {challengesRoutes} from './routes/challenges';
 import type {AuthedEnv} from './middleware/auth';
 
+function appVersion(): string {
+	const v = process.env['APP_VERSION'];
+	const sha = v && v !== 'dev' ? v : (process.env['RENDER_GIT_COMMIT'] ?? 'dev');
+	return sha.slice(0, 7);
+}
 
 export function createApp() {
 	// Sentry инициализируем перед созданием роутов, чтобы любые
@@ -25,26 +27,30 @@ export function createApp() {
 
 	const app = new Hono<AuthedEnv>();
 
-	const origins = env.CORS_ORIGINS === '*'
-		? '*'
-		: env.CORS_ORIGINS.split(',').map(s => s.trim()).filter(Boolean);
+	const origins =
+		env.CORS_ORIGINS === '*'
+			? '*'
+			: env.CORS_ORIGINS.split(',')
+					.map((s) => s.trim())
+					.filter(Boolean);
 
 	app.use('*', logger());
 	app.use('*', cors({origin: origins, credentials: origins !== '*'}));
 
-	app.get('/healthz', (c) => c.json({
-		ok: true,
-		env: env.NODE_ENV,
-		version: process.env['RENDER_GIT_COMMIT']?.slice(0, 7) ?? 'dev',
-	}));
+	app.get('/healthz', (c) =>
+		c.json({
+			ok: true,
+			env: env.NODE_ENV,
+			// APP_VERSION ставит Dockerfile из GIT_SHA; Render build-arg не передаёт и
+			// оставляет дефолт 'dev' — тогда берём его собственный RENDER_GIT_COMMIT.
+			version: appVersion(),
+		}),
+	);
 
 	app.route('/auth', authRoutes);
 	app.route('/me', meRoutes);
 	app.route('/progress', progressRoutes);
-	app.route('/fuel', fuelRoutes);
 	app.route('/leaderboard', leaderboardRoutes);
-	app.route('/groups', groupsRoutes);
-	app.route('/challenges', challengesRoutes);
 
 	app.onError((err, c) => {
 		// Не флудим в Sentry бизнес-ошибки (400/401/403/404/etc) —
@@ -63,9 +69,9 @@ export function createApp() {
 	return app;
 }
 
-
 // Запускаем сервер только если это прямой вызов, а не импорт из тестов.
-const isDirectRun = import.meta.url.startsWith('file:') &&
+const isDirectRun =
+	import.meta.url.startsWith('file:') &&
 	process.argv[1] &&
 	import.meta.url.endsWith(process.argv[1].replace(/\\/g, '/'));
 

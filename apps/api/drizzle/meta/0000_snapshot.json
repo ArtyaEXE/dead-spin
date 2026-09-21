@@ -1,97 +1,17 @@
 {
-  "id": "4e217e27-ef1b-442d-ae7e-eeefb36d2b2d",
+  "id": "1139cdf7-7f3f-474b-a08f-bcb515001121",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "public.allowlist": {
-      "name": "allowlist",
+    "public.global_ghosts": {
+      "name": "global_ghosts",
       "schema": "",
       "columns": {
-        "tg_id": {
-          "name": "tg_id",
-          "type": "text",
+        "level": {
+          "name": "level",
+          "type": "integer",
           "primaryKey": true,
-          "notNull": true
-        },
-        "note": {
-          "name": "note",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "''"
-        },
-        "added_at": {
-          "name": "added_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.editor_admins": {
-      "name": "editor_admins",
-      "schema": "",
-      "columns": {
-        "tg_id": {
-          "name": "tg_id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "added_at": {
-          "name": "added_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "editor_admins_tg_id_allowlist_tg_id_fk": {
-          "name": "editor_admins_tg_id_allowlist_tg_id_fk",
-          "tableFrom": "editor_admins",
-          "tableTo": "allowlist",
-          "columnsFrom": [
-            "tg_id"
-          ],
-          "columnsTo": [
-            "tg_id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.payments": {
-      "name": "payments",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()::text"
-        },
-        "tg_charge_id": {
-          "name": "tg_charge_id",
-          "type": "text",
-          "primaryKey": false,
           "notNull": true
         },
         "user_id": {
@@ -100,69 +20,37 @@
           "primaryKey": false,
           "notNull": true
         },
-        "lot_id": {
-          "name": "lot_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "amount": {
-          "name": "amount",
+        "stars": {
+          "name": "stars",
           "type": "integer",
           "primaryKey": false,
           "notNull": true
         },
-        "currency": {
-          "name": "currency",
-          "type": "text",
+        "time_ms": {
+          "name": "time_ms",
+          "type": "integer",
           "primaryKey": false,
-          "notNull": true,
-          "default": "'XTR'"
+          "notNull": true
         },
-        "created_at": {
-          "name": "created_at",
+        "recording": {
+          "name": "recording",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "recorded_at": {
+          "name": "recorded_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
         }
       },
-      "indexes": {
-        "payments_tg_charge_id_idx": {
-          "name": "payments_tg_charge_id_idx",
-          "columns": [
-            {
-              "expression": "tg_charge_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "payments_user_idx": {
-          "name": "payments_user_idx",
-          "columns": [
-            {
-              "expression": "user_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
+      "indexes": {},
       "foreignKeys": {
-        "payments_user_id_users_id_fk": {
-          "name": "payments_user_id_users_id_fk",
-          "tableFrom": "payments",
+        "global_ghosts_user_id_users_id_fk": {
+          "name": "global_ghosts_user_id_users_id_fk",
+          "tableFrom": "global_ghosts",
           "tableTo": "users",
           "columnsFrom": [
             "user_id"
@@ -170,7 +58,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -213,6 +101,20 @@
           "type": "integer",
           "primaryKey": false,
           "notNull": true
+        },
+        "par_hit": {
+          "name": "par_hit",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "full_clear": {
+          "name": "full_clear",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
         },
         "updated_at": {
           "name": "updated_at",
@@ -343,8 +245,8 @@
           "notNull": true,
           "default": "gen_random_uuid()::text"
         },
-        "tg_id": {
-          "name": "tg_id",
+        "device_id": {
+          "name": "device_id",
           "type": "text",
           "primaryKey": false,
           "notNull": true
@@ -362,33 +264,11 @@
           "notNull": true,
           "default": "'en'"
         },
-        "fuel": {
-          "name": "fuel",
-          "type": "integer",
+        "profile": {
+          "name": "profile",
+          "type": "jsonb",
           "primaryKey": false,
-          "notNull": true,
-          "default": 10000
-        },
-        "fuel_updated_at": {
-          "name": "fuel_updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "coins": {
-          "name": "coins",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "details": {
-          "name": "details",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
@@ -406,11 +286,11 @@
         }
       },
       "indexes": {
-        "users_tg_id_idx": {
-          "name": "users_tg_id_idx",
+        "users_device_id_idx": {
+          "name": "users_device_id_idx",
           "columns": [
             {
-              "expression": "tg_id",
+              "expression": "device_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"

@@ -1,7 +1,6 @@
 import {createEffect, onMount} from 'solid-js';
 import {audio} from '../game/audio';
 
-
 /**
  * Монтируется в authed-состоянии. Инициализирует AudioContext и gain-ноды
  * + подписки на Settings-store. Музыка стартует после того, как пользователь

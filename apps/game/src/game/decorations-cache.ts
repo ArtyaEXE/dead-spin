@@ -1,6 +1,5 @@
 import {Assets, type Texture} from 'pixi.js';
 
-
 /**
  * Кэш для статичных декораций.
  *
@@ -11,7 +10,6 @@ import {Assets, type Texture} from 'pixi.js';
  * Загружаются лениво по `src` из уровня.
  */
 const cache = new Map<string, Promise<Texture>>();
-
 
 export function loadDecoTexture(src: string): Promise<Texture> {
 	let existing = cache.get(src);

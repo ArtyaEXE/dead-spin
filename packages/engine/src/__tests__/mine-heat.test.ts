@@ -1,16 +1,9 @@
 import {describe, expect, it} from 'vitest';
-import {
-	updateHeat,
-	heatToTint,
-	DEFAULT_HEAT_PARAMS,
-	type MineHeatState,
-} from '../mine-heat';
-
+import {updateHeat, heatToTint, DEFAULT_HEAT_PARAMS, type MineHeatState} from '../mine-heat';
 
 function fresh(): MineHeatState {
 	return {heat: 0, lastInRangeAtMs: null};
 }
-
 
 describe('updateHeat — нагрев в радиусе', () => {
 	it('линейный рост с заданной скоростью', () => {
@@ -42,7 +35,6 @@ describe('updateHeat — нагрев в радиусе', () => {
 		expect(s.heat).toBeCloseTo(0.6, 5);
 	});
 });
-
 
 describe('updateHeat — поведение вне радиуса', () => {
 	it('не остывает до конца coolDelay', () => {
@@ -82,20 +74,18 @@ describe('updateHeat — поведение вне радиуса', () => {
 	});
 });
 
-
 describe('updateHeat — переходы in/out', () => {
 	it('возврат в радиус снова греет, не сбрасывая heat', () => {
-		let s = updateHeat(fresh(), 1.25, true, 0);     // ≈0.5
-		s = updateHeat(s, 1.0, false, 1000);             // ушёл; после coolDelay вычтется (1.0-0.5)/3
+		let s = updateHeat(fresh(), 1.25, true, 0); // ≈0.5
+		s = updateHeat(s, 1.0, false, 1000); // ушёл; после coolDelay вычтется (1.0-0.5)/3
 		const heatAfterCool = s.heat;
 		expect(heatAfterCool).toBeLessThan(0.5);
 
-		s = updateHeat(s, 0.5, true, 1500);              // вернулся, +0.2
+		s = updateHeat(s, 0.5, true, 1500); // вернулся, +0.2
 		expect(s.heat).toBeCloseTo(heatAfterCool + 0.2, 5);
 		expect(s.lastInRangeAtMs).toBe(1500);
 	});
 });
-
 
 describe('heatToTint', () => {
 	it('heat=0 — чистый белый (нейтральный tint)', () => {
@@ -126,7 +116,6 @@ describe('heatToTint', () => {
 		expect(heatToTint(2)).toBe(heatToTint(1));
 	});
 });
-
 
 describe('DEFAULT_HEAT_PARAMS', () => {
 	it('exports concrete numbers', () => {

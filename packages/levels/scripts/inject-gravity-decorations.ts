@@ -22,10 +22,8 @@ import {join, dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {LevelSchema} from '@dead-spin/shared';
 
-
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const dataDir = join(__dirname, '..', 'src', 'data');
-
 
 type Vec = {x: number; y: number};
 type Decoration = {
@@ -38,7 +36,6 @@ type Decoration = {
 	type?: 'up' | 'down' | 'left' | 'right';
 };
 
-
 /**
  * Угол вектора (gx, gy) В ГРАДУСАХ так, чтобы текстура «стрелка вниз»
  * указывала туда. Текстура нарисована стрелкой по +Y оси (вниз) при r=0.
@@ -50,9 +47,7 @@ function angleDegFromGravity(g: Vec): number {
 	return (Math.atan2(g.x, g.y) * 180) / Math.PI;
 }
 
-
 const OFFSET_FROM_START = 180;
-
 
 function placeArrow(start: Vec, g: Vec): Vec {
 	const mag = Math.hypot(g.x, g.y);
@@ -65,9 +60,8 @@ function placeArrow(start: Vec, g: Vec): Vec {
 	};
 }
 
-
 const files = readdirSync(dataDir)
-	.filter(f => f.endsWith('.json'))
+	.filter((f) => f.endsWith('.json'))
 	.sort((a, b) => Number(a.replace(/\.json$/, '')) - Number(b.replace(/\.json$/, '')));
 
 let touched = 0;
@@ -85,7 +79,7 @@ for (const file of files) {
 	// 1) Чистим все прежние gravity-decorations (могло быть 1 или 2 после
 	//    предыдущего скрипта). Хвосты `type` остаются неиспользуемыми —
 	//    renderer их игнорирует, но повторное накопление мусора нам не нужно.
-	const filtered = raw.decorations.filter(d => d.name !== 'gravity');
+	const filtered = raw.decorations.filter((d) => d.name !== 'gravity');
 	const removed = raw.decorations.length - filtered.length;
 
 	// 2) Если гравитации нет — просто сохраняем (если что-то выкинули).
@@ -122,7 +116,9 @@ for (const file of files) {
 	}
 
 	writeFileSync(path, JSON.stringify(raw, null, 2));
-	console.log(`L${file.padEnd(9)} gravity=(${raw.gravity.x},${raw.gravity.y}) angle=${angleDeg.toFixed(1)}° offset=${OFFSET_FROM_START}px (removed ${removed} old)`);
+	console.log(
+		`L${file.padEnd(9)} gravity=(${raw.gravity.x},${raw.gravity.y}) angle=${angleDeg.toFixed(1)}° offset=${OFFSET_FROM_START}px (removed ${removed} old)`,
+	);
 	touched++;
 }
 

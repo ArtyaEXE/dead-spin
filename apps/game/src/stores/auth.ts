@@ -1,50 +1,41 @@
 import {createStore} from 'zustand/vanilla';
 import {createSolidStoreAdapter} from './solid';
-import {api, getToken, setToken, loginFake, loginTelegram} from '../net/client';
+import {api, getToken, setToken, loginDevice} from '../net/client';
 import type {User} from '../net/schemas';
 import {identify, track} from '../analytics';
-
 
 type AuthState = {
 	user: User | null;
 	status: 'idle' | 'loading' | 'authed' | 'error';
 	error: string | null;
-	loginFake: (tgId: string, password: string) => Promise<void>;
-	loginTelegram: (initData: string) => Promise<void>;
+	login: () => Promise<void>;
 	refresh: () => Promise<void>;
+	/** Старт приложения: обновить сессию по токену, иначе завести аккаунт. Не блокирует UI. */
+	boot: () => Promise<void>;
 	setUser: (u: User) => void;
 	logout: () => void;
 };
 
-
-export const authStore = createStore<AuthState>((set) => ({
+export const authStore = createStore<AuthState>((set, get) => ({
 	user: null,
 	status: 'idle',
 	error: null,
 
-	async loginFake(tgId, password) {
+	/**
+	 * Анонимный вход по идентификатору устройства. Вызывается сам при
+	 * старте приложения — игрок ничего не вводит и экрана логина в
+	 * обычном течении не видит.
+	 */
+	async login() {
 		set({status: 'loading', error: null});
 		try {
-			const res = await loginFake(tgId, password);
-			set({user: res.user, status: 'authed'});
-		} catch (err) {
-			setToken(null);
-			const msg = err instanceof Error ? err.message : 'loginFailed';
-			set({status: 'error', error: msg});
-		}
-	},
-
-	async loginTelegram(initData) {
-		set({status: 'loading', error: null});
-		try {
-			const res = await loginTelegram(initData);
+			const res = await loginDevice();
 			set({user: res.user, status: 'authed'});
 			identify(res.user.id, {
-				tg_id: res.user.tgId,
 				username: res.user.username,
 				locale: res.user.locale,
 			});
-			track('login_success', {method: 'telegram'});
+			track('login_success', {method: 'device'});
 		} catch (err) {
 			setToken(null);
 			const msg = err instanceof Error ? err.message : 'loginFailed';
@@ -59,7 +50,6 @@ export const authStore = createStore<AuthState>((set) => ({
 			const res = await api.me();
 			set({user: res.user, status: 'authed'});
 			identify(res.user.id, {
-				tg_id: res.user.tgId,
 				username: res.user.username,
 				locale: res.user.locale,
 			});
@@ -69,9 +59,18 @@ export const authStore = createStore<AuthState>((set) => ({
 		}
 	},
 
-	setUser(u) { set({user: u}); },
-	logout() { setToken(null); set({user: null, status: 'idle', error: null}); },
-}));
+	async boot() {
+		if (getToken()) await get().refresh();
+		if (get().status !== 'authed') await get().login();
+	},
 
+	setUser(u) {
+		set({user: u});
+	},
+	logout() {
+		setToken(null);
+		set({user: null, status: 'idle', error: null});
+	},
+}));
 
 export const useAuth = createSolidStoreAdapter(authStore);

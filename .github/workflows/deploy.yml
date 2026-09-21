@@ -1,0 +1,36 @@
+# CD: только main. Полный CI (переиспользуем ci.yml), затем API на Render
+# через deploy hook — Render сам собирает Docker-образ из apps/api/Dockerfile.
+#
+# Веб деплоится НЕ отсюда: apps/game собирает Cloudflare Pages по Git-интеграции
+# (production с main, preview с каждой ветки). Настройки — в дашборде Pages.
+#
+# Секрет репозитория: RENDER_DEPLOY_HOOK_URL — Render → dead-spin-api → Settings → Deploy Hook.
+# Переменная: VITE_API_BASE — публичный URL API, дублируется в env проекта Pages.
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+
+  api:
+    name: api → Render
+    needs: ci
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 5
+    steps:
+      - name: Trigger Render deploy
+        run: curl -fsS -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"

@@ -1,23 +1,16 @@
-import {Sprite, Texture, Container} from 'pixi.js';
+import {Sprite, type Texture, Container} from 'pixi.js';
 import {Physics, getNearStrokesByPoint, getDistanceBtwPoints, type Body, type ChunkMap} from '@dead-spin/engine';
 import type {Enemy} from './types';
 import type {SmokeSystem} from '../effects/smokes';
 import {audio} from '../audio';
 
-
 type StoneSetup = {x: number; y: number; r: number; radius: number; speed: number};
-
 
 /**
  * "Камень" — движется по прямой, отражается от стен (упругий отскок
  * вдоль нормали отрезка стены), вращается. Логика 1:1 с [Stone.svelte](space/imports/ui/enemy/stone/Stone.svelte).
  */
-export function createStone(
-	setup: StoneSetup,
-	tex: Texture,
-	smokes: SmokeSystem,
-	speedMult: number = 1,
-): Enemy {
+export function createStone(setup: StoneSetup, tex: Texture, smokes: SmokeSystem, speedMult: number = 1): Enemy {
 	const container = new Container();
 	const sprite = new Sprite(tex);
 	sprite.anchor.set(0.5);
@@ -26,10 +19,14 @@ export function createStone(
 	container.addChild(sprite);
 
 	const state: Body = {
-		x: setup.x, y: setup.y,
-		r: setup.r, vx: 0, vy: 0,
+		x: setup.x,
+		y: setup.y,
+		r: setup.r,
+		vx: 0,
+		vy: 0,
 		vr: randRange(-90, 90),
-		radius: setup.radius, speed: 0,
+		radius: setup.radius,
+		speed: 0,
 	};
 	Physics.applyForce(state, setup.speed * speedMult);
 
@@ -50,10 +47,7 @@ export function createStone(
 			runSmokes = distance < 500;
 
 			if (collided) {
-				const volume =
-					distance < 200 ? 0.6 :
-					distance > 700 ? 0 :
-					0.6 * (1 - (distance - 200) / 500);
+				const volume = distance < 200 ? 0.6 : distance > 700 ? 0 : 0.6 * (1 - (distance - 200) / 500);
 				if (volume > 0) audio.play('stone-impact', volume);
 			}
 
@@ -62,19 +56,14 @@ export function createStone(
 
 			return distance <= state.radius + player.radius;
 		},
-		destroy() { container.destroy({children: true}); },
+		destroy() {
+			container.destroy({children: true});
+		},
 	};
 }
 
-
 /** Шаг stone-а: попытка движения; при пересечении со стеной — упругое отражение. */
-function moveAndReflect(
-	stone: Body,
-	chunks: ChunkMap,
-	dt: number,
-	smokes: SmokeSystem,
-	runSmokes: boolean,
-): boolean {
+function moveAndReflect(stone: Body, chunks: ChunkMap, dt: number, smokes: SmokeSystem, runSmokes: boolean): boolean {
 	const strokes = getNearStrokesByPoint(chunks, stone);
 	const nextX = stone.x + stone.vx * dt;
 	const nextY = stone.y + stone.vy * dt;
@@ -94,9 +83,16 @@ function moveAndReflect(
 		const projection = toStartX * wNx + toStartY * wNy;
 		let cx: number;
 		let cy: number;
-		if (projection < 0) {cx = s.x; cy = s.y;}
-		else if (projection > wLen) {cx = e.x; cy = e.y;}
-		else {cx = s.x + projection * wNx; cy = s.y + projection * wNy;}
+		if (projection < 0) {
+			cx = s.x;
+			cy = s.y;
+		} else if (projection > wLen) {
+			cx = e.x;
+			cy = e.y;
+		} else {
+			cx = s.x + projection * wNx;
+			cy = s.y + projection * wNy;
+		}
 
 		const dx = stone.x - cx;
 		const dy = stone.y - cy;
@@ -132,7 +128,6 @@ function moveAndReflect(
 	}
 	return collision;
 }
-
 
 function randRange(min: number, max: number): number {
 	return min + Math.random() * (max - min);

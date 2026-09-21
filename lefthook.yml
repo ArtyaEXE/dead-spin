@@ -1,0 +1,18 @@
+# Git-хуки. Ставятся автоматически через `pnpm install` (script "prepare").
+# Обойти в крайнем случае: `LEFTHOOK=0 git commit`.
+# Локальные переопределения — lefthook-local.yml (в .gitignore).
+
+pre-commit:
+  parallel: true
+  jobs:
+    - name: biome
+      glob: "*.{ts,tsx,js,mjs,json,jsonc}"
+      run: pnpm exec biome check --write --no-errors-on-unmatched {staged_files}
+      stage_fixed: true
+
+pre-push:
+  jobs:
+    - name: typecheck
+      run: pnpm typecheck
+    - name: test
+      run: pnpm test

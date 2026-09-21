@@ -1,8 +1,8 @@
 /**
- * Метаданные 10 ачивок (emoji + локализованные названия).
+ * Метаданные 7 ачивок (emoji + локализованные названия).
  *
  * Живут в shared, потому что нужны и API (выдача через unlockAchievement,
- * см. apps/api/src/lib/achievements.ts), и боту (рендер сетки в /me).
+ * см. apps/api/src/lib/achievements.ts), и клиенту (экран достижений).
  *
  * Условия выдачи и SQL остаются в API — это server-only логика.
  */
@@ -49,28 +49,8 @@ export const ACHIEVEMENTS = {
 		ru: 'Коллекционер',
 		en: 'Collector',
 	},
-	week_streak: {
-		emoji: '🔥',
-		icon: '/icons/ach-week-streak.png',
-		ru: 'Неделя в строю',
-		en: 'Week strong',
-	},
-	first_duel_win: {
-		emoji: '👊',
-		icon: '/icons/ach-first-duel-win.png',
-		ru: 'Первый победный поединок',
-		en: 'First duel win',
-	},
-	bot_in_group: {
-		emoji: '👥',
-		icon: '/icons/ach-bot-in-group.png',
-		ru: 'Социальный гонщик',
-		en: 'Social racer',
-	},
 } as const;
 
-
 export type AchievementKey = keyof typeof ACHIEVEMENTS;
-
 
 export const ACHIEVEMENT_KEYS = Object.keys(ACHIEVEMENTS) as AchievementKey[];

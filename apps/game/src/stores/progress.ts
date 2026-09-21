@@ -1,78 +1,96 @@
 import {createStore} from 'zustand/vanilla';
+import {z} from 'zod';
+import {mergeRecord, type Rating} from '@dead-spin/shared';
 import {api} from '../net/client';
-import type {ProgressLevel} from '../net/schemas';
+import {ProgressLevelSchema, type ProgressLevel} from '../net/schemas';
 import {createSolidStoreAdapter} from './solid';
-import {groupStore} from './group';
-import {isGroupMode} from './mode';
+import {loadJson, saveJson} from '../lib/persist';
 
+/**
+ * Прогресс по уровням — на устройстве (GDD §16.2). Загружается из хранилища
+ * до любого сетевого запроса, поэтому уровни доступны сразу и без сети.
+ * Серверная копия при refresh() сливается с локальной по mergeRecord.
+ */
+
+const KEY = 'dead-spin.progress.v1';
+const LevelsSchema = z.record(z.string(), ProgressLevelSchema);
+
+function sumStars(levels: Record<number, ProgressLevel>): number {
+	let s = 0;
+	for (const r of Object.values(levels)) s += r.stars;
+	return s;
+}
+
+function loadLevels(): Record<number, ProgressLevel> {
+	const raw = loadJson<Record<string, ProgressLevel>>(KEY, LevelsSchema, () => ({}));
+	const out: Record<number, ProgressLevel> = {};
+	for (const [k, v] of Object.entries(raw)) out[Number(k)] = v;
+	return out;
+}
 
 type ProgressState = {
 	summaryStars: number;
 	levels: Record<number, ProgressLevel>;
-	/** Group-mode records (per-chat). Null in single mode. */
-	groupLevels: Record<number, ProgressLevel> | null;
 	loaded: boolean;
 	refresh: () => Promise<void>;
-	recordLocal: (level: number, stars: number, timeMs: number, fuelSpent: number) => void;
+	recordLocal: (level: number, run: Rating & {timeMs: number; fuelSpent: number}) => void;
 };
 
-
 export const progressStore = createStore<ProgressState>((set, get) => ({
-	summaryStars: 0,
-	levels: {},
-	groupLevels: null,
-	loaded: false,
+	summaryStars: sumStars(loadLevels()),
+	levels: loadLevels(),
+	loaded: true,
 
+	/** Слить серверную копию с локальной. Без сети — no-op, локальное остаётся. */
 	async refresh() {
-		// Всегда загружаем global progress — он нужен для unlock gate и summaryStars.
-		const globalRes = await api.progress();
-		const globalMap: Record<number, ProgressLevel> = {};
-		for (const row of globalRes.levels) globalMap[row.level] = row;
-
-		let groupMap: Record<number, ProgressLevel> | null = null;
-		if (isGroupMode()) {
-			const g = groupStore.getState();
-			if (g.chatId !== null && g.hmac !== null) {
-				const groupRes = await api.groupProgress(g.chatId, g.hmac);
-				groupMap = {};
-				for (const row of groupRes.levels) groupMap[row.level] = row;
+		const res = await api.progress();
+		const map: Record<number, ProgressLevel> = {...get().levels};
+		let changed = false;
+		for (const row of res.levels) {
+			const local = map[row.level];
+			const merged = mergeRecord(local, {
+				stars: row.stars,
+				parHit: row.parHit,
+				fullClear: row.fullClear,
+				timeMs: row.timeMs,
+				fuelSpent: row.fuelSpent,
+			});
+			if (
+				!local ||
+				merged.stars !== local.stars ||
+				merged.timeMs !== local.timeMs ||
+				merged.fuelSpent !== local.fuelSpent
+			) {
+				map[row.level] = {...row, ...merged};
+				changed = true;
 			}
 		}
-
-		set({
-			summaryStars: globalRes.summaryStars,
-			levels: globalMap,
-			groupLevels: groupMap,
-			loaded: true,
-		});
+		if (!changed) return;
+		saveJson(KEY, map);
+		set({summaryStars: sumStars(map), levels: map, loaded: true});
 	},
 
-	recordLocal(level, stars, timeMs, fuelSpent) {
+	recordLocal(level, run) {
 		const existing = get().levels[level];
-		if (existing && (stars < existing.stars ||
-			(stars === existing.stars && timeMs >= existing.timeMs))) return;
-
-		const newSummary = existing
-			? get().summaryStars + Math.max(0, stars - existing.stars)
-			: get().summaryStars + stars;
+		// Флаги рейтинга липкие, время и топливо — минимумы (см. mergeRecord).
+		const merged = mergeRecord(existing, run);
+		if (
+			existing &&
+			merged.stars === existing.stars &&
+			merged.timeMs === existing.timeMs &&
+			merged.fuelSpent === existing.fuelSpent
+		)
+			return;
 
 		const entry: ProgressLevel = {
 			userId: existing?.userId ?? '',
 			level,
-			stars,
-			timeMs,
-			fuelSpent,
+			...merged,
 			updatedAt: new Date().toISOString(),
 		};
-
-		set({
-			summaryStars: newSummary,
-			levels: {...get().levels, [level]: entry},
-			// В group-mode обновляем и group-записи (оптимистично).
-			groupLevels: get().groupLevels
-				? {...get().groupLevels, [level]: entry}
-				: null,
-		});
+		const levels = {...get().levels, [level]: entry};
+		saveJson(KEY, levels);
+		set({summaryStars: sumStars(levels), levels});
 	},
 }));
 

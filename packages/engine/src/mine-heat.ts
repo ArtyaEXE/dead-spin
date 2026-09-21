@@ -16,7 +16,6 @@
  *   COOL 3.0 c   → остывает дольше чем греется → возвращаться рискованно
  */
 
-
 export const MINE_DETECT_MULT = 3.2;
 export const MINE_ARM_TIME = 2.5;
 export const MINE_COOL_DELAY = 0.5;
@@ -27,13 +26,11 @@ export const MINE_SWELL = 0.3;
 /** Амплитуда тряски при heat=1, px. На heat=0 — 0. */
 export const MINE_SHAKE_AMP = 3;
 
-
 export interface MineHeatState {
 	heat: number;
 	/** Момент последнего «в радиусе», ms (performance.now()). null = ни разу. */
 	lastInRangeAtMs: number | null;
 }
-
 
 export interface MineHeatParams {
 	armTime: number;
@@ -41,13 +38,11 @@ export interface MineHeatParams {
 	coolTime: number;
 }
 
-
 export const DEFAULT_HEAT_PARAMS: MineHeatParams = {
 	armTime: MINE_ARM_TIME,
 	coolDelay: MINE_COOL_DELAY,
 	coolTime: MINE_COOL_TIME,
 };
-
 
 /**
  * Шаг state-машины heat'а. Чистая функция: получает текущее состояние,
@@ -80,7 +75,6 @@ export function updateHeat(
 	return {heat, lastInRangeAtMs: state.lastInRangeAtMs};
 }
 
-
 /**
  * Tint спрайта мины как функция heat'а: белый (0xFFFFFF, нейтрально)
  * → красный (0xFF4040, перегрев). Pixi применяет tint мультипликативно,
@@ -94,7 +88,6 @@ export function heatToTint(heat: number): number {
 	const b = lerp(255, 64, t);
 	return rgb(r, g, b);
 }
-
 
 function clamp01(x: number): number {
 	return x < 0 ? 0 : x > 1 ? 1 : x;

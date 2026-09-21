@@ -1,4 +1,4 @@
-import {Sprite, Texture, Container} from 'pixi.js';
+import {Sprite, type Texture, Container} from 'pixi.js';
 import {
 	getDistanceBtwPoints,
 	updateHeat,
@@ -11,9 +11,7 @@ import {
 } from '@dead-spin/engine';
 import type {Enemy} from './types';
 
-
 type MineSetup = {x: number; y: number; r: number; radius: number};
-
 
 /**
  * Мина с магнитным взрывателем. Старая «инстакилл на касание» осталась
@@ -52,14 +50,17 @@ export function createMine(setup: MineSetup, tex: Texture): Enemy {
 	const baseW = sprite.width;
 	const baseH = sprite.height;
 
-	const startedAtMs = performance.now();
 	const rDetect = setup.radius * MINE_DETECT_MULT;
 	const rKill = setup.radius;
 
 	const state: MineHeatState = {heat: 0, lastInRangeAtMs: null};
 	let deactivated = false;
 	let burnedAtMs: number | null = null;
-	let lastStepMs = startedAtMs;
+	// Игровое время мины в мс. Копится из dt физического шага, а не из
+	// wall-clock: на паузе и при сворачивании приложения step() не зовут,
+	// значит heat не растёт и мина не взрывается «за спиной» игрока. Заодно
+	// поведение детерминировано относительно записи призрака.
+	let tMs = 0;
 
 	const BURN_MS = 350;
 
@@ -89,7 +90,7 @@ export function createMine(setup: MineSetup, tex: Texture): Enemy {
 		sprite.tint = heatToTint(heat);
 
 		// Базовое покачивание (как раньше) + добавочная тряска от heat.
-		const t = (nowMs - startedAtMs) / 1000;
+		const t = nowMs / 1000;
 		const phase = (t % 3) / 3;
 		const idleY = -Math.sin(Math.PI * phase) * 5;
 
@@ -109,10 +110,9 @@ export function createMine(setup: MineSetup, tex: Texture): Enemy {
 		name: 'mine',
 		container,
 		getHitPosition: () => ({x: setup.x, y: setup.y}),
-		step(player) {
-			const nowMs = performance.now();
-			const dt = Math.max(0, (nowMs - lastStepMs) / 1000);
-			lastStepMs = nowMs;
+		step(player, _chunks, dt) {
+			tMs += dt * 1000;
+			const nowMs = tMs;
 
 			if (deactivated) {
 				applyBurnoutFx(nowMs);
@@ -151,6 +151,8 @@ export function createMine(setup: MineSetup, tex: Texture): Enemy {
 			applyHeatFx(state.heat, nowMs);
 			return false;
 		},
-		destroy() { container.destroy({children: true}); },
+		destroy() {
+			container.destroy({children: true});
+		},
 	};
 }

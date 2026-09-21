@@ -1,1 +1,0 @@
-ALTER TABLE "group_chats" ADD COLUMN "last_digest_at" timestamp with time zone;

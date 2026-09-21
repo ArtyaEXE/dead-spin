@@ -1,6 +1,5 @@
 import * as Sentry from '@sentry/browser';
 
-
 /**
  * Опциональная инициализация Sentry в Mini App. DSN приходит из env
  * `VITE_SENTRY_DSN`. Если пусто — функция не делает ничего, и
@@ -9,9 +8,7 @@ import * as Sentry from '@sentry/browser';
  * DSN в env при build/deploy.
  */
 
-
 let enabled = false;
-
 
 export function initSentry(): void {
 	const dsn = import.meta.env['VITE_SENTRY_DSN'] as string | undefined;
@@ -26,7 +23,6 @@ export function initSentry(): void {
 	enabled = true;
 	console.log('Sentry initialized');
 }
-
 
 export function captureException(err: unknown, context?: Record<string, unknown>): void {
 	if (!enabled) return;

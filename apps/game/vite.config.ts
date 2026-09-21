@@ -2,7 +2,6 @@ import {execSync} from 'node:child_process';
 import {defineConfig} from 'vite';
 import solid from 'vite-plugin-solid';
 
-
 /**
  * Версия билда — комбинируем package.json#version (сейчас 0.0.0) и
  * git short-sha. На Render-сборках $RENDER_GIT_COMMIT доступен; локально
@@ -20,9 +19,7 @@ function buildVersion(): string {
 	}
 }
 
-
 const APP_VERSION = buildVersion();
-
 
 export default defineConfig({
 	plugins: [solid()],

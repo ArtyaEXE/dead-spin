@@ -1,39 +1,39 @@
 import {Sprite, Container, type Texture} from 'pixi.js';
 import {
-	Physics, createClosedBSpline, initSplineMovement, updateSplineMovement,
-	getDistanceBtwPoints, type Body, type SplineState,
+	Physics,
+	createClosedBSpline,
+	initSplineMovement,
+	updateSplineMovement,
+	getDistanceBtwPoints,
+	type Body,
+	type SplineState,
 } from '@dead-spin/engine';
 import type {Point} from '@dead-spin/shared';
 import type {Enemy} from './types';
 import type {SmokeSystem} from '../effects/smokes';
 import {audio, type LoopHandle} from '../audio';
 
-
 type WormSetup = {seed: string; x: number; y: number};
-
 
 /** Амплитуда seed-зависимого «дрожания» waypoints, px. */
 const JITTER = 110;
 /** Сколько случайных промежуточных точек добавлять между waypoints для непредсказуемости. */
 const EXTRA_RANDOM_POINTS = 2;
 
-
 const SEGMENT_COUNT = 5;
 const SEGMENT_SIZE = 80;
 const RADIUS = 35;
 const INTERVAL = 60; // расстояние между сегментами по сплайну
 
-
 type Segment = {
 	sprite: Sprite;
 	state: SplineState;
 	pos: Body;
-	lr: number;  // local rotation (качается)
+	lr: number; // local rotation (качается)
 	tlr: number; // target local rotation
 	lrt: number; // local rotation phase
 	lrr: number; // local rotation range
 };
-
 
 /**
  * "Червяк" — цепочка из 5 сегментов, движущихся по замкнутому B-сплайну.
@@ -83,19 +83,26 @@ export function createWorm(
 		for (let i = 1; i < splinePoints.length; i++) {
 			splineLen += Math.hypot(splinePoints[i]!.x - splinePoints[i - 1]!.x, splinePoints[i]!.y - splinePoints[i - 1]!.y);
 		}
-		let best = 0, bestD = 0;
+		let best = 0,
+			bestD = 0;
 		for (let k = 0; k < 20; k++) {
 			const off = (splineLen * k) / 20;
 			// Наивно: берём точку сплайна на дистанции off
 			let acc = 0;
 			for (let i = 1; i < splinePoints.length; i++) {
-				const seg = Math.hypot(splinePoints[i]!.x - splinePoints[i - 1]!.x, splinePoints[i]!.y - splinePoints[i - 1]!.y);
+				const seg = Math.hypot(
+					splinePoints[i]!.x - splinePoints[i - 1]!.x,
+					splinePoints[i]!.y - splinePoints[i - 1]!.y,
+				);
 				if (acc + seg >= off) {
 					const t = (off - acc) / seg;
 					const hx = splinePoints[i - 1]!.x + (splinePoints[i]!.x - splinePoints[i - 1]!.x) * t;
 					const hy = splinePoints[i - 1]!.y + (splinePoints[i]!.y - splinePoints[i - 1]!.y) * t;
 					const d = Math.hypot(hx - safeFromPlayer.x, hy - safeFromPlayer.y);
-					if (d > bestD) { bestD = d; best = off; }
+					if (d > bestD) {
+						bestD = d;
+						best = off;
+					}
 					break;
 				}
 				acc += seg;
@@ -170,9 +177,11 @@ export function createWorm(
 
 			// Громкость пропорциональна близости
 			const volume =
-				distance < maxDistanceCheck ? 0.6 :
-				distance > maxDistanceCheck * 5 ? 0 :
-				0.6 * (1 - (distance - maxDistanceCheck) / (maxDistanceCheck * 4));
+				distance < maxDistanceCheck
+					? 0.6
+					: distance > maxDistanceCheck * 5
+						? 0
+						: 0.6 * (1 - (distance - maxDistanceCheck) / (maxDistanceCheck * 4));
 			wormSound?.setVolume(volume);
 
 			if (distance > maxDistanceCheck) return false;
@@ -189,7 +198,6 @@ export function createWorm(
 	};
 }
 
-
 function updateLocalRotation(seg: Segment, dt: number): void {
 	const from = seg.tlr > 0 ? -seg.lrr : seg.lrr;
 	seg.lrt += dt;
@@ -203,15 +211,16 @@ function updateLocalRotation(seg: Segment, dt: number): void {
 	}
 }
 
-
 function quadraticInterpolation(
-	from: number, to: number, t: number, duration: number,
+	from: number,
+	to: number,
+	t: number,
+	duration: number,
 ): {value: number; reached: boolean} {
 	const ratio = Math.min(1, t / duration);
 	const eased = 1 - (1 - ratio) * (1 - ratio);
 	return {value: from + (to - from) * eased, reached: ratio >= 1};
 }
-
 
 /**
  * Детерминированный путь червяка вокруг маршрута игрока.
@@ -242,7 +251,7 @@ function generatePath(
 			h ^= s.charCodeAt(i);
 			h = Math.imul(h, 16777619);
 		}
-		return (h >>> 0) / 0xffffffff * max;
+		return ((h >>> 0) / 0xffffffff) * max;
 	};
 
 	const clampX = (x: number): number => Math.max(50, Math.min(levelW - 50, x));
@@ -277,7 +286,10 @@ function generatePath(
 		const p = {x: 50 + rand(levelW - 100), y: 50 + rand(levelH - 100)};
 		let ok = true;
 		for (const q of points) {
-			if (getDistanceBtwPoints(p, q) < minDist) { ok = false; break; }
+			if (getDistanceBtwPoints(p, q) < minDist) {
+				ok = false;
+				break;
+			}
 		}
 		if (ok) points.push(p);
 	}

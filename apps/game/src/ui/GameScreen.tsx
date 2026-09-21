@@ -1,13 +1,10 @@
 import {createEffect, createSignal, onCleanup, onMount, Show} from 'solid-js';
 import {getLevelByNumber, getNextLevelNumber} from '@dead-spin/levels';
-import {api} from '../net/client';
-import {authStore} from '../stores/auth';
+import {computeRating, levelFuelTank, LOW_FUEL_FRACTION, type Rating} from '@dead-spin/shared';
 import {progressStore} from '../stores/progress';
+import {profileStore} from '../stores/profile';
+import {syncStore} from '../stores/sync';
 import {ghostStore, useGhost} from '../stores/ghost';
-import {groupStore, useGroup} from '../stores/group';
-import {useChallenge, formatTimeLeft} from '../stores/challenge';
-import {challengePushStore} from '../stores/challenge-push';
-import {isGroupMode} from '../stores/mode';
 import {track} from '../analytics';
 import {GameWorld, type GameResult} from '../game/GameWorld';
 import {audio, type LoopHandle} from '../game/audio';
@@ -16,10 +13,6 @@ import {BottomBar} from './BottomBar';
 import {ResultScreen, type ResultKind} from './ResultScreen';
 import {TutorialOverlay, computeTutorialQueue, markSeen} from './Tutorial';
 
-
-const LOW_FUEL_THRESHOLD = 2000;
-
-
 function fmtTime(ms: number): string {
 	const totalSec = Math.floor(ms / 1000);
 	const m = Math.floor(totalSec / 60);
@@ -27,23 +20,22 @@ function fmtTime(ms: number): string {
 	return `${m}:${String(s).padStart(2, '0')}`;
 }
 
-
 const ZOOM_STEP = 0.2;
 // Задержка показа overlay ResultScreen — соответствует оригинальному
 // `delay: result === 'pause' ? 0 : 500` в ResultScreen.svelte.
 // Shake и взрыв при этом работают сразу, overlay появляется после.
 const RESULT_OVERLAY_DELAY_MS = 500;
 
-
-export function GameScreen(props: {
-	levelNumber: number;
-	onExit: () => void;
-	onSwitchLevel: (n: number) => void;
-}) {
+export function GameScreen(props: {levelNumber: number; onExit: () => void; onSwitchLevel: (n: number) => void}) {
 	let hostRef: HTMLDivElement | undefined;
 	let world: GameWorld | null = null;
 
+	// Топливо — ресурс уровня (GDD §10): бак берётся из JSON уровня.
+	const levelDef = () => getLevelByNumber(props.levelNumber);
+	const fuelTank = () => levelFuelTank(levelDef() ?? {});
+
 	const [fuel, setFuel] = createSignal(0);
+	const [rating, setRating] = createSignal<Rating | null>(null);
 	const [stars, setStars] = createSignal(0);
 	const [time, setTime] = createSignal(0);
 	// result — "игра окончена" состояние (физика заморожена).
@@ -54,11 +46,7 @@ export function GameScreen(props: {
 	const [shake, setShake] = createSignal(false);
 	// Low-fuel alarm: красная пульсация вокруг экрана + sirens, когда топлива мало
 	// и нет финального оверлея/паузы.
-	const isLowFuel = (): boolean =>
-		fuel() < LOW_FUEL_THRESHOLD &&
-		!result() &&
-		!pause() &&
-		fuel() > 0;
+	const isLowFuel = (): boolean => fuel() < fuelTank() * LOW_FUEL_FRACTION && !result() && !pause() && fuel() > 0;
 	let alarmHandle: LoopHandle | null = null;
 	createEffect(() => {
 		if (isLowFuel()) {
@@ -82,7 +70,6 @@ export function GameScreen(props: {
 		const level = getLevelByNumber(levelNumber);
 		if (!level || !hostRef) return;
 
-		const user = authStore.getState().user;
 		world = new GameWorld(level, levelNumber, {
 			onFuelChange: setFuel,
 			onStarsChange: setStars,
@@ -97,55 +84,52 @@ export function GameScreen(props: {
 					setTimeout(() => setShake(false), 500);
 				}
 
-				// Challenge push: после level-complete/death проверяем, не ждёт
-				// ли нас принятый челлендж. Если да — MainMenu покажет overlay.
-				void challengePushStore.getState().checkOnce();
-
 				// Показ overlay откладываем, чтобы была видна анимация взрыва.
 				if (overlayTimer !== null) clearTimeout(overlayTimer);
-				overlayTimer = window.setTimeout(
-					() => setShowOverlay(true),
-					RESULT_OVERLAY_DELAY_MS,
-				);
+				overlayTimer = window.setTimeout(() => setShowOverlay(true), RESULT_OVERLAY_DELAY_MS);
 
 				if (r.type === 'win') {
-					progressStore.getState().recordLocal(levelNumber, r.stars, r.timeMs, r.fuelSpent);
+					const rt = computeRating(levelDef() ?? {}, {
+						collected: r.collected,
+						timeMs: r.timeMs,
+						fuelSpent: r.fuelSpent,
+					});
+					setRating(rt);
+					progressStore.getState().recordLocal(levelNumber, {...rt, timeMs: r.timeMs, fuelSpent: r.fuelSpent});
 					track('level_win', {
 						level: levelNumber,
-						stars: r.stars,
+						collected: r.collected,
+						stars: rt.stars,
+						par_hit: rt.parHit,
+						full_clear: rt.fullClear,
 						time_ms: r.timeMs,
 						fuel_spent: r.fuelSpent,
-						in_group: isGroupMode(),
 					});
-					try {
-						const recording = world?.getRecording() ?? null;
-						await api.levelComplete({
-							level: levelNumber,
-							stars: r.stars,
-							timeMs: r.timeMs,
-							fuelSpent: r.fuelSpent,
-							recording: recording ?? undefined,
-						});
-					} catch {}
+					// Ачивки считаются на устройстве, результат уходит через очередь:
+					// без сети он не потеряется, а дойдёт при следующем подключении.
+					profileStore.getState().evaluateAfterLevel(progressStore.getState().levels, {
+						stars: rt.stars,
+						timeMs: r.timeMs,
+						fuelSpent: r.fuelSpent,
+					});
+					const recording = world?.getRecording() ?? null;
+					syncStore.getState().enqueueLevelComplete({
+						level: levelNumber,
+						collected: r.collected,
+						timeMs: r.timeMs,
+						fuelSpent: r.fuelSpent,
+						recording: recording ?? undefined,
+					});
 				} else if (r.type === 'loose') {
 					track('level_loose', {
 						level: levelNumber,
 						time_ms: r.timeMs,
 						fuel_spent: r.fuelSpent,
-						in_group: isGroupMode(),
 					});
-				}
-
-				if (r.fuelSpent > 0) {
-					try {
-						const res = await api.fuelSpend(r.fuelSpent);
-						const u = authStore.getState().user;
-						if (u) authStore.getState().setUser({...u, fuel: res.fuel});
-					} catch {}
 				}
 			},
 		});
-		void world.mount(hostRef, user?.fuel ?? 10_000).then(() => {
+		void world.mount(hostRef, fuelTank()).then(() => {
 			// После того как сцена готова — применяем ghost (если он уже
 			// загружен ghostStore'ом). На случай гонки: setGhostRecording
 			// будет вызвана повторно из createEffect ниже когда стор обновится.
@@ -154,7 +138,6 @@ export function GameScreen(props: {
 		});
 		track('level_start', {
 			level: levelNumber,
-			in_group: isGroupMode(),
 		});
 	};
 
@@ -192,16 +175,19 @@ export function GameScreen(props: {
 	});
 
 	const retry = () => {
-		const u = authStore.getState().user;
-		if (overlayTimer !== null) { clearTimeout(overlayTimer); overlayTimer = null; }
+		if (overlayTimer !== null) {
+			clearTimeout(overlayTimer);
+			overlayTimer = null;
+		}
 		setResult(null);
+		setRating(null);
 		setShowOverlay(false);
 		setStars(0);
 		setTime(0);
 		setPause(false);
 		setShake(false);
 		world?.setPaused(false);
-		world?.restart(u?.fuel ?? 10_000);
+		world?.restart(fuelTank());
 	};
 
 	const togglePause = () => {
@@ -217,72 +203,17 @@ export function GameScreen(props: {
 		return result()?.type ?? 'pause';
 	};
 
-	const group = useGroup();
-	const groupLabel = (): string | null => {
-		const g = group();
-		if (g.chatId === null) return null;
-		const emoji = g.emoji ?? '🚀';
-		const name = g.nickname ?? g.title;
-		return name ? `${emoji} ${name}` : null;
-	};
-
-	// Активный челлендж именно на этом уровне в этой беседе. Только в
-	// active-статусе (pending_accept в игре не показываем — оппонент ещё
-	// не принял, играть «в зачёт» рано).
-	const challengeState = useChallenge();
-	const challengeOnThisLevel = () => {
-		const c = challengeState().current;
-		if (!c || c.status !== 'active') return null;
-		const g = group();
-		if (g.chatId !== c.chatId) return null;
-		if (c.level !== props.levelNumber) return null;
-		return c;
-	};
-
-	// Live-таймер до конца окна игры (1 час с момента принятия).
-	const [tickGame, setTickGame] = createSignal(0);
-	createEffect(() => {
-		if (!challengeOnThisLevel()) return;
-		const id = window.setInterval(() => setTickGame(t => t + 1), 1000);
-		onCleanup(() => window.clearInterval(id));
-	});
-	const timeLeft = (): string | null => {
-		tickGame(); // dependency
-		const c = challengeOnThisLevel();
-		if (!c) return null;
-		return formatTimeLeft(c.expiresAt);
-	};
-
 	return (
 		<div class="game-screen" classList={{shake: shake()}}>
-			<TopBar fuel={fuel()} time={time()} stars={stars()} />
-
-			<Show when={groupLabel()}>
-				{(label) => <div class="group-badge">{label()}</div>}
-			</Show>
+			<TopBar fuel={fuel()} fuelTank={fuelTank()} time={time()} stars={stars()} />
 
 			<Show when={ghost().current}>
 				{(g) => (
 					<div class="ghost-badge">
 						<img class="icon-inline" src="/icons/ghost-icon.png" alt="" />
-						<b>{g().username}</b> — {g().stars}<img class="icon-inline" src="/star.png" alt="" style={{height: '1em'}} /> <code>{fmtTime(g().timeMs)}</code>
-					</div>
-				)}
-			</Show>
-
-			<Show when={challengeOnThisLevel()}>
-				{(c) => (
-					<div class="challenge-ingame">
-						<div class="challenge-ingame__bg" />
-						<div class="challenge-ingame__content">
-							<div class="challenge-ingame__title">
-								<img class="icon-inline" src="/icons/challenge-icon.png" alt="" />
-								Челлендж vs <b>{c().opponentUsername}</b>
-							</div>
-							<Show when={timeLeft()}>
-								{(tl) => <div class="challenge-ingame__timer">{tl()}</div>}
-							</Show>
-						</div>
+						<b>{g().username}</b> — {g().stars}
+						<img class="icon-inline" src="/star.png" alt="" style={{height: '1em'}} />{' '}
+						<code>{fmtTime(g().timeMs)}</code>
 					</div>
 				)}
 			</Show>
@@ -312,7 +243,10 @@ export function GameScreen(props: {
 			<Show when={showOverlay()}>
 				<ResultScreen
 					result={resultKind()}
-					stars={result()?.stars ?? 0}
+					rating={rating()}
+					collected={result()?.collected ?? 0}
+					parTimeMs={levelDef()?.parTimeMs ?? null}
+					parFuel={levelDef()?.parFuel ?? null}
 					timeMs={result()?.timeMs ?? time()}
 					fuelSpent={result()?.fuelSpent ?? 0}
 					levelNumber={props.levelNumber}

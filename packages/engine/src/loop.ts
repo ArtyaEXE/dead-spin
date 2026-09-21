@@ -29,26 +29,25 @@ export type Loop = {
 	isRunning: () => boolean;
 };
 
-
 const DEFAULT_FIXED_DT = 1 / 60;
 const DEFAULT_MAX_FRAME_TIME = 0.25;
 
-
-export function createLoop(
-	update: LoopUpdateFn,
-	render: LoopRenderFn,
-	opts: LoopOptions = {}
-): Loop {
+export function createLoop(update: LoopUpdateFn, render: LoopRenderFn, opts: LoopOptions = {}): Loop {
 	const fixedDt = opts.fixedDt ?? DEFAULT_FIXED_DT;
 	const maxFrameTime = opts.maxFrameTime ?? DEFAULT_MAX_FRAME_TIME;
 	const now = opts.now ?? (() => performance.now() / 1000);
-	const scheduler = opts.scheduler ?? ((cb) => (globalThis.requestAnimationFrame
-		? globalThis.requestAnimationFrame(() => cb())
-		: (setTimeout(cb, 16) as unknown as number)));
-	const cancel = opts.cancel ?? ((h) => {
-		if (globalThis.cancelAnimationFrame) globalThis.cancelAnimationFrame(h);
-		else clearTimeout(h as unknown as NodeJS.Timeout);
-	});
+	const scheduler =
+		opts.scheduler ??
+		((cb) =>
+			globalThis.requestAnimationFrame
+				? globalThis.requestAnimationFrame(() => cb())
+				: (setTimeout(cb, 16) as unknown as number));
+	const cancel =
+		opts.cancel ??
+		((h) => {
+			if (globalThis.cancelAnimationFrame) globalThis.cancelAnimationFrame(h);
+			else clearTimeout(h as unknown as NodeJS.Timeout);
+		});
 
 	let running = false;
 	let handle: number | null = null;

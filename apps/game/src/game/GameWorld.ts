@@ -1,10 +1,20 @@
 import {Application, Container, TilingSprite} from 'pixi.js';
 import {
-	Physics, pointsToStrokes, splitWallStrokesToChunks, getNearStrokesByPoint,
-	createLoop, type Loop, type Body, type ChunkMap,
+	Physics,
+	pointsToStrokes,
+	splitWallStrokesToChunks,
+	getNearStrokesByPoint,
+	createLoop,
+	type Loop,
+	type Body,
+	type ChunkMap,
 } from '@dead-spin/engine';
 import {
-	PLAYER_RADIUS, STAR_RADIUS, FINISH_RADIUS, FINISH_MAX_SPEED, BOOST_FORCE,
+	PLAYER_RADIUS,
+	STAR_RADIUS,
+	FINISH_RADIUS,
+	FINISH_MAX_SPEED,
+	BOOST_FORCE,
 	FUEL_CONSUMPTION_PER_BOOST,
 } from '@dead-spin/shared';
 import type {Level, GhostRecording} from '@dead-spin/shared';
@@ -29,10 +39,10 @@ import {createExplosion, type ExplosionHandle} from './effects/explosion';
 import {createDecorationsLayer, type DecorationsLayer} from './renderers/decorations';
 import {audio} from './audio';
 
-
 export type GameResult = {
 	type: 'win' | 'loose';
-	stars: number;
+	/** Подобрано звёзд-предметов (0..3). Рейтинг считается снаружи по par. */
+	collected: number;
 	timeMs: number;
 	fuelSpent: number;
 };
@@ -43,7 +53,6 @@ export type GameCallbacks = {
 	onTimeChange: (ms: number) => void;
 	onResult: (res: GameResult) => void;
 };
-
 
 export class GameWorld {
 	private app = new Application();
@@ -82,6 +91,16 @@ export class GameWorld {
 	private zoom = 1;
 	private paused = false;
 
+	// Состояние игрока на предыдущем физическом шаге — для интерполяции
+	// в draw(alpha). Без неё на 120 Гц два кадра подряд рисуют одно и то же
+	// положение, и корабль «дрожит».
+	private prevX = 0;
+	private prevY = 0;
+	private prevR = 0;
+	// Переиспользуемый буфер для попарной проверки камней — без аллокации
+	// нового массива на каждом физическом шаге.
+	private stoneBodies: Body[] = [];
+
 	// Анимации входа/выхода из дыры: на старте корабль "вылетает" из дыры
 	// (разворачивается и увеличивается в размере, крутясь); на финише —
 	// засасывается в дыру (скручивается и сжимается в точку).
@@ -91,13 +110,11 @@ export class GameWorld {
 	private readonly SPAWN_MS = 900;
 	private readonly FINISH_MS = 800;
 
-
 	constructor(
 		private level: Level,
 		private levelNumber: number,
 		private callbacks: GameCallbacks,
 	) {}
-
 
 	async mount(host: HTMLElement, initialFuel: number): Promise<void> {
 		this.fuel = initialFuel;
@@ -120,7 +137,9 @@ export class GameWorld {
 			backgroundColor: 0x19130f,
 			antialias: true,
 			autoDensity: true,
-			resolution: window.devicePixelRatio || 1,
+			// Потолок 2: на DPR 3 fill-rate вырастает в 9 раз при antialias, а
+			// визуально разница с 2 на 6-дюймовом экране неразличима.
+			resolution: Math.min(window.devicePixelRatio || 1, 2),
 		});
 		host.appendChild(this.app.canvas);
 
@@ -141,11 +160,10 @@ export class GameWorld {
 
 		this.loop = createLoop(
 			(dt) => this.step(dt),
-			() => this.draw(),
+			(alpha) => this.draw(alpha),
 		);
 		this.loop.start();
 	}
-
 
 	destroy(): void {
 		this.loop?.stop();
@@ -154,7 +172,6 @@ export class GameWorld {
 		// Короткие SFX сами доиграют, worm-loop остановится в enemy.destroy().
 		this.app.destroy(true, {children: true, texture: false});
 	}
-
 
 	restart(initialFuel: number): void {
 		this.fuel = initialFuel;
@@ -166,25 +183,27 @@ export class GameWorld {
 		this.callbacks.onStarsChange(this.collected);
 		this.callbacks.onTimeChange(0);
 
+		// Рестарт — основное действие игрока, поэтому сцену не пересобираем.
+		// Стены (два полноуровневых TilingSprite + маска), декорации, маркеры и
+		// световой слой не имеют состояния — остаются. Пересоздаём только то,
+		// что stateful: врагов и взрывы; дымы и звёзды сбрасываем на месте.
 		for (const e of this.enemies) e.destroy();
 		this.enemies = [];
 		for (const ex of this.explosions) ex.destroy();
 		this.explosions = [];
-		this.smokes?.destroy();
-		this.smokes = null;
-		this.decorations?.destroy();
-		this.decorations = null;
-		this.lightLayer?.destroy();
-		this.lightLayer = null;
+		this.smokes?.clear();
+		const now = performance.now();
+		for (const s of this.stars) {
+			s.container.visible = true;
+			s.spawnAt = now;
+		}
 
-		this.world.removeChildren();
-		this.buildScene();
+		this.buildEnemies();
 		this.resetPlayer();
 		this.resetRecorder();
 		this.refreshGhost();
 		this.beginSpawnAnim();
 	}
-
 
 	private resetRecorder(): void {
 		this.recorder = new Recorder({
@@ -194,11 +213,9 @@ export class GameWorld {
 		this.recorder.add('start', 0, this.player);
 	}
 
-
 	getRecording(): GhostRecording | null {
 		return this.recorder ? this.recorder.finalize() : null;
 	}
-
 
 	/**
 	 * Установить запись лидера для воспроизведения как ghost. null — убрать.
@@ -209,7 +226,6 @@ export class GameWorld {
 		this.ghostRecording = rec;
 		this.refreshGhost();
 	}
-
 
 	private refreshGhost(): void {
 		if (this.ghost) {
@@ -224,7 +240,6 @@ export class GameWorld {
 		this.world.addChildAt(this.ghost.container, idx);
 	}
 
-
 	private beginSpawnAnim(): void {
 		this.animState = 'spawn';
 		this.animStart = performance.now();
@@ -232,7 +247,6 @@ export class GameWorld {
 		this.playerSprite.container.scale.set(0);
 		this.playerSprite.booster.visible = false;
 	}
-
 
 	private buildScene(): void {
 		// Текстуры пещеры подбираются по миру уровня (CERES/PALLAS/...) — см. caveTexturesForLevel.
@@ -282,7 +296,6 @@ export class GameWorld {
 		this.world.addChild(this.lightLayer);
 	}
 
-
 	private buildEnemies(): void {
 		if (!this.smokes) return;
 		for (const e of this.level.enemies) {
@@ -294,10 +307,7 @@ export class GameWorld {
 					this.smokes,
 				);
 			} else if (e.name === 'mine') {
-				enemy = createMine(
-					{x: e.x, y: e.y, r: e.r, radius: e.radius},
-					this.textures.mine,
-				);
+				enemy = createMine({x: e.x, y: e.y, r: e.r, radius: e.radius}, this.textures.mine);
 			} else if (e.name === 'worm') {
 				// Маршрут червя «прибит» к ключевым точкам уровня — иначе
 				// он раньше гулял в случайном углу, и при «плохом» seed'е
@@ -313,7 +323,8 @@ export class GameWorld {
 				];
 				enemy = createWorm(
 					{seed: e.seed, x: e.x, y: e.y},
-					this.level.res.x, this.level.res.y,
+					this.level.res.x,
+					this.level.res.y,
 					{worm1: this.textures.worm1, worm2: this.textures.worm2, worm3: this.textures.worm3},
 					this.smokes,
 					1,
@@ -323,27 +334,34 @@ export class GameWorld {
 			}
 			if (enemy) {
 				this.enemies.push(enemy);
-				this.world.addChild(enemy.container);
+				// При первой сборке спрайта игрока ещё нет — добавляем в конец;
+				// при рестарте вставляем под игрока, чтобы не оказаться над светом.
+				if (this.playerSprite) {
+					this.world.addChildAt(enemy.container, this.world.getChildIndex(this.playerSprite.container));
+				} else {
+					this.world.addChild(enemy.container);
+				}
 			}
 		}
 	}
 
-
 	private prepareSpatialIndex(): void {
-		const strokes = this.level.walls.flatMap(poly => pointsToStrokes(poly));
+		const strokes = this.level.walls.flatMap((poly) => pointsToStrokes(poly));
 		this.chunks = splitWallStrokesToChunks(strokes);
 	}
-
 
 	private freshPlayer(): Body {
 		return {
 			radius: PLAYER_RADIUS,
-			x: 0, y: 0,
-			r: 0, vx: 0, vy: 0,
-			vr: 360, speed: 0,
+			x: 0,
+			y: 0,
+			r: 0,
+			vx: 0,
+			vy: 0,
+			vr: 360,
+			speed: 0,
 		};
 	}
-
 
 	private resetPlayer(): void {
 		this.player.x = this.level.startPoint.x;
@@ -353,7 +371,6 @@ export class GameWorld {
 		this.player.vy = 0;
 		this.player.speed = 0;
 	}
-
 
 	boost(): void {
 		if (this.result || this.paused) return;
@@ -378,12 +395,7 @@ export class GameWorld {
 			const rad = ((this.player.r + 180) * Math.PI) / 180;
 			const ox = 35 * Math.sin(rad);
 			const oy = -35 * Math.cos(rad);
-			this.smokes.add(
-				{x: this.player.x + ox, y: this.player.y + oy},
-				80,
-				2000,
-				{x: ox * 3, y: oy * 3},
-			);
+			this.smokes.add({x: this.player.x + ox, y: this.player.y + oy}, 80, 2000, {x: ox * 3, y: oy * 3});
 		}
 	}
 
@@ -392,17 +404,31 @@ export class GameWorld {
 		this.zoom = clamped;
 		localStorage.setItem('dead-spin.sceneZoom', String(clamped));
 	}
-	getZoom(): number { return this.zoom; }
-	addZoom(delta: number): void { this.setZoom(this.zoom + delta); }
+	getZoom(): number {
+		return this.zoom;
+	}
+	addZoom(delta: number): void {
+		this.setZoom(this.zoom + delta);
+	}
 
-	setPaused(paused: boolean): void { this.paused = paused; }
+	setPaused(paused: boolean): void {
+		this.paused = paused;
+	}
 
+	private snapPrev(): void {
+		this.prevX = this.player.x;
+		this.prevY = this.player.y;
+		this.prevR = this.player.r;
+	}
 
 	private step(dt: number): void {
-		if (this.result || this.paused) return;
-		// Во время анимаций появления/засасывания физика заморожена,
-		// столкновения не считаются, таймер не тикает.
-		if (this.animState !== 'running') return;
+		// На паузе/результате/анимациях физика стоит — prev должен совпадать с
+		// текущим, иначе draw(alpha) будет качать корабль между устаревшими точками.
+		if (this.result || this.paused || this.animState !== 'running') {
+			this.snapPrev();
+			return;
+		}
+		this.snapPrev();
 
 		let r = this.player.r + this.player.vr * dt;
 		while (r < -180) r += 360;
@@ -414,8 +440,9 @@ export class GameWorld {
 		this.player.x += this.player.vx * dt;
 		this.player.y += this.player.vy * dt;
 
-		this.time += Math.round(dt * 1000);
-		this.callbacks.onTimeChange(this.time);
+		// Копим в float: Math.round(1000/60)=17 давало 1020 мс на секунду.
+		this.time += dt * 1000;
+		this.callbacks.onTimeChange(Math.floor(this.time));
 
 		// Призрак движется в реальном игровом времени; pause/result обработаны
 		// выше — в step() мы доходим только в running-state, поэтому тут
@@ -446,16 +473,20 @@ export class GameWorld {
 		}
 		// Stone-stone collisions: попарный elastic ответ. Камни одной массы,
 		// поэтому при столкновении меняем нормальные компоненты скорости.
-		const stoneBodies: Body[] = [];
+		const stoneBodies = this.stoneBodies;
+		stoneBodies.length = 0;
 		for (const e of this.enemies) if (e.name === 'stone' && e.body) stoneBodies.push(e.body);
 		for (let i = 0; i < stoneBodies.length; i++) {
 			for (let j = i + 1; j < stoneBodies.length; j++) {
-				const a = stoneBodies[i]!, b = stoneBodies[j]!;
-				const dx = b.x - a.x, dy = b.y - a.y;
+				const a = stoneBodies[i]!,
+					b = stoneBodies[j]!;
+				const dx = b.x - a.x,
+					dy = b.y - a.y;
 				const dist = Math.hypot(dx, dy);
 				const sumR = a.radius + b.radius;
 				if (dist >= sumR || dist === 0) continue;
-				const nx = dx / dist, ny = dy / dist;
+				const nx = dx / dist,
+					ny = dy / dist;
 				// Раздвигаем тела чтобы избавиться от перекрытия (по половине каждому)
 				const overlap = sumR - dist;
 				a.x -= nx * overlap * 0.5;
@@ -492,7 +523,6 @@ export class GameWorld {
 		}
 	}
 
-
 	private triggerLoose(): void {
 		// Взрыв на текущей позиции игрока
 		const ex = createExplosion({x: this.player.x, y: this.player.y}, this.textures.explosion);
@@ -507,7 +537,6 @@ export class GameWorld {
 		this.finish('loose');
 	}
 
-
 	private beginFinishAnim(): void {
 		this.animState = 'finishing';
 		this.animStart = performance.now();
@@ -516,12 +545,11 @@ export class GameWorld {
 		this.player.vy = 0;
 	}
 
-
 	private finish(type: 'win' | 'loose'): void {
 		this.result = {
 			type,
-			stars: this.collected,
-			timeMs: this.time,
+			collected: this.collected,
+			timeMs: Math.round(this.time),
 			fuelSpent: Math.max(0, this.initialFuel - this.fuel),
 		};
 		this.recorder?.add(type, this.time, this.player);
@@ -530,7 +558,6 @@ export class GameWorld {
 		// отложить в GameScreen (через setTimeout на его стороне).
 		this.callbacks.onResult(this.result);
 	}
-
 
 	/**
 	 * Envelope-анимация пламени бустера для одного тапа:
@@ -568,10 +595,7 @@ export class GameWorld {
 		sx += flick;
 		sy += flick * 0.4;
 
-		const alpha =
-			t < 0.15 ? t / 0.15 :
-			t < 0.7 ? 1 :
-			Math.max(0, 1 - (t - 0.7) / 0.3);
+		const alpha = t < 0.15 ? t / 0.15 : t < 0.7 ? 1 : Math.max(0, 1 - (t - 0.7) / 0.3);
 
 		const bs = this.playerSprite;
 		bs.booster.scale.set(bs.boosterBaseScaleX * sx, bs.boosterBaseScaleY * sy);
@@ -579,9 +603,18 @@ export class GameWorld {
 		bs.booster.visible = true;
 	}
 
-
-	private draw(): void {
+	private draw(alpha: number): void {
 		const now = performance.now();
+
+		// Интерполированное положение между предыдущим и текущим физическим
+		// шагом. В running-состоянии рисуем его; в анимациях — точное.
+		const a = Math.max(0, Math.min(1, alpha));
+		let dr = this.player.r - this.prevR;
+		if (dr > 180) dr -= 360;
+		if (dr < -180) dr += 360;
+		const ix = this.prevX + (this.player.x - this.prevX) * a;
+		const iy = this.prevY + (this.player.y - this.prevY) * a;
+		const ir = this.prevR + dr * a;
 
 		if (this.animState === 'spawn') {
 			const elapsed = now - this.animStart;
@@ -619,8 +652,8 @@ export class GameWorld {
 				this.finish('win');
 			}
 		} else if (this.playerSprite.container.visible) {
-			this.playerSprite.container.position.set(this.player.x, this.player.y);
-			this.playerSprite.container.rotation = (this.player.r * Math.PI) / 180;
+			this.playerSprite.container.position.set(ix, iy);
+			this.playerSprite.container.rotation = (ir * Math.PI) / 180;
 			this.tickBoosterFlame(now);
 		}
 
@@ -636,7 +669,9 @@ export class GameWorld {
 			}
 		}
 
-		this.camera.follow({x: this.player.x, y: this.player.y}, this.zoom);
+		const camX = this.animState === 'running' ? ix : this.player.x;
+		const camY = this.animState === 'running' ? iy : this.player.y;
+		this.camera.follow({x: camX, y: camY}, this.zoom);
 
 		if (this.walls) {
 			// Параллакс задней стены. tilePosition применяет ОБРАТНЫЙ сдвиг
@@ -644,10 +679,7 @@ export class GameWorld {
 			// на экране = world_speed × (1 − k). k=0.15 даёт ~85% скорости —
 			// чуть заметнее разрыв между задником и стенами пещеры чем при 0.07.
 			const k = 0.15;
-			this.walls.innerCave.tilePosition.set(
-				this.player.x * k,
-				this.player.y * k,
-			);
+			this.walls.innerCave.tilePosition.set(camX * k, camY * k);
 		}
 	}
 }

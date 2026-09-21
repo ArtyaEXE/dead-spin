@@ -1,9 +1,7 @@
 import {z} from 'zod';
 
-
 export const ShakeSchema = z.enum(['none', 'slow', 'medium', 'fast']);
 export type Shake = z.infer<typeof ShakeSchema>;
-
 
 export const SoundCueSchema = z.object({
 	sound: z.string().min(1),
@@ -13,12 +11,8 @@ export const SoundCueSchema = z.object({
 });
 export type SoundCue = z.infer<typeof SoundCueSchema>;
 
-
-export const AnchorSchema = z.enum([
-	'center', 'tl', 'tr', 'bl', 'br', 'top', 'bottom', 'left', 'right',
-]);
+export const AnchorSchema = z.enum(['center', 'tl', 'tr', 'bl', 'br', 'top', 'bottom', 'left', 'right']);
 export type Anchor = z.infer<typeof AnchorSchema>;
-
 
 /**
  * Ken Burns: плавный pan + zoom по статичной картинке. `path` — массив
@@ -36,7 +30,6 @@ export const KenBurnsSchema = z.object({
 });
 export type KenBurns = z.infer<typeof KenBurnsSchema>;
 
-
 /**
  * Реплика поверх панели. `at` — через сколько мс после входа в панель
  * начать показ; `until` — когда скрыть (default: до конца панели).
@@ -52,7 +45,6 @@ export const CaptionSchema = z.object({
 });
 export type Caption = z.infer<typeof CaptionSchema>;
 
-
 export const PanelSchema = z.object({
 	img: z.string().min(1),
 	duration: z.number().positive().default(7000),
@@ -63,14 +55,12 @@ export const PanelSchema = z.object({
 });
 export type Panel = z.infer<typeof PanelSchema>;
 
-
 export const ComicSchema = z.object({
 	id: z.string().min(1),
 	letterbox: z.boolean().default(true),
 	panels: z.array(PanelSchema).min(1),
 });
 export type Comic = z.infer<typeof ComicSchema>;
-
 
 export function validateComic(data: unknown): Comic {
 	return ComicSchema.parse(data);

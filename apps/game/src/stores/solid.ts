@@ -1,7 +1,6 @@
 import {createSignal, onCleanup} from 'solid-js';
 import type {StoreApi} from 'zustand/vanilla';
 
-
 /**
  * Мост Zustand-vanilla ↔ Solid. Возвращает функцию-хук, которая даёт
  * Solid-signal со всем состоянием стора и ре-рендерит компонент при

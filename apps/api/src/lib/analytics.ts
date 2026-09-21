@@ -1,7 +1,6 @@
 import {PostHog} from 'posthog-node';
 import {env} from '../config';
 
-
 /**
  * Серверная аналитика через PostHog. Без ключа — все методы
  * становятся no-op'ами, можно безопасно вызывать `track()` из любого
@@ -16,9 +15,7 @@ import {env} from '../config';
  * серверные нельзя.
  */
 
-
 let client: PostHog | null = null;
-
 
 export function initAnalytics(): void {
 	if (!env.POSTHOG_KEY) return;
@@ -31,12 +28,7 @@ export function initAnalytics(): void {
 	console.log('PostHog analytics initialized');
 }
 
-
-export function track(args: {
-	userId: string;
-	event: string;
-	properties?: Record<string, unknown>;
-}): void {
+export function track(args: {userId: string; event: string; properties?: Record<string, unknown>}): void {
 	if (!client) return;
 	client.capture({
 		distinctId: args.userId,
@@ -45,25 +37,17 @@ export function track(args: {
 	});
 }
 
-
 /** Идентификация юзера — заполняем профиль в PostHog. */
-export function identify(args: {
-	userId: string;
-	tgId: string;
-	username: string;
-	locale: string;
-}): void {
+export function identify(args: {userId: string; username: string; locale: string}): void {
 	if (!client) return;
 	client.identify({
 		distinctId: args.userId,
 		properties: {
-			tg_id: args.tgId,
 			username: args.username,
 			locale: args.locale,
 		},
 	});
 }
-
 
 export async function shutdownAnalytics(): Promise<void> {
 	if (!client) return;

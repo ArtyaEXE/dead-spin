@@ -3,13 +3,11 @@ export const MINUTE = 60 * SECOND;
 export const HOUR = 60 * MINUTE;
 export const DAY = 24 * HOUR;
 
-export const TELEGRAM_ID_REGEX = /^[0-9]{2,32}$/;
-
 /**
  * Количество ВАЛИДНЫХ уровней — то есть тех, для которых есть JSON в
  * `packages/levels/src/data/`. Отличается от наибольшего номера уровня:
- * сейчас CERES (1..3) + PALLAS (16..30) = 18 валидных, при максимальном
- * номере 30. UI использует это значение для счётчиков "X / N".
+ * сейчас CERES (1..15) + PALLAS (16..30) = 30 валидных. UI использует
+ * это значение для счётчиков "X / N".
  *
  * При добавлении нового мира поднимаем здесь — иначе `Levels`-экран
  * не покажет ачиев "all levels", а ачивка `all_levels` не выдастся.
@@ -27,13 +25,6 @@ export const BOOST_FORCE = 50;
 
 export const MIN_LEVEL_TIME_MS = 3 * SECOND;
 export const MAX_LEVEL_TIME_MS = HOUR;
-
-export const FUEL_SPEND_MIN = 20;
-export const FUEL_SPEND_MAX = 20_000;
-export const FUEL_MAX = 30_000;
-export const FUEL_REGEN_PER_TICK = 500;
-export const FUEL_TICK_MS = 10 * SECOND;
-export const FUEL_INITIAL = 10_000;
 
 export const STARS_MIN = 0;
 export const STARS_MAX = 3;

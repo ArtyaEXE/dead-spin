@@ -24,3 +24,6 @@ pnpm-debug.log*
 *.tsbuildinfo
 
 .pnpm-store/
+
+# lefthook
+lefthook-local.yml

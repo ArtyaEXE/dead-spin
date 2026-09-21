@@ -2,7 +2,6 @@ import type {Container} from 'pixi.js';
 import type {Body} from '@dead-spin/engine';
 import type {ChunkMap} from '@dead-spin/engine';
 
-
 /**
  * Общий контракт врага: контейнер в сцене и контроллер обновления.
  * step вызывается каждый физический кадр, возвращает true если враг

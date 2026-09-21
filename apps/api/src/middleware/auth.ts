@@ -4,8 +4,6 @@ import {verifyUserToken} from '../lib/jwt';
 import {unauthorized} from '../lib/errors';
 import {db} from '../db/client';
 import {users, type User} from '../db/schema';
-import {regenerateFuelInDb} from '../lib/fuel-db';
-
 
 export type AuthedEnv = {
 	Variables: {
@@ -13,11 +11,9 @@ export type AuthedEnv = {
 	};
 };
 
-
 /**
  * requireAuth — извлекает JWT из Authorization: Bearer, верифицирует,
- * подтягивает свежего юзера из БД, применяет ленивую регенерацию fuel,
- * и кладёт готовый объект в c.var.user.
+ * подтягивает свежего юзера из БД и кладёт его в c.var.user.
  */
 export const requireAuth = createMiddleware<AuthedEnv>(async (c, next) => {
 	const authHeader = c.req.header('authorization') ?? '';
@@ -30,8 +26,7 @@ export const requireAuth = createMiddleware<AuthedEnv>(async (c, next) => {
 	const [user] = await db.select().from(users).where(eq(users.id, payload.sub)).limit(1);
 	if (!user) throw unauthorized('userNotFound');
 
-	const withFuel = await regenerateFuelInDb(user);
-	c.set('user', withFuel);
+	c.set('user', user);
 
 	await next();
 });

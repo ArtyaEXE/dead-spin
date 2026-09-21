@@ -1,7 +1,6 @@
 import * as Sentry from '@sentry/node';
 import {env} from '../config';
 
-
 /**
  * Опциональная инициализация Sentry. Если `SENTRY_DSN` не задан — функция
  * становится no-op'ом, и `captureException` тоже ничего не делает. Так мы
@@ -9,9 +8,7 @@ import {env} from '../config';
  * аккаунта Sentry; включится только когда добавишь DSN в env.
  */
 
-
 let enabled = false;
-
 
 export function initSentry(): void {
 	if (!env.SENTRY_DSN) return;
@@ -26,7 +23,6 @@ export function initSentry(): void {
 	enabled = true;
 	console.log('Sentry initialized');
 }
-
 
 export function captureException(err: unknown, context?: Record<string, unknown>): void {
 	if (!enabled) return;
