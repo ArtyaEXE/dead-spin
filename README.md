@@ -31,30 +31,38 @@ dead-spin/
 └─ docker-compose.yml   — Postgres для локалки
 ```
 
+## Быстрый старт
+
+```bash
+pnpm install          # зависимости + git-хуки (lefthook)
+pnpm setup            # .env из .env.example там, где их нет
+pnpm db:up            # Postgres 16 в Docker
+pnpm db:migrate       # накатить схему
+pnpm dev              # API :3001 + клиент :5173 одной командой
+```
+
+Требуется Node 22 (`.nvmrc`), pnpm 9.12 (`packageManager`, через corepack), Docker.
+
 ## Команды
 
 ```bash
-pnpm install                          # установить зависимости
-pnpm typecheck                        # проверить типы во всём монорепо
-pnpm test                             # все unit-тесты (engine + api)
-pnpm validate:levels                  # прогнать 30 уровней через Zod-схему
+pnpm check            # Biome: линт + формат (в CI — biome ci)
+pnpm check:fix        # то же с автофиксами
+pnpm typecheck        # tsc по всем пакетам
+pnpm test             # Vitest (engine + api)
+pnpm validate:levels  # схема + дизайн-инварианты 30 уровней
+pnpm build            # прод-сборки: API (tsup → dist/) и клиент (vite → dist/)
+pnpm ci               # всё вышеперечисленное, как в CI
 
-# Клиент
-pnpm --filter @dead-spin/game dev     # dev-сервер на :5173
-pnpm --filter @dead-spin/game build   # прод-сборка в apps/game/dist
-
-# API
-docker compose up -d                  # поднять Postgres
-cd apps/api && cp .env.example .env   # настроить ENV
-pnpm --filter @dead-spin/api db:migrate   # применить миграции
-pnpm --filter @dead-spin/api dev          # запустить API на :3001
-
-# Уровни
 pnpm --filter @dead-spin/levels exec tsx scripts/generate-pallas.ts   # перегенерировать PALLAS (L16–L30)
 pnpm --filter @dead-spin/levels exec tsx scripts/tune-curve.ts        # звёзды с прямой + мины в пустые уровни
 pnpm --filter @dead-spin/levels exec tsx scripts/inject-par.ts        # пересчитать fuelTank/par по маршрутам
 pnpm optimize:assets                                                  # пережать картинки под размеры отрисовки
+
+docker compose --profile full up   # прод-образ API локально вместе с Postgres
 ```
+
+Хуки: pre-commit — Biome по staged-файлам, pre-push — typecheck + test. Деплой и CI — в [`DEPLOY.md`](DEPLOY.md).
 
 ## Эндпоинты API
 
@@ -87,5 +95,4 @@ Typecheck: 6 пакетов. 74 теста зелёные (47 engine + 27 api). 
 
 **Этап A (фундамент) завершён 2026-09-21. Следующий:** GDD §19, этап B — режимы (бесконечный, испытание дня, continue, призрак себя, near-miss).
 
-Легаси-документы `DEPLOY.md` и `SMOKE_TEST.md` описывают Telegram-альфу и будут
-переписаны на этапе C (обёртка).
+Инфраструктура: [`DEPLOY.md`](DEPLOY.md) — локалка, CI/CD, секреты, Docker; [`SMOKE_TEST.md`](SMOKE_TEST.md) — ручной чеклист перед выкладкой.

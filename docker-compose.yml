@@ -1,3 +1,7 @@
+# Локальная инфраструктура.
+#   pnpm db:up                       — только Postgres (обычный dev-цикл)
+#   docker compose --profile full up — Postgres + API из Dockerfile,
+#                                      чтобы проверить прод-образ локально
 services:
   postgres:
     image: postgres:16-alpine
@@ -17,20 +21,22 @@ services:
       timeout: 5s
       retries: 5
 
-  redis:
-    image: redis:7-alpine
-    container_name: dead-spin-redis
-    restart: unless-stopped
+  api:
+    profiles: [full]
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: dead-spin-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://deadspin:deadspin@postgres:5432/deadspin
+      JWT_SECRET: local-docker-secret-at-least-32-bytes-long-000
+      CORS_ORIGINS: '*'
     ports:
-      - '6379:6379'
-    volumes:
-      - redis-data:/data
-    healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      - '3001:3001'
 
 volumes:
   pg-data:
-  redis-data:

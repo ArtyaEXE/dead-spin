@@ -1,0 +1,16 @@
+**/node_modules
+**/dist
+**/.env
+**/.env.*
+!**/.env.example
+.git
+.github
+_backups
+apps/game/public
+apps/game/src
+docs
+*.md
+.vscode
+.idea
+**/*.log
+**/coverage

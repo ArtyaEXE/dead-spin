@@ -1,0 +1,55 @@
+# CD: только main. Сначала полный CI (переиспользуем ci.yml), затем
+# параллельно — веб на Cloudflare Workers Static Assets и API на Render
+# через deploy hook. Render сам собирает Docker-образ из apps/api/Dockerfile.
+#
+# Секреты репозитория (Settings → Secrets and variables → Actions):
+#   CLOUDFLARE_API_TOKEN   — токен с правами Workers Scripts:Edit
+#   CLOUDFLARE_ACCOUNT_ID
+#   RENDER_DEPLOY_HOOK_URL — Render → dead-spin-api → Settings → Deploy Hook
+# Переменные (vars):
+#   VITE_API_BASE          — публичный URL API, например https://dead-spin-api.onrender.com
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  web:
+    name: web → Cloudflare
+    needs: ci
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          path: apps/game/dist
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy
+
+  api:
+    name: api → Render
+    needs: ci
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 5
+    steps:
+      - name: Trigger Render deploy
+        run: curl -fsS -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
