@@ -1,4 +1,4 @@
-import {ColorMatrixFilter, Container, Graphics, type Texture, TilingSprite} from 'pixi.js';
+import {Container, Graphics, type Texture, TilingSprite} from 'pixi.js';
 import type {Level, Point} from '@dead-spin/shared';
 
 export type WallsLayer = {
@@ -26,22 +26,20 @@ export function createWallsLayer(level: Level, cave1: Texture, cave2: Texture): 
 	const w = level.res.x + pad * 2;
 	const h = level.res.y + pad * 2;
 
-	// 1) cave1 — внешняя скала (передний план, стены). Насыщенность
-	// приподнята чтобы стены визуально выделялись на фоне задника.
+	// 1) Внешняя порода — передний план, стены. Фильтр насыщенности отсюда
+	// убран: плитки генерируются сразу в допуске слоя мира (DESIGN.md §4),
+	// подкручивать их на лету больше не нужно, и это минус один проход
+	// постобработки на кадр.
 	const outerCave = new TilingSprite({texture: cave1, width: w, height: h});
 	outerCave.position.set(-pad, -pad);
-	const satFilter = new ColorMatrixFilter();
-	satFilter.saturate(0.9, false);
-	outerCave.filters = [satFilter];
 	container.addChild(outerCave);
 
-	// 2) cave2 — внутренняя пещера, поверх cave1, маскируется полигоном.
-	// Tint затемняет задник чтобы он не перебивал передний план (стены,
-	// врагов, корабль). 0x808080 ≈ 50% яркости.
+	// 2) Задник пещеры поверх породы, маскируется полигоном. Tint убран:
+	// плитка задника генерируется уже приглушённой (dim 0.5 в gen-cave.mjs),
+	// поэтому глубина заложена в сам ассет, а не докручивается в рантайме.
 	const innerCave = new TilingSprite({texture: cave2, width: w, height: h});
 	innerCave.position.set(-pad, -pad);
 	innerCave.tileTransform.scale.set(0.8, 0.8);
-	innerCave.tint = 0xc0c0c0;
 
 	const polyMask = new Graphics();
 	for (const polygon of level.walls) {
@@ -59,7 +57,8 @@ export function createWallsLayer(level: Level, cave1: Texture, cave2: Texture): 
 		if (polygon.length < 2) continue;
 		polyPath(stroke, polygon);
 	}
-	stroke.stroke({color: 0x1a140c, width: 2, cap: 'round', join: 'round'});
+	// Контур пера по кромке стены: тот же закон, что у остальных ассетов.
+	stroke.stroke({color: 0x14110e, width: 3, cap: 'round', join: 'round'});
 	container.addChild(stroke);
 
 	// 4) Внешний "rim" со сдвигом по нормали наружу на 2px
@@ -68,7 +67,7 @@ export function createWallsLayer(level: Level, cave1: Texture, cave2: Texture): 
 		if (polygon.length < 2) continue;
 		rimPath(rim, polygon);
 	}
-	rim.stroke({color: 0x29260a, width: 2, cap: 'round', join: 'round'});
+	rim.stroke({color: 0x3a322a, width: 2, cap: 'round', join: 'round'});
 	container.addChild(rim);
 
 	return {container, innerCave};

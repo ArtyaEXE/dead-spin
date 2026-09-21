@@ -16,7 +16,8 @@ export type GameTextures = {
 	vestaInner: Texture;
 	eunomiaOuter: Texture;
 	eunomiaInner: Texture;
-	hole: Texture;
+	finish: Texture;
+	start: Texture;
 	ship: Texture;
 	booster: Texture;
 	star: Texture;
@@ -30,17 +31,18 @@ export type GameTextures = {
 };
 
 const SIMPLE_PATHS = {
-	ceresOuter: '/ceres-1.jpg',
-	ceresInner: '/ceres-2.jpg',
-	pallasOuter: '/pallas-1.jpg',
-	pallasInner: '/pallas-2.jpg',
-	junoOuter: '/juno-1.jpg',
-	junoInner: '/juno-2.jpg',
-	vestaOuter: '/vesta-1.jpg',
-	vestaInner: '/vesta-2.jpg',
-	eunomiaOuter: '/eunomia-1.jpg',
-	eunomiaInner: '/eunomia-2.jpg',
-	hole: '/hole.png',
+	ceresOuter: '/cave/ceres-outer.png',
+	ceresInner: '/cave/ceres-inner.png',
+	pallasOuter: '/cave/pallas-outer.png',
+	pallasInner: '/cave/pallas-inner.png',
+	junoOuter: '/cave/juno-outer.png',
+	junoInner: '/cave/juno-inner.png',
+	vestaOuter: '/cave/vesta-outer.png',
+	vestaInner: '/cave/vesta-inner.png',
+	eunomiaOuter: '/cave/eunomia-outer.png',
+	eunomiaInner: '/cave/eunomia-inner.png',
+	finish: '/finish.png',
+	start: '/start.png',
 	ship: '/ship2.png',
 	booster: '/booster-single.png',
 	star: '/star.png',
@@ -49,7 +51,7 @@ const SIMPLE_PATHS = {
 	worm1: '/enemies/worm/s1.png',
 	worm2: '/enemies/worm/s2.png',
 	worm3: '/enemies/worm/s3.png',
-	light: '/light.png',
+	light: '/dust.png',
 } as const;
 
 const EXPLOSION_FRAMES = Array.from({length: 13}, (_, i) => `/effects/explosion/${i + 1}.png`);

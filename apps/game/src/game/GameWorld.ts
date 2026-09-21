@@ -258,8 +258,8 @@ export class GameWorld {
 		this.decorations = createDecorationsLayer(this.level.decorations);
 		this.world.addChild(this.decorations.container);
 
-		this.world.addChild(createStartMarker(this.level.startPoint, this.textures.hole, this.levelNumber));
-		this.world.addChild(createFinishMarker(this.level.finishPoint, this.textures.hole, this.levelNumber));
+		this.world.addChild(createStartMarker(this.level.startPoint, this.textures.start));
+		this.world.addChild(createFinishMarker(this.level.finishPoint, this.textures.finish));
 
 		// Дымы рендерятся под врагами/игроком, но поверх стен.
 		this.smokes = createSmokeSystem(this.textures.explosion);
@@ -279,9 +279,9 @@ export class GameWorld {
 		this.playerSprite = createPlayer(this.textures.ship, this.textures.booster, nozzle);
 		this.world.addChild(this.playerSprite.container);
 
-		// Световой слой — repeat-тайл light.png поверх всей сцены. Он в world,
+		// Пылевой слой — repeat-тайл dust.png поверх всей сцены. Он в world,
 		// значит движется вместе с миром (как в Game.svelte:418-428, где
-		// light.png был внутри scene-div через background-repeat).
+		// слой был внутри scene-div через background-repeat).
 		// tileScale 3.5 — каждый «лепесток» света заметно крупнее, не дробится
 		// частой решёткой по экрану.
 		const pad = 500;

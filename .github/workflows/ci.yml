@@ -47,6 +47,9 @@ jobs:
       - name: Levels
         run: pnpm validate:levels
 
+      - name: Art layers
+        run: pnpm art:check
+
       - name: Build API
         run: pnpm --filter @dead-spin/api build
 

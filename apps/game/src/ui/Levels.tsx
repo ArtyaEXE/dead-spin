@@ -8,11 +8,11 @@ import {useProgress, progressStore} from '../stores/progress';
 
 const WORLD_NAMES = ['CERES', 'PALLAS', 'JUNO', 'VESTA', 'EUNOMIA'] as const;
 const WORLD_BG: Record<number, string> = {
-	0: '/ceres-1.jpg',
-	1: '/pallas-1.jpg',
-	2: '/juno-1.jpg',
-	3: '/vesta-1.jpg',
-	4: '/eunomia-1.jpg',
+	0: '/cave/ceres-outer.png',
+	1: '/cave/pallas-outer.png',
+	2: '/cave/juno-outer.png',
+	3: '/cave/vesta-outer.png',
+	4: '/cave/eunomia-outer.png',
 };
 
 // Показываем только миры, у которых есть уровни. Иначе игрок с первого
@@ -85,7 +85,7 @@ export function Levels(props: {onBack: () => void; onPlay: (levelNumber: number)
 			<div class="levels-world">
 				<div
 					class="levels-world-inner"
-					style={{'background-image': `url(${WORLD_BG[worldIndex()] ?? '/ceres-1.jpg'})`}}
+					style={{'background-image': `url(${WORLD_BG[worldIndex()] ?? '/cave/ceres-outer.png'})`}}
 				>
 					<For each={levelList()}>
 						{(row) => (

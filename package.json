@@ -17,12 +17,14 @@
 		"check:fix": "biome check --write .",
 		"format": "biome format --write .",
 		"validate:levels": "pnpm --filter @dead-spin/levels run validate",
+		"art:gen": "node apps/game/scripts/gen-cave.mjs && node apps/game/scripts/gen-sprites.mjs && node apps/game/scripts/gen-deco.mjs",
+		"art:check": "node apps/game/scripts/check-art.mjs",
 		"optimize:assets": "tsx apps/game/scripts/optimize-assets.ts",
 		"db:up": "docker compose up -d postgres",
 		"db:down": "docker compose down",
 		"db:migrate": "pnpm --filter @dead-spin/api run db:migrate",
 		"db:studio": "pnpm --filter @dead-spin/api run db:studio",
-		"ci": "pnpm check && pnpm typecheck && pnpm test && pnpm validate:levels && pnpm build",
+		"ci": "pnpm check && pnpm typecheck && pnpm test && pnpm validate:levels && pnpm art:check && pnpm build",
 		"prepare": "lefthook install"
 	},
 	"devDependencies": {
