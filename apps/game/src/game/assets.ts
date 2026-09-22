@@ -41,6 +41,10 @@ export type GameTextures = {
 	worm2: Texture; // тело
 	worm3: Texture; // хвост
 	light: Texture;
+	/** Мягкие световые пятна: лампа корабля, свечение цели, жар мины. */
+	lampLight: Texture;
+	goalLight: Texture;
+	dangerLight: Texture;
 	explosion: Texture[]; // 13 кадров 1..13
 };
 
@@ -66,6 +70,9 @@ const SIMPLE_PATHS = {
 	worm2: '/enemies/worm/s2.svg',
 	worm3: '/enemies/worm/s3.svg',
 	light: '/dust.svg',
+	lampLight: '/light-lamp.svg',
+	goalLight: '/light-goal.svg',
+	dangerLight: '/light-danger.svg',
 } as const;
 
 const EXPLOSION_FRAMES = Array.from({length: 13}, (_, i) => `/effects/explosion/${i + 1}.svg`);

@@ -27,7 +27,7 @@ import {getActiveSkinId, getSkinById} from '../stores/skin';
 import {progressStore} from '../stores/progress';
 import {createWallsLayer, type WallsLayer} from './renderers/walls';
 import {createPlayer} from './renderers/player';
-import {createStar, animateStarSpawn, type StarSprite} from './renderers/stars';
+import {createStar, animateStarSpawn, type StarSprite, collectStar, isCollectDone} from './renderers/stars';
 import {createStartMarker, createFinishMarker} from './renderers/finish';
 
 import {createStone} from './enemies/stone';
@@ -195,6 +195,9 @@ export class GameWorld {
 		const now = performance.now();
 		for (const s of this.stars) {
 			s.container.visible = true;
+			s.collectedAt = null;
+			s.sprite.alpha = 1;
+			s.glow.alpha = 0.34;
 			s.spawnAt = now;
 		}
 
@@ -259,16 +262,16 @@ export class GameWorld {
 		this.world.addChild(this.decorations.container);
 
 		this.world.addChild(createStartMarker(this.level.startPoint, this.textures.start));
-		this.world.addChild(createFinishMarker(this.level.finishPoint, this.textures.finish));
+		this.world.addChild(createFinishMarker(this.level.finishPoint, this.textures.finish, this.textures.goalLight));
 
 		// Дымы рендерятся под врагами/игроком, но поверх стен.
 		this.smokes = createSmokeSystem(this.textures.explosion);
 		this.world.addChild(this.smokes.container);
 
 		this.stars = [
-			createStar('1', this.level.star1, this.textures.star),
-			createStar('2', this.level.star2, this.textures.star),
-			createStar('3', this.level.star3, this.textures.star),
+			createStar('1', this.level.star1, this.textures.star, this.textures.goalLight),
+			createStar('2', this.level.star2, this.textures.star, this.textures.goalLight),
+			createStar('3', this.level.star3, this.textures.star, this.textures.goalLight),
 		];
 		for (const s of this.stars) this.world.addChild(s.container);
 
@@ -276,7 +279,7 @@ export class GameWorld {
 
 		const skinId = getActiveSkinId(progressStore.getState().summaryStars);
 		const nozzle = getSkinById(skinId).nozzle;
-		this.playerSprite = createPlayer(this.textures.ship, this.textures.booster, nozzle);
+		this.playerSprite = createPlayer(this.textures.ship, this.textures.booster, this.textures.lampLight, nozzle);
 		this.world.addChild(this.playerSprite.container);
 
 		// Пылевой слой — repeat-тайл dust.png поверх всей сцены. Он в world,
@@ -307,7 +310,7 @@ export class GameWorld {
 					this.smokes,
 				);
 			} else if (e.name === 'mine') {
-				enemy = createMine({x: e.x, y: e.y, r: e.r, radius: e.radius}, this.textures.mine);
+				enemy = createMine({x: e.x, y: e.y, r: e.r, radius: e.radius}, this.textures.mine, this.textures.dangerLight);
 			} else if (e.name === 'worm') {
 				// Маршрут червя «прибит» к ключевым точкам уровня — иначе
 				// он раньше гулял в случайном углу, и при «плохом» seed'е
@@ -511,10 +514,12 @@ export class GameWorld {
 		}
 
 		for (const star of this.stars) {
-			if (!star.container.visible) continue;
+			if (!star.container.visible || star.collectedAt !== null) continue;
 			const hit = Physics.resolveCollision(this.player, {x: star.pos.x, y: star.pos.y, radius: STAR_RADIUS});
 			if (hit) {
-				star.container.visible = false;
+				// Звезда не гаснет мгновенно: запускаем вспышку, скрытие
+				// произойдёт в тике, когда она догорит.
+				collectStar(star, performance.now());
 				this.collected++;
 				this.callbacks.onStarsChange(this.collected);
 				audio.play('star-catch');
@@ -657,7 +662,11 @@ export class GameWorld {
 			this.tickBoosterFlame(now);
 		}
 
-		for (const s of this.stars) if (s.container.visible) animateStarSpawn(s, now);
+		for (const s of this.stars) {
+			if (!s.container.visible) continue;
+			animateStarSpawn(s, now);
+			if (isCollectDone(s, now)) s.container.visible = false;
+		}
 
 		// Дым, взрывы и декорации живут даже на паузе — как в оригинале.
 		this.smokes?.tick(now);

@@ -410,6 +410,37 @@ ${ring}
 ${core}`);
 }
 
+/* ---------------------------------------------------------------- свет --- */
+
+/**
+ * Световые пятна. Радиальный градиент здесь не нарушает §3: запрет на
+ * градиенты относится к объектам, а свет объектом не является — он ровно
+ * то, чем градиент и должен быть.
+ *
+ * Зачем: в тёмной пещере объект без собственного света висит в пустоте.
+ * Свет делает три вещи сразу — показывает, где герой, показывает, куда
+ * лететь, и превращает провал в пространство. Это и есть разница между
+ * «правильно» и «приятно».
+ *
+ * @param tone цвет ядра
+ * @param falloff доля радиуса, на которой свет ещё заметен
+ */
+function lightPool(tone, falloff = 0.55) {
+	const S = 512;
+	const stops = [];
+	// Кривая спада ближе к обратному квадрату, чем к линейной: линейный
+	// градиент читается как наклейка, потому что в природе свет так не падает.
+	for (let i = 0; i <= 8; i++) {
+		const t = i / 8;
+		const a = Math.max(0, (1 - t) ** 2.4) * (t < falloff ? 1 : 1 - (t - falloff) / (1 - falloff));
+		stops.push(`<stop offset="${(t * 100).toFixed(0)}%" stop-color="${tone}" stop-opacity="${a.toFixed(3)}"/>`);
+	}
+	return `<svg xmlns="http://www.w3.org/2000/svg" width="${S}" height="${S}" viewBox="0 0 ${S} ${S}">
+<defs><radialGradient id="g" cx="50%" cy="50%" r="50%">${stops.join('')}</radialGradient></defs>
+<rect width="${S}" height="${S}" fill="url(#g)"/></svg>
+`;
+}
+
 /* ------------------------------------------------------------- рендер --- */
 
 function emit(relPath, body) {
@@ -431,6 +462,12 @@ total += emit('finish.svg', finish());
 total += emit('start.svg', start());
 total += emit('booster-single.svg', booster());
 total += emit('dust.svg', dust());
+// Тон лампы насыщеннее, чем кажется нужным: аддитивный свет на тёмном
+// быстро уходит в белый, и бледно-кремовый превращается в белое пятно,
+// которое спорит с корпусом. Янтарь остаётся янтарём даже в клиппинге.
+total += emit('light-lamp.svg', lightPool('#ffbe63', 0.42));
+total += emit('light-goal.svg', lightPool('#ffd24a', 0.42));
+total += emit('light-danger.svg', lightPool('#ff5324', 0.38));
 for (const [path, skin] of Object.entries(SKINS)) total += emit(`${path}.svg`, ship(skin));
 for (let i = 0; i < 13; i++) total += emit(`effects/explosion/${i + 1}.svg`, explosion(i, 13));
 console.log(`\nвсего ${(total / 1024).toFixed(1)} КБ`);

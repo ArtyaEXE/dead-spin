@@ -12,6 +12,17 @@ import type {Point} from '@dead-spin/shared';
  * во всех мирах, старт — тихий люк слоя мира.
  */
 
+/** Мягкое световое пятно под объектом. Аддитивное: свет складывается. */
+function glow(tex: Texture, size: number, alpha: number): Sprite {
+	const s = new Sprite(tex);
+	s.anchor.set(0.5);
+	s.width = size;
+	s.height = size;
+	s.blendMode = 'add';
+	s.alpha = alpha;
+	return s;
+}
+
 export function createStartMarker(pos: Point, tex: Texture): Container {
 	const c = new Container();
 	c.position.set(pos.x, pos.y);
@@ -24,9 +35,14 @@ export function createStartMarker(pos: Point, tex: Texture): Container {
 	return c;
 }
 
-export function createFinishMarker(pos: Point, tex: Texture): Container {
+export function createFinishMarker(pos: Point, tex: Texture, glowTex: Texture): Container {
 	const c = new Container();
 	c.position.set(pos.x, pos.y);
+
+	// Финиш светится. Это не украшение: цель должна быть видна раньше, чем
+	// игрок разберёт её форму, а в тёмной пещере свет разносится дальше
+	// силуэта.
+	c.addChild(glow(glowTex, 620, 0.42));
 
 	const sprite = new Sprite(tex);
 	sprite.anchor.set(0.5);

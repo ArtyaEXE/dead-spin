@@ -55,6 +55,63 @@ body,
 	overscroll-behavior: none;
 }
 
+/* ---------- Появление экрана ----------
+   Экраны переключались жёсткой склейкой: кадр меню сменялся кадром уровней
+   без перехода, и это читается как рывок даже когда всё быстро. Вход, а не
+   выход: уходящий экран не задерживает пользователя, приходящий объясняет,
+   что произошла смена.
+
+   260 мс — верх диапазона «смена вида» и низ «переход экрана»: на телефоне
+   быстрее выглядит рывком, медленнее — задержкой ввода. */
+
+@keyframes screen-enter {
+	from {
+		opacity: 0;
+		transform: scale(0.985);
+	}
+	to {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
+.mm-root,
+.levels-root,
+.settings-root,
+.shop-root,
+.game-screen,
+.comic-root {
+	animation: screen-enter var(--t-panel) var(--ease-out) both;
+}
+
+/* Приборные панели въезжают следом за сценой: сначала мир, потом обвязка.
+   Стаггер 60 мс — внутри диапазона, при котором группа читается как группа,
+   а не как очередь. */
+@keyframes bar-enter {
+	from {
+		opacity: 0;
+		transform: translateY(var(--bar-from));
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+/* Движение по позиции при reduced-motion убираем, смысл перехода оставляем
+   прозрачностью: пользователь всё ещё видит, что экран сменился. */
+@media (prefers-reduced-motion: reduce) {
+	.mm-root,
+	.levels-root,
+	.settings-root,
+	.shop-root,
+	.game-screen,
+	.comic-root {
+		animation: none;
+		opacity: 1;
+	}
+}
+
 /* ---------- Внешний контейнер игры ---------- */
 
 .app {
@@ -976,6 +1033,8 @@ body,
 	/* Сдвигаем весь bar вниз через margin — фон-картинка остаётся
 	   нерастянутой, а под него проступает чёрный фон .screen, прикрытый
 	   нотчем/UI Telegram. */
+	--bar-from: -14px;
+	animation: bar-enter var(--t-panel) 60ms var(--ease-out) both;
 	margin-top: var(--sa-top);
 	margin-bottom: -30px;
 	margin-left: var(--sa-left);
@@ -1048,6 +1107,10 @@ body,
 }
 @media (prefers-reduced-motion: reduce) {
 	.game-screen.shake {
+		animation: none;
+	}
+	.topbar,
+	.bottombar {
 		animation: none;
 	}
 }
@@ -1132,6 +1195,8 @@ body,
 .bottombar {
 	position: relative;
 	z-index: 10;
+	--bar-from: 14px;
+	animation: bar-enter var(--t-panel) 60ms var(--ease-out) both;
 	margin-top: -30px;
 	margin-bottom: var(--sa-bottom);
 	margin-left: var(--sa-left);

@@ -156,7 +156,7 @@ function buildShards(n, salt, mergeP) {
 	return {find, joinRight, joinDown};
 }
 
-function tile(w, salt, dim, inkWidth) {
+function tile(w, salt, dim, inkWidth, mergeBoost = 0) {
 	const n = w.grid;
 	const cell = SIZE / n;
 	const mix = (hex) => {
@@ -164,7 +164,7 @@ function tile(w, salt, dim, inkWidth) {
 		const f = (c) => Math.round(c * dim);
 		return `#${((f((v >> 16) & 255) << 16) | (f((v >> 8) & 255) << 8) | f(v & 255)).toString(16).padStart(6, '0')}`;
 	};
-	const {find, joinRight, joinDown} = buildShards(n, salt, w.merge);
+	const {find, joinRight, joinDown} = buildShards(n, salt, Math.min(0.92, w.merge + mergeBoost));
 	const at = (i, j) => (((j % n) + n) % n) * n + (((i % n) + n) % n);
 
 	const plates = [];
@@ -241,10 +241,16 @@ function tile(w, salt, dim, inkWidth) {
 mkdirSync(OUT, {recursive: true});
 let total = 0;
 for (const [name, w] of Object.entries(WORLDS)) {
-	// Стена: полный тон, толстая линия. Задник: приглушён, линия тоньше —
-	// так он уходит вглубь и не спорит с передним планом.
+	// Стена: полный тон, толстая линия.
+	//
+	// Задник: приглушён, линия тоньше, осколки крупнее. Раньше он уходил
+	// в 0.5 и превращался в провал — игровое поле читалось как чёрная дыра,
+	// в которой висят объекты. Теперь 0.85: разрыв с корпусом корабля всё
+	// ещё десятикратный, но пространство перестаёт быть пустотой. Крупный
+	// осколок вместо мелкого — так работает расстояние: дальше видно меньше
+	// деталей, а не то же самое потемнее.
 	const outer = tile(w, 1, 1, 3.2);
-	const inner = tile(w, 7, 0.5, 2);
+	const inner = tile(w, 7, 0.85, 1.8, 0.22);
 	writeFileSync(join(OUT, `${name}-outer.svg`), outer);
 	writeFileSync(join(OUT, `${name}-inner.svg`), inner);
 	total += outer.length + inner.length;
