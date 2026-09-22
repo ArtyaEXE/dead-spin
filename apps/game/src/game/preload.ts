@@ -66,42 +66,10 @@ const UI_IMAGES = [
 	'/icons/ach-all-skins.svg',
 ];
 
-const DECO_NAMES = [
-	// Legacy (shared / JUNO)
-	...Array.from({length: 13}, (_, i) => `debris-${i + 1}.svg`),
-	'gear-1.svg',
-	'gear-2.svg',
-	'pipe-1.svg',
-	'pipe-2.svg',
-	'pipe-3.svg',
-	'pipe-4.svg',
-	'robot-1.svg',
-	'robot-2.svg',
-	'robot-3.svg',
-	'ship-1.svg',
-	'ship-2.svg',
-	'ship-3.svg',
-	'ship-4.svg',
-	'sign-danger.svg',
-	'sign-down.svg',
-	'sign-happy.svg',
-	'sign-left.svg',
-	'sign-right.svg',
-	'sign-round.svg',
-	'sign-sad.svg',
-	'sign-warning.svg',
-	'stuff-1.svg',
-	'stuff-2.svg',
-	'stuff-3.svg',
-	'stuff-4.svg',
-	// CERES
-	'ceres/ceres-stalactite.svg',
-	'ceres/ceres-crystal-cluster.svg',
-	'ceres/ceres-frozen-probe.svg',
-	'ceres/ceres-ice-sheet.svg',
-	'ceres/ceres-frost-pipe.svg',
-	'ceres/ceres-icicles.svg',
-];
+// Декор временно снят со всех уровней, грузить нечего. Массив оставлен
+// пустым, а не удалён: прелоадер и кэш декораций остаются на месте, вернуть
+// предметы можно одной правкой.
+const DECO_NAMES: readonly string[] = [];
 
 function preloadImage(url: string): Promise<void> {
 	return new Promise((resolve) => {

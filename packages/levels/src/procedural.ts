@@ -290,20 +290,6 @@ function placeMines(level: Level, rand: () => number, want: number): void {
 	}
 }
 
-const DECOR_SRC = [
-	'sign-warning.svg',
-	'sign-danger.svg',
-	'pipe-2.svg',
-	'pipe-3.svg',
-	'gear-1.svg',
-	'gear-2.svg',
-	'robot-2.svg',
-	'ship-1.svg',
-	'debris-3.svg',
-	'debris-7.svg',
-	'stuff-1.svg',
-];
-
 /** Одна попытка: спека из сида плюс мины и декор поверх готового уровня. */
 function attempt(seed: number, difficulty: number, name: string): Level | null {
 	const rand = rng(seed);
@@ -354,25 +340,9 @@ function attempt(seed: number, difficulty: number, name: string): Level | null {
 
 	placeMines(level, rand, 2 + Math.round(difficulty * 3));
 
-	// Декор кладём в карманы и по маршруту: он объясняет место, а не
-	// заполняет пустоту. В стенах ему делать нечего.
-	const spots = [...pockets.ends, ...path.slice(1, -1)];
-	for (const [i, p] of spots.entries()) {
-		const src = DECOR_SRC[Math.floor(rand() * DECOR_SRC.length)];
-		if (!src) continue;
-		const jitter = {x: Math.round(p.x + (rand() - 0.5) * 90), y: Math.round(p.y + (rand() - 0.5) * 90)};
-		if (!inCave(jitter, level) || wallClearance(jitter, level) < 50) continue;
-		if (dist(jitter, level.startPoint) < 150 || dist(jitter, level.finishPoint) < 150) continue;
-		level.decorations.push({
-			name: 'static',
-			x: jitter.x,
-			y: jitter.y,
-			r: Math.round((rand() - 0.5) * 180),
-			s: Number((0.26 + rand() * 0.2).toFixed(2)),
-			src,
-		});
-		if (i >= 5) break;
-	}
+	// Декор временно снят со всех уровней: предметы отвлекали взгляд от слоя
+	// геймплея. Когда решим, чем наполнять пещеру, раскладка вернётся сюда —
+	// прежний список лежит в истории, держать мёртвый код незачем.
 
 	return violations(level).length === 0 ? level : null;
 }
