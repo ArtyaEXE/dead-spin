@@ -19,6 +19,7 @@
 		"validate:levels": "pnpm --filter @dead-spin/levels run validate",
 		"art:gen": "node apps/game/scripts/gen-cave.mjs && node apps/game/scripts/gen-sprites.mjs && node apps/game/scripts/gen-deco.mjs && node apps/game/scripts/gen-props.mjs && node apps/game/scripts/gen-icons.mjs && node apps/game/scripts/gen-scenes.mjs",
 		"art:check": "node apps/game/scripts/check-art.mjs",
+		"ds:build": "node tools/design-system/build.mjs",
 		"optimize:assets": "tsx apps/game/scripts/optimize-assets.ts",
 		"db:up": "docker compose up -d postgres",
 		"db:down": "docker compose down",
