@@ -25,7 +25,7 @@ export function Settings(props: {onBack: () => void}) {
 
 					<div class="setting-row">
 						<div class="setting-display">
-							<img class="icon-inline" src="/icons/music-icon.png" alt="" />
+							<img class="icon-inline" src="/icons/music-icon.svg" alt="" />
 							{t('settings.music')}
 						</div>
 						<input
@@ -41,7 +41,7 @@ export function Settings(props: {onBack: () => void}) {
 
 					<div class="setting-row">
 						<div class="setting-display">
-							<img class="icon-inline" src="/icons/sound-icon.png" alt="" />
+							<img class="icon-inline" src="/icons/sound-icon.svg" alt="" />
 							{t('settings.effects')}
 						</div>
 						<input

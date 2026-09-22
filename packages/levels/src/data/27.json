@@ -44,7 +44,7 @@
       "y": 270,
       "r": 180,
       "s": 0.3,
-      "src": "sign-down.png"
+      "src": "sign-down.svg"
     },
     {
       "name": "static",
@@ -52,7 +52,7 @@
       "y": 700,
       "r": -30,
       "s": 0.36,
-      "src": "ship-1.png"
+      "src": "ship-1.svg"
     },
     {
       "name": "static",
@@ -60,7 +60,7 @@
       "y": 1500,
       "r": 60,
       "s": 0.32,
-      "src": "debris-12.png"
+      "src": "debris-12.svg"
     },
     {
       "name": "static",
@@ -68,7 +68,7 @@
       "y": 1900,
       "r": 0,
       "s": 0.4,
-      "src": "gear-1.png"
+      "src": "gear-1.svg"
     },
     {
       "name": "static",
@@ -76,7 +76,7 @@
       "y": 1000,
       "r": 0,
       "s": 0.3,
-      "src": "sign-danger.png"
+      "src": "sign-danger.svg"
     }
   ],
   "enemies": [

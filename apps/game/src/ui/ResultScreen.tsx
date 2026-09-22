@@ -57,10 +57,10 @@ export function ResultScreen(props: {
 			<div class="result-body">
 				<div class="result-stats">
 					<div class="panel large">
-						<img class="icon-inline" src="/icons/fuel-icon.png" alt="" />-{(props.fuelSpent / 1000).toFixed(2)}
+						<img class="icon-inline" src="/icons/fuel-icon.svg" alt="" />-{(props.fuelSpent / 1000).toFixed(2)}
 					</div>
 					<div class="panel large">
-						<img class="icon-inline" src="/icons/clock-icon.png" alt="" />
+						<img class="icon-inline" src="/icons/clock-icon.svg" alt="" />
 						{printTimer(props.timeMs, true)}
 					</div>
 				</div>
@@ -68,12 +68,12 @@ export function ResultScreen(props: {
 				<Show when={record()}>
 					{(r) => (
 						<div class="panel wide" style={{gap: '8px'}}>
-							<img class="icon-inline" src="/icons/trophy-icon.png" alt="" style={{'margin-right': 'auto'}} />
+							<img class="icon-inline" src="/icons/trophy-icon.svg" alt="" style={{'margin-right': 'auto'}} />
 							<span>
 								<img class="icon-inline" src="/star.png" alt="" /> {r().stars}
 							</span>
 							<span style={{'margin-left': '12px'}}>
-								<img class="icon-inline" src="/icons/clock-icon.png" alt="" /> {printTimer(r().timeMs, true)}
+								<img class="icon-inline" src="/icons/clock-icon.svg" alt="" /> {printTimer(r().timeMs, true)}
 							</span>
 						</div>
 					)}
@@ -84,7 +84,7 @@ export function ResultScreen(props: {
 					fallback={
 						<img
 							class="result-mood"
-							src={props.result === 'loose' ? '/icons/crash-icon.png' : '/icons/pause-icon.png'}
+							src={props.result === 'loose' ? '/icons/crash-icon.svg' : '/icons/pause-icon.svg'}
 							alt=""
 						/>
 					}

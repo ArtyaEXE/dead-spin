@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="250" height="250" viewBox="0 0 250 250"><path d="M65 45L185 45L185 205L65 205Z" fill="#443a24" stroke="#14110e" stroke-width="9" stroke-linejoin="round"/>
+<path d="M65 45L119 45L119 205L65 205Z" fill="#564a2e"/>
+<path d="M65 89L185 89M65 161L185 161" stroke="#14110e" stroke-width="12" opacity="0.6"/>
+<path d="M65 45L185 45L185 205L65 205Z" fill="none" stroke="#14110e" stroke-width="9" stroke-linejoin="round"/>
+<circle cx="125" cy="47" r="18" fill="#2a251f" stroke="#14110e" stroke-width="7"/></svg>

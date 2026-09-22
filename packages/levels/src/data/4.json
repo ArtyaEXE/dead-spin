@@ -44,7 +44,7 @@
       "y": 811,
       "r": 3,
       "s": 0.25,
-      "src": "sign-right.png"
+      "src": "sign-right.svg"
     },
     {
       "name": "static",
@@ -52,7 +52,7 @@
       "y": 530,
       "r": 182,
       "s": 0.4,
-      "src": "ship-3.png"
+      "src": "ship-3.svg"
     },
     {
       "name": "static",

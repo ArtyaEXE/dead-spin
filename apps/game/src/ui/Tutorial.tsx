@@ -21,10 +21,10 @@ type TutorialContent = {
 };
 
 const TUTORIALS: Record<TutorialKey, TutorialContent> = {
-	controls: {primary: '/icons/icon-tap.png', secondary: '/icons/icon-boost.png'},
-	mine: {primary: '/icons/icon-mine-warning.png'},
-	stone: {primary: '/icons/icon-stone-warning.png'},
-	worm: {primary: '/icons/icon-worm-warning.png'},
+	controls: {primary: '/icons/icon-tap.svg', secondary: '/icons/icon-boost.svg'},
+	mine: {primary: '/icons/icon-mine-warning.svg'},
+	stone: {primary: '/icons/icon-stone-warning.svg'},
+	worm: {primary: '/icons/icon-worm-warning.svg'},
 };
 
 function getSeenSet(): Set<string> {
@@ -66,7 +66,7 @@ export function TutorialOverlay(props: {tutorial: TutorialKey; onDismiss: () => 
 						</>
 					)}
 				</div>
-				<img class="tutorial-hint-icon" src="/icons/icon-tap.png" alt="" />
+				<img class="tutorial-hint-icon" src="/icons/icon-tap.svg" alt="" />
 			</div>
 		</div>
 	);

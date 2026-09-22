@@ -44,7 +44,7 @@
       "y": 1456,
       "r": -41,
       "s": 0.28,
-      "src": "sign-danger.png"
+      "src": "sign-danger.svg"
     },
     {
       "name": "static",
@@ -52,7 +52,7 @@
       "y": 899,
       "r": 3,
       "s": 0.26,
-      "src": "sign-warning.png"
+      "src": "sign-warning.svg"
     },
     {
       "name": "static",
@@ -60,7 +60,7 @@
       "y": 1155,
       "r": -68,
       "s": 0.45,
-      "src": "ship-3.png"
+      "src": "ship-3.svg"
     },
     {
       "name": "static",
@@ -68,7 +68,7 @@
       "y": 429,
       "r": 158,
       "s": 0.42,
-      "src": "ship-4.png"
+      "src": "ship-4.svg"
     },
     {
       "name": "static",

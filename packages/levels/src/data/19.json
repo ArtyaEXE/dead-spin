@@ -36,7 +36,7 @@
       "y": 760,
       "r": 0,
       "s": 0.32,
-      "src": "sign-warning.png"
+      "src": "sign-warning.svg"
     },
     {
       "name": "static",
@@ -44,7 +44,7 @@
       "y": 460,
       "r": -30,
       "s": 0.42,
-      "src": "ship-1.png"
+      "src": "ship-1.svg"
     },
     {
       "name": "static",
@@ -52,7 +52,7 @@
       "y": 660,
       "r": 30,
       "s": 0.32,
-      "src": "debris-9.png"
+      "src": "debris-9.svg"
     },
     {
       "name": "static",
@@ -60,7 +60,7 @@
       "y": 850,
       "r": -10,
       "s": 0.4,
-      "src": "robot-1.png"
+      "src": "robot-1.svg"
     },
     {
       "name": "static",
@@ -68,7 +68,7 @@
       "y": 200,
       "r": 0,
       "s": 0.28,
-      "src": "sign-happy.png"
+      "src": "sign-happy.svg"
     }
   ],
   "enemies": [

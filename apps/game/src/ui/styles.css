@@ -120,7 +120,7 @@ body,
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	background: url(/global-bg.jpg) center / cover no-repeat;
+	background: url(/global-bg.svg) center / cover no-repeat;
 }
 .screen {
 	width: 100%;
@@ -447,7 +447,7 @@ body,
 .preload-root {
 	position: absolute;
 	inset: 0;
-	background: url(/main-menu-bg.png) 0 0 / cover no-repeat;
+	background: url(/main-menu-bg.svg) 0 0 / cover no-repeat;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
@@ -457,7 +457,9 @@ body,
 		calc(24px + var(--sa-left));
 }
 .preload-logo {
-	max-width: 80%;
+	width: 80%;
+	max-width: 360px;
+	height: auto;
 	opacity: 0.95;
 }
 .preload-gear {
@@ -505,7 +507,7 @@ body,
 .mm-root {
 	position: absolute;
 	inset: 0;
-	background: url(/main-menu-bg.png) 0 0 / cover no-repeat;
+	background: url(/main-menu-bg.svg) 0 0 / cover no-repeat;
 	display: flex;
 	flex-direction: column;
 	justify-content: space-between;
@@ -527,7 +529,11 @@ body,
 	filter: drop-shadow(0 2px 4px rgb(14 11 8 / 0.6));
 }
 .mm-logo {
-	max-width: 80%;
+	width: 80%;
+	max-width: 380px;
+	height: auto;
+	/* Тень вместо бывшего logo-shadow.png: тот же эффект, ноль байт. */
+	filter: drop-shadow(0 8px 18px rgb(14 11 8 / 0.7));
 }
 .mm-play {
 	animation: smoothSpin 4s var(--ease-mid) infinite;
@@ -773,7 +779,7 @@ body,
 	flex-direction: column;
 	gap: 10px;
 	padding: var(--sa-top) var(--sa-right) var(--sa-bottom) var(--sa-left);
-	background: url(/main-menu-bg.png) -50px 0 / cover no-repeat;
+	background: url(/main-menu-bg.svg) -50px 0 / cover no-repeat;
 }
 .shop-top {
 	display: flex;
@@ -913,7 +919,7 @@ body,
 	flex-direction: column;
 	gap: 10px;
 	padding: var(--sa-top) var(--sa-right) var(--sa-bottom) var(--sa-left);
-	background: url(/main-menu-bg.png) -50px 0 / cover no-repeat;
+	background: url(/main-menu-bg.svg) -50px 0 / cover no-repeat;
 }
 .levels-top {
 	display: flex;
@@ -1521,7 +1527,7 @@ body,
 	flex-direction: column;
 	gap: 10px;
 	padding: var(--sa-top) var(--sa-right) var(--sa-bottom) var(--sa-left);
-	background: url(/main-menu-bg.png) -50px 0 / cover no-repeat;
+	background: url(/main-menu-bg.svg) -50px 0 / cover no-repeat;
 }
 .settings-center {
 	flex: 1;

@@ -210,7 +210,7 @@ export function GameScreen(props: {levelNumber: number; onExit: () => void; onSw
 			<Show when={ghost().current}>
 				{(g) => (
 					<div class="ghost-badge">
-						<img class="icon-inline" src="/icons/ghost-icon.png" alt="" />
+						<img class="icon-inline" src="/icons/ghost-icon.svg" alt="" />
 						<b>{g().username}</b> — {g().stars}
 						<img class="icon-inline" src="/star.png" alt="" style={{height: '1em'}} />{' '}
 						<code>{fmtTime(g().timeMs)}</code>

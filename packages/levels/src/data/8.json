@@ -44,7 +44,7 @@
       "y": 1751,
       "r": -114,
       "s": 0.25,
-      "src": "sign-warning.png"
+      "src": "sign-warning.svg"
     },
     {
       "name": "static",
@@ -52,7 +52,7 @@
       "y": 1005,
       "r": -111,
       "s": 0.4,
-      "src": "ship-3.png"
+      "src": "ship-3.svg"
     },
     {
       "name": "static",

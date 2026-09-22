@@ -36,7 +36,7 @@
       "y": 270,
       "r": 0,
       "s": 0.32,
-      "src": "sign-round.png"
+      "src": "sign-round.svg"
     },
     {
       "name": "static",
@@ -44,7 +44,7 @@
       "y": 400,
       "r": -40,
       "s": 0.42,
-      "src": "ship-4.png"
+      "src": "ship-4.svg"
     },
     {
       "name": "static",
@@ -52,7 +52,7 @@
       "y": 1330,
       "r": 60,
       "s": 0.4,
-      "src": "debris-6.png"
+      "src": "debris-6.svg"
     },
     {
       "name": "static",
@@ -60,7 +60,7 @@
       "y": 800,
       "r": 30,
       "s": 0.36,
-      "src": "pipe-2.png"
+      "src": "pipe-2.svg"
     },
     {
       "name": "static",
@@ -68,7 +68,7 @@
       "y": 900,
       "r": 0,
       "s": 0.4,
-      "src": "robot-1.png"
+      "src": "robot-1.svg"
     }
   ],
   "enemies": [

@@ -44,7 +44,7 @@
       "y": 842,
       "r": -3,
       "s": 0.24,
-      "src": "sign-down.png"
+      "src": "sign-down.svg"
     },
     {
       "name": "static",
@@ -52,7 +52,7 @@
       "y": 926,
       "r": 103,
       "s": 0.4,
-      "src": "ship-2.png"
+      "src": "ship-2.svg"
     },
     {
       "name": "static",

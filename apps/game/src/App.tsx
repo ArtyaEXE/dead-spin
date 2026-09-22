@@ -1,4 +1,5 @@
 import {createEffect, createSignal, Match, Show, Switch, onMount} from 'solid-js';
+import {Logo} from './ui/Logo';
 import {authStore, useAuth} from './stores/auth';
 import {progressStore, useProgress} from './stores/progress';
 import {profileStore} from './stores/profile';
@@ -104,8 +105,8 @@ export default function App() {
 				<Switch>
 					<Match when={!preloadDone()}>
 						<div class="preload-root">
-							<img class="preload-logo" src="/dead-spin-logo-shadow.png" alt="Dead Spin" />
-							<img class="preload-gear" src="/icons/icon-loading.png" alt="" />
+							<Logo class="preload-logo" />
+							<img class="preload-gear" src="/icons/icon-loading.svg" alt="" />
 							<div class="preload-bar">
 								<div class="preload-bar-fill" style={{transform: `scaleX(${preloadPct() / 100})`}} />
 							</div>

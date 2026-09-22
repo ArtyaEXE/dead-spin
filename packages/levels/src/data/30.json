@@ -44,7 +44,7 @@
       "y": 270,
       "r": 0,
       "s": 0.34,
-      "src": "sign-danger.png"
+      "src": "sign-danger.svg"
     },
     {
       "name": "static",
@@ -52,7 +52,7 @@
       "y": 500,
       "r": -50,
       "s": 0.45,
-      "src": "ship-4.png"
+      "src": "ship-4.svg"
     },
     {
       "name": "static",
@@ -60,7 +60,7 @@
       "y": 720,
       "r": 30,
       "s": 0.5,
-      "src": "gear-2.png"
+      "src": "gear-2.svg"
     },
     {
       "name": "static",
@@ -68,7 +68,7 @@
       "y": 880,
       "r": 0,
       "s": 0.42,
-      "src": "robot-3.png"
+      "src": "robot-3.svg"
     },
     {
       "name": "static",
@@ -76,7 +76,7 @@
       "y": 1430,
       "r": -20,
       "s": 0.4,
-      "src": "gear-1.png"
+      "src": "gear-1.svg"
     },
     {
       "name": "static",
@@ -84,7 +84,7 @@
       "y": 1100,
       "r": 60,
       "s": 0.32,
-      "src": "pipe-4.png"
+      "src": "pipe-4.svg"
     },
     {
       "name": "static",
@@ -92,7 +92,7 @@
       "y": 1100,
       "r": 0,
       "s": 0.3,
-      "src": "sign-warning.png"
+      "src": "sign-warning.svg"
     },
     {
       "name": "static",
@@ -100,7 +100,7 @@
       "y": 1100,
       "r": 0,
       "s": 0.36,
-      "src": "debris-13.png"
+      "src": "debris-13.svg"
     }
   ],
   "enemies": [

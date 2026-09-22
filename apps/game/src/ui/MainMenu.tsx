@@ -6,6 +6,7 @@ import {localDate} from '../lib/persist';
 import {t} from '../i18n';
 import {AchievementsOverlay} from './Achievements';
 import {Icon, RoundBtn} from './Icon';
+import {Logo} from './Logo';
 
 /**
  * MainMenu — стартовый экран: логотип и крутящаяся кнопка Play.
@@ -34,17 +35,17 @@ export function MainMenu(props: {onPlay: () => void; onSettings: () => void; onS
 			<div class="mm-top">
 				<img class="mm-shop pressable" src={shipSrc()} alt={t('a11y.shop')} onClick={props.onShop} />
 				<div class="panel">
-					<img class="icon-inline" src="/icons/coins-icon.png" alt="" />
+					<img class="icon-inline" src="/icons/coins-icon.svg" alt="" />
 					{profile().profile.coins}
 				</div>
 				<RoundBtn icon="cog" label={t('a11y.settings')} size="md" onClick={props.onSettings} />
 			</div>
 
-			<img class="mm-logo" src="/dead-spin-logo-shadow.png" alt="Dead Spin" />
+			<Logo class="mm-logo" />
 
 			<Show when={profile() && daily().canClaim}>
 				<div class="daily-banner pressable" onClick={claim}>
-					<img class="icon-inline" src="/icons/daily-gift-icon.png" alt="" />
+					<img class="icon-inline" src="/icons/daily-gift-icon.svg" alt="" />
 					{t('daily.claim', {n: daily().nextReward})}
 					<span class="daily-streak">{t('daily.day', {n: daily().streakDays + 1})}</span>
 				</div>
@@ -69,7 +70,7 @@ export function MainMenu(props: {onPlay: () => void; onSettings: () => void; onS
 					aria-label={t('a11y.achievements')}
 					onClick={() => setShowAchievements(true)}
 				>
-					<img src="/icons/trophy-icon.png" alt="" />
+					<img src="/icons/trophy-icon.svg" alt="" />
 				</button>
 			</div>
 

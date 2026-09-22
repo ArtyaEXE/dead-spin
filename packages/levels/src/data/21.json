@@ -36,7 +36,7 @@
       "y": 470,
       "r": 0,
       "s": 0.34,
-      "src": "sign-danger.png"
+      "src": "sign-danger.svg"
     },
     {
       "name": "static",
@@ -44,7 +44,7 @@
       "y": 380,
       "r": -20,
       "s": 0.36,
-      "src": "debris-7.png"
+      "src": "debris-7.svg"
     },
     {
       "name": "static",
@@ -52,7 +52,7 @@
       "y": 700,
       "r": 30,
       "s": 0.4,
-      "src": "pipe-3.png"
+      "src": "pipe-3.svg"
     },
     {
       "name": "static",
@@ -60,7 +60,7 @@
       "y": 380,
       "r": 0,
       "s": 0.38,
-      "src": "robot-2.png"
+      "src": "robot-2.svg"
     },
     {
       "name": "static",
@@ -68,7 +68,7 @@
       "y": 700,
       "r": 60,
       "s": 0.32,
-      "src": "debris-2.png"
+      "src": "debris-2.svg"
     }
   ],
   "enemies": [

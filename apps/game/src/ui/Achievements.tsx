@@ -27,7 +27,7 @@ export function AchievementsOverlay(props: {onClose: () => void}) {
 			<div class="ach-card" onClick={(e) => e.stopPropagation()}>
 				<div class="ach-header">
 					<div class="ach-title">
-						<img class="icon-inline" src="/icons/trophy-icon.png" alt="" />
+						<img class="icon-inline" src="/icons/trophy-icon.svg" alt="" />
 						{t('achievements.title')}
 					</div>
 					<div class="ach-count">
@@ -41,7 +41,7 @@ export function AchievementsOverlay(props: {onClose: () => void}) {
 						{(a) => (
 							<div class="ach-item" classList={{locked: !a.unlocked}}>
 								<div class="ach-emoji">
-									{a.unlocked ? <img src={a.icon} alt="" /> : <img src="/icons/lock-icon.png" alt="locked" />}
+									{a.unlocked ? <img src={a.icon} alt="" /> : <img src="/icons/lock-icon.svg" alt="locked" />}
 								</div>
 								<div class="ach-name">{getLocale() === 'ru' ? a.ru : a.en}</div>
 							</div>

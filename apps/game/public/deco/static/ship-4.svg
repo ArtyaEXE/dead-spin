@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="750" viewBox="0 0 500 750"><g transform="rotate(8 250 375)">
+<path d="M160 425L56 549L70 565L160 517Z" fill="#2a251f" stroke="#14110e" stroke-width="9" stroke-linejoin="round"/>
+<path d="M250 185C296 237 340 293 340 357L332 455L196 477L160 357C160 293 204 237 250 185Z" fill="#3a332b" stroke="#14110e" stroke-width="10" stroke-linejoin="round"/>
+<path d="M250 179L340 355L340 485L250 545Z" fill="#2a251f"/>
+<path d="M250 185C296 237 340 293 340 357L332 455L196 477L160 357C160 293 204 237 250 185Z" fill="none" stroke="#14110e" stroke-width="10" stroke-linejoin="round"/>
+<path d="M196 477L238 425L262 463L300 417L332 455" fill="none" stroke="#14110e" stroke-width="10" stroke-linejoin="round"/>
+<circle cx="250" cy="293" r="44" fill="#26313a" stroke="#14110e" stroke-width="10"/>
+<path d="M216 265L266 321" stroke="#14110e" stroke-width="7" opacity="0.7"/>
+<g fill="#14110e" opacity="0.5"><circle cx="284.7" cy="428.7" r="5"/><circle cx="226.3" cy="439.7" r="5"/><circle cx="215.3" cy="381.3" r="5"/><circle cx="273.7" cy="370.3" r="5"/></g>
+</g></svg>

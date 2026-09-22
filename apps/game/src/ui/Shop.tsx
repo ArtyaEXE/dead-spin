@@ -74,7 +74,7 @@ export function Shop(props: {onBack: () => void}) {
 									<img class="shop-card-img" src={skin.src} alt="" />
 									<Show when={!unlocked()}>
 										<div class="shop-card-lock">
-											<img src="/icons/lock-icon.png" alt="locked" />
+											<img src="/icons/lock-icon.svg" alt="locked" />
 										</div>
 									</Show>
 								</div>
