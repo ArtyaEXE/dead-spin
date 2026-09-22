@@ -8,6 +8,10 @@
  * отбрасываются, и сравнивается 95-й процентиль — не максимум, потому что
  * одинокий блик в пару пикселей не делает объект светлым.
  *
+ * Ассеты векторные, поэтому скрипт растеризует их в памяти тем же способом,
+ * что и браузер, и меряет уже пиксели: закон §4 про то, что видит игрок, а не
+ * про то, что написано в атрибуте fill.
+ *
  *   node apps/game/scripts/check-art.mjs
  *
  * Выход 1, если хоть один ассет вне допуска своего слоя.
@@ -39,34 +43,34 @@ const LAYERS = {
 };
 
 const ASSETS = [
-	['cave/ceres-outer.png', 'world'],
-	['cave/ceres-inner.png', 'world'],
-	['cave/pallas-outer.png', 'world'],
-	['cave/juno-outer.png', 'world'],
-	['cave/vesta-outer.png', 'world'],
-	['cave/eunomia-outer.png', 'world'],
-	['deco/static/ceres/ceres-stalactite.png', 'world'],
-	['deco/static/ceres/ceres-crystal-cluster.png', 'world'],
-	['deco/static/ceres/ceres-icicles.png', 'world'],
-	['deco/static/ceres/ceres-ice-sheet.png', 'world'],
-	['deco/static/ceres/ceres-frozen-probe.png', 'world'],
-	['deco/static/ceres/ceres-frost-pipe.png', 'world'],
-	['start.png', 'world'],
-	['enemies/mine/mine.png', 'threat'],
-	['enemies/stone/stone.png', 'threat'],
-	['enemies/worm/s1.png', 'threat'],
-	['enemies/worm/s2.png', 'threat'],
-	['enemies/worm/s3.png', 'threat'],
-	['effects/explosion/3.png', 'flash'],
-	['effects/explosion/9.png', 'threat'],
-	['star.png', 'goal'],
-	['finish.png', 'goal'],
-	['booster-single.png', 'goal'],
-	['ship2.png', 'hero'],
-	['ship-skins/ship-wanderer.png', 'hero'],
-	['ship-skins/ship-engineer.png', 'hero'],
-	['ship-skins/ship-veteran.png', 'hero'],
-	['ship-skins/ship-asteroid-king.png', 'hero'],
+	['cave/ceres-outer.svg', 'world'],
+	['cave/ceres-inner.svg', 'world'],
+	['cave/pallas-outer.svg', 'world'],
+	['cave/juno-outer.svg', 'world'],
+	['cave/vesta-outer.svg', 'world'],
+	['cave/eunomia-outer.svg', 'world'],
+	['deco/static/ceres/ceres-stalactite.svg', 'world'],
+	['deco/static/ceres/ceres-crystal-cluster.svg', 'world'],
+	['deco/static/ceres/ceres-icicles.svg', 'world'],
+	['deco/static/ceres/ceres-ice-sheet.svg', 'world'],
+	['deco/static/ceres/ceres-frozen-probe.svg', 'world'],
+	['deco/static/ceres/ceres-frost-pipe.svg', 'world'],
+	['start.svg', 'world'],
+	['enemies/mine/mine.svg', 'threat'],
+	['enemies/stone/stone.svg', 'threat'],
+	['enemies/worm/s1.svg', 'threat'],
+	['enemies/worm/s2.svg', 'threat'],
+	['enemies/worm/s3.svg', 'threat'],
+	['effects/explosion/3.svg', 'flash'],
+	['effects/explosion/9.svg', 'threat'],
+	['star.svg', 'goal'],
+	['finish.svg', 'goal'],
+	['booster-single.svg', 'goal'],
+	['ship2.svg', 'hero'],
+	['ship-skins/ship-wanderer.svg', 'hero'],
+	['ship-skins/ship-engineer.svg', 'hero'],
+	['ship-skins/ship-veteran.svg', 'hero'],
+	['ship-skins/ship-asteroid-king.svg', 'hero'],
 ];
 
 const toLinear = (c) => (c / 255 <= 0.04045 ? c / 255 / 12.92 : ((c / 255 + 0.055) / 1.055) ** 2.4);
@@ -86,7 +90,7 @@ function lab(r, g, b) {
 }
 
 async function stats(relPath) {
-	const {data, info} = await sharp(readFileSync(join(PUB, relPath)))
+	const {data, info} = await sharp(readFileSync(join(PUB, relPath)), {density: 192})
 		.ensureAlpha()
 		.raw()
 		.toBuffer({resolveWithObject: true});

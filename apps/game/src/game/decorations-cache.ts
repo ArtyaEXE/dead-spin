@@ -1,20 +1,22 @@
-import {Assets, type Texture} from 'pixi.js';
+import type {Texture} from 'pixi.js';
+import {loadSvgTexture} from './assets';
 
 /**
  * Кэш для статичных декораций.
  *
  * Пути резолвятся так:
- *   - `ceres/ceres-stalactite.png` → `/deco/static/ceres/ceres-stalactite.png`
- *   - `debris-1.png`               → `/deco/static/debris-1.png` (legacy flat)
+ *   - `ceres/ceres-stalactite.svg` → `/deco/static/ceres/ceres-stalactite.svg`
+ *   - `debris-1.png`               → `/deco/static/debris-1.png` (рисованное от руки)
  *
- * Загружаются лениво по `src` из уровня.
+ * Загружаются лениво по `src` из уровня. Векторные декорации растеризуются
+ * под DPR устройства, рисованные от руки грузятся как есть.
  */
 const cache = new Map<string, Promise<Texture>>();
 
 export function loadDecoTexture(src: string): Promise<Texture> {
 	let existing = cache.get(src);
 	if (!existing) {
-		existing = Assets.load<Texture>(`/deco/static/${src}`);
+		existing = loadSvgTexture(`/deco/static/${src}`);
 		cache.set(src, existing);
 	}
 	return existing;

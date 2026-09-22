@@ -4,7 +4,21 @@ import {getSkinById, type SkinId} from '../stores/skin';
 /**
  * Текстуры игрового поля — предзагружаем один раз до монтирования сцены.
  * Имена совпадают с путями в public/.
+ *
+ * Все игровые ассеты — вектор. Pixi растеризует SVG один раз при загрузке
+ * (loadSVG → canvas → ImageSource), и `resolution` задаёт, во сколько раз
+ * плотнее холст относительно логического размера текстуры. Берём реальный
+ * DPR устройства с потолком 3: выше разницы уже не видно, а память текстур
+ * растёт квадратично. На 1x это ровно тот же вес, что был бы у PNG, на 3x —
+ * резкая картинка, которой у растра не было вообще.
  */
+
+const SVG_RESOLUTION = Math.min(Math.max(globalThis.devicePixelRatio || 1, 1), 3);
+
+/** Загрузка вектора с растеризацией под DPR. Кэш Pixi ключуется по src. */
+export function loadSvgTexture(src: string): Promise<Texture> {
+	return Assets.load<Texture>({src, data: {resolution: SVG_RESOLUTION}});
+}
 export type GameTextures = {
 	ceresOuter: Texture;
 	ceresInner: Texture;
@@ -31,44 +45,44 @@ export type GameTextures = {
 };
 
 const SIMPLE_PATHS = {
-	ceresOuter: '/cave/ceres-outer.png',
-	ceresInner: '/cave/ceres-inner.png',
-	pallasOuter: '/cave/pallas-outer.png',
-	pallasInner: '/cave/pallas-inner.png',
-	junoOuter: '/cave/juno-outer.png',
-	junoInner: '/cave/juno-inner.png',
-	vestaOuter: '/cave/vesta-outer.png',
-	vestaInner: '/cave/vesta-inner.png',
-	eunomiaOuter: '/cave/eunomia-outer.png',
-	eunomiaInner: '/cave/eunomia-inner.png',
-	finish: '/finish.png',
-	start: '/start.png',
-	ship: '/ship2.png',
-	booster: '/booster-single.png',
-	star: '/star.png',
-	stone: '/enemies/stone/stone.png',
-	mine: '/enemies/mine/mine.png',
-	worm1: '/enemies/worm/s1.png',
-	worm2: '/enemies/worm/s2.png',
-	worm3: '/enemies/worm/s3.png',
-	light: '/dust.png',
+	ceresOuter: '/cave/ceres-outer.svg',
+	ceresInner: '/cave/ceres-inner.svg',
+	pallasOuter: '/cave/pallas-outer.svg',
+	pallasInner: '/cave/pallas-inner.svg',
+	junoOuter: '/cave/juno-outer.svg',
+	junoInner: '/cave/juno-inner.svg',
+	vestaOuter: '/cave/vesta-outer.svg',
+	vestaInner: '/cave/vesta-inner.svg',
+	eunomiaOuter: '/cave/eunomia-outer.svg',
+	eunomiaInner: '/cave/eunomia-inner.svg',
+	finish: '/finish.svg',
+	start: '/start.svg',
+	ship: '/ship2.svg',
+	booster: '/booster-single.svg',
+	star: '/star.svg',
+	stone: '/enemies/stone/stone.svg',
+	mine: '/enemies/mine/mine.svg',
+	worm1: '/enemies/worm/s1.svg',
+	worm2: '/enemies/worm/s2.svg',
+	worm3: '/enemies/worm/s3.svg',
+	light: '/dust.svg',
 } as const;
 
-const EXPLOSION_FRAMES = Array.from({length: 13}, (_, i) => `/effects/explosion/${i + 1}.png`);
+const EXPLOSION_FRAMES = Array.from({length: 13}, (_, i) => `/effects/explosion/${i + 1}.svg`);
 
 let cached: Promise<GameTextures> | null = null;
 
 /**
  * Грузит текстуру корабля для выбранного скина. Если ассета нет — возвращает
- * дефолтный prospector (ship2.png). Используется в GameWorld.mount чтобы
+ * дефолтный prospector (ship2.svg). Используется в GameWorld.mount чтобы
  * подменить ship после loadGameTextures.
  */
 export async function loadShipTexture(skinId: SkinId): Promise<Texture> {
 	const skin = getSkinById(skinId);
 	try {
-		return await Assets.load<Texture>(skin.src);
+		return await loadSvgTexture(skin.src);
 	} catch {
-		return Assets.load<Texture>('/ship2.png');
+		return loadSvgTexture('/ship2.svg');
 	}
 }
 
@@ -98,12 +112,12 @@ export function loadGameTextures(): Promise<GameTextures> {
 		const simpleEntries = Object.entries(SIMPLE_PATHS) as [keyof typeof SIMPLE_PATHS, string][];
 		const simpleLoaded = await Promise.all(
 			simpleEntries.map(async ([key, path]) => {
-				const tex = await Assets.load<Texture>(path);
+				const tex = await loadSvgTexture(path);
 				return [key, tex] as const;
 			}),
 		);
 
-		const explosionFrames = await Promise.all(EXPLOSION_FRAMES.map((path) => Assets.load<Texture>(path)));
+		const explosionFrames = await Promise.all(EXPLOSION_FRAMES.map(loadSvgTexture));
 
 		const simple = Object.fromEntries(simpleLoaded) as Record<keyof typeof SIMPLE_PATHS, Texture>;
 		return {...simple, explosion: explosionFrames};

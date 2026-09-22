@@ -26,12 +26,10 @@
 import {mkdirSync, writeFileSync} from 'node:fs';
 import {dirname, join} from 'node:path';
 import {fileURLToPath} from 'node:url';
-import sharp from 'sharp';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', 'public');
 const VB = 256;
 const C = VB / 2;
-const RASTER = 256;
 
 const INK = '#17120e';
 const DANGER = '#ff5324';
@@ -414,29 +412,25 @@ ${core}`);
 
 /* ------------------------------------------------------------- рендер --- */
 
-async function emit(relPath, body, size = RASTER) {
+function emit(relPath, body) {
 	const full = join(ROOT, relPath);
 	mkdirSync(dirname(full), {recursive: true});
-	const png = await sharp(Buffer.from(body), {density: (size / (size === RASTER ? VB : 512)) * 96})
-		.resize(size, size)
-		.png({effort: 9})
-		.toBuffer();
-	writeFileSync(full, png);
-	console.log(`${relPath.padEnd(34)} ${(png.length / 1024).toFixed(1).padStart(6)} КБ`);
-	return png.length;
+	writeFileSync(full, body);
+	console.log(`${relPath.padEnd(34)} ${(body.length / 1024).toFixed(1).padStart(6)} КБ`);
+	return body.length;
 }
 
 let total = 0;
-total += await emit('enemies/mine/mine.png', mine());
-total += await emit('enemies/stone/stone.png', stone());
-total += await emit('enemies/worm/s1.png', wormSegment('head'));
-total += await emit('enemies/worm/s2.png', wormSegment('body'));
-total += await emit('enemies/worm/s3.png', wormSegment('tail'));
-total += await emit('star.png', star());
-total += await emit('finish.png', finish());
-total += await emit('start.png', start());
-total += await emit('booster-single.png', booster());
-total += await emit('dust.png', dust(), 512);
-for (const [path, skin] of Object.entries(SKINS)) total += await emit(`${path}.png`, ship(skin));
-for (let i = 0; i < 13; i++) total += await emit(`effects/explosion/${i + 1}.png`, explosion(i, 13));
+total += emit('enemies/mine/mine.svg', mine());
+total += emit('enemies/stone/stone.svg', stone());
+total += emit('enemies/worm/s1.svg', wormSegment('head'));
+total += emit('enemies/worm/s2.svg', wormSegment('body'));
+total += emit('enemies/worm/s3.svg', wormSegment('tail'));
+total += emit('star.svg', star());
+total += emit('finish.svg', finish());
+total += emit('start.svg', start());
+total += emit('booster-single.svg', booster());
+total += emit('dust.svg', dust());
+for (const [path, skin] of Object.entries(SKINS)) total += emit(`${path}.svg`, ship(skin));
+for (let i = 0; i < 13; i++) total += emit(`effects/explosion/${i + 1}.svg`, explosion(i, 13));
 console.log(`\nвсего ${(total / 1024).toFixed(1)} КБ`);

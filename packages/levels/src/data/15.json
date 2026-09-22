@@ -76,7 +76,7 @@
       "y": 216,
       "r": 6,
       "s": 0.35,
-      "src": "ceres/ceres-stalactite.png"
+      "src": "ceres/ceres-stalactite.svg"
     },
     {
       "name": "static",
@@ -84,7 +84,7 @@
       "y": 1777,
       "r": 6,
       "s": 0.3,
-      "src": "ceres/ceres-crystal-cluster.png"
+      "src": "ceres/ceres-crystal-cluster.svg"
     },
     {
       "name": "static",
@@ -92,7 +92,7 @@
       "y": 919,
       "r": 36,
       "s": 0.38,
-      "src": "ceres/ceres-frost-pipe.png"
+      "src": "ceres/ceres-frost-pipe.svg"
     },
     {
       "name": "static",
@@ -100,7 +100,7 @@
       "y": 1390,
       "r": 5,
       "s": 0.32,
-      "src": "ceres/ceres-ice-sheet.png"
+      "src": "ceres/ceres-ice-sheet.svg"
     },
     {
       "name": "static",
@@ -108,7 +108,7 @@
       "y": 820,
       "r": 5,
       "s": 0.28,
-      "src": "ceres/ceres-icicles.png"
+      "src": "ceres/ceres-icicles.svg"
     }
   ],
   "enemies": [

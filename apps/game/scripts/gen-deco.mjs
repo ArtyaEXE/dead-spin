@@ -20,7 +20,6 @@
 import {mkdirSync, writeFileSync} from 'node:fs';
 import {dirname, join} from 'node:path';
 import {fileURLToPath} from 'node:url';
-import sharp from 'sharp';
 
 const OUT = join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'deco', 'static', 'ceres');
 
@@ -202,11 +201,9 @@ mkdirSync(OUT, {recursive: true});
 let total = 0;
 for (const [name, body] of Object.entries(ITEMS)) {
 	const m = /width="(\d+)" height="(\d+)"/.exec(body);
-	const w = Number(m[1]);
-	const h = Number(m[2]);
-	const png = await sharp(Buffer.from(body), {density: 96}).resize(w, h).png({effort: 9}).toBuffer();
-	writeFileSync(join(OUT, `${name}.png`), png);
-	total += png.length;
-	console.log(`${name.padEnd(24)} ${w}x${h} ${(png.length / 1024).toFixed(1).padStart(6)} КБ`);
+	writeFileSync(join(OUT, `${name}.svg`), body);
+	total += body.length;
+	console.log(`${name.padEnd(24)} ${m[1]}x${m[2]} ${(body.length / 1024).toFixed(1).padStart(6)} КБ`);
 }
-console.log(`\nвсего ${(total / 1024).toFixed(1)} КБ против 92.9 КБ`);
+console.log(`
+всего ${(total / 1024).toFixed(1)} КБ вектором против 92.9 КБ в PNG`);

@@ -24,10 +24,9 @@
  * ребро двух ячеек смещается одинаково с обеих сторон, а левый край плитки
  * совпадает с правым.
  *
- * SVG здесь — промежуточная форма, а не ассет: в public/ кладётся растр 1024.
- * TilingSprite нужна предсказуемая растеризация на всех DPR, а браузерный
- * рендер SVG в текстуру даёт шов по краю плитки. Источник правды — сам
- * генератор: он детерминирован и всегда воспроизводит плитки один в один.
+ * В репозитории лежит только SVG. Растеризует его Pixi при загрузке, один раз
+ * и под реальный DPR устройства (см. svgTexture в src/game/assets.ts), поэтому
+ * плитка одинаково резкая и на 1x, и на 3x, а в гите нет ни одного пикселя.
  *
  *   node apps/game/scripts/gen-cave.mjs
  */
@@ -35,7 +34,6 @@
 import {mkdirSync, writeFileSync} from 'node:fs';
 import {dirname, join} from 'node:path';
 import {fileURLToPath} from 'node:url';
-import sharp from 'sharp';
 
 const OUT = join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'cave');
 const SIZE = 512;
@@ -240,28 +238,19 @@ function tile(w, salt, dim, inkWidth) {
 `;
 }
 
-const RASTER = 1024;
-
-async function emit(name, svg) {
-	const png = await sharp(Buffer.from(svg), {density: (RASTER / SIZE) * 96})
-		.resize(RASTER, RASTER)
-		.png({palette: true, effort: 9})
-		.toBuffer();
-	writeFileSync(join(OUT, `${name}.png`), png);
-	return png.length;
-}
-
 mkdirSync(OUT, {recursive: true});
 let total = 0;
 for (const [name, w] of Object.entries(WORLDS)) {
 	// Стена: полный тон, толстая линия. Задник: приглушён, линия тоньше —
 	// так он уходит вглубь и не спорит с передним планом.
-	const outer = await emit(`${name}-outer`, tile(w, 1, 1, 3.2));
-	const inner = await emit(`${name}-inner`, tile(w, 7, 0.5, 2));
-	total += outer + inner;
+	const outer = tile(w, 1, 1, 3.2);
+	const inner = tile(w, 7, 0.5, 2);
+	writeFileSync(join(OUT, `${name}-outer.svg`), outer);
+	writeFileSync(join(OUT, `${name}-inner.svg`), inner);
+	total += outer.length + inner.length;
 	console.log(
-		`${name.padEnd(9)} outer ${(outer / 1024).toFixed(1).padStart(6)} КБ   inner ${(inner / 1024).toFixed(1).padStart(6)} КБ`,
+		`${name.padEnd(9)} outer ${(outer.length / 1024).toFixed(1).padStart(6)} КБ   inner ${(inner.length / 1024).toFixed(1).padStart(6)} КБ`,
 	);
 }
 console.log(`
-всего ${(total / 1024).toFixed(1)} КБ против 2518 КБ в JPG`);
+всего ${(total / 1024).toFixed(1)} КБ вектором против 2518 КБ в JPG`);
