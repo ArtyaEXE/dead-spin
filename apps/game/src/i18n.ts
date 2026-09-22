@@ -67,6 +67,13 @@ const DICT = {
 		'a11y.zoomOut': 'Zoom out',
 		'a11y.boost': 'Thrust',
 		'a11y.skip': 'Skip',
+		'daily.challenge': 'Daily challenge',
+		'daily.notPlayed': 'Not cleared today',
+		'daily.yourBest': 'Your best: {t}',
+		'daily.newBest': 'New best!',
+		'daily.streak': '{n} days in a row',
+		'daily.cleared': 'CLEARED',
+		'daily.failed': 'CRASHED',
 	},
 	ru: {
 		'achievements.title': 'Достижения',
@@ -103,6 +110,13 @@ const DICT = {
 		'a11y.zoomOut': 'Отдалить',
 		'a11y.boost': 'Тяга',
 		'a11y.skip': 'Пропустить',
+		'daily.challenge': 'Испытание дня',
+		'daily.notPlayed': 'Сегодня не пройдено',
+		'daily.yourBest': 'Лучшее: {t}',
+		'daily.newBest': 'Новый рекорд!',
+		'daily.streak': '{n} дней подряд',
+		'daily.cleared': 'ПРОЙДЕНО',
+		'daily.failed': 'РАЗБИЛСЯ',
 	},
 } as const;
 

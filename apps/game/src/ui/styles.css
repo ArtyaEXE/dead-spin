@@ -770,6 +770,125 @@ body,
 	min-height: 20px;
 }
 
+/* ---------- Испытание дня ----------
+   Карточка стоит над кнопкой Play: если механику «вернись завтра» не видно
+   до входа в кампанию, она не работает. */
+
+.daily-card {
+	display: flex;
+	align-items: center;
+	gap: var(--sp-3);
+	width: min(88%, 380px);
+	padding: var(--sp-3) var(--sp-4);
+	background: var(--rock-700);
+	border: 3px solid var(--rock-line);
+	border-radius: var(--r-panel);
+	box-shadow:
+		inset 0 2px 0 rgb(242 236 224 / 0.07),
+		inset 0 -3px 0 rgb(14 11 8 / 0.5),
+		var(--shadow-md);
+	color: var(--ink-inv);
+	font-family: var(--font-ui);
+	text-align: left;
+	cursor: pointer;
+}
+.daily-card-icon {
+	display: flex;
+	flex-shrink: 0;
+}
+.daily-card-icon img {
+	width: 38px;
+	height: 38px;
+}
+.daily-card-body {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	flex: 1;
+	min-width: 0;
+}
+.daily-card-title {
+	font-size: var(--fs-label);
+	font-weight: 700;
+	color: var(--goal);
+}
+.daily-card-sub {
+	font-size: var(--fs-hud);
+	color: var(--ink-inv-soft);
+	font-variant-numeric: tabular-nums;
+}
+.daily-card-streak {
+	flex-shrink: 0;
+	font-size: var(--fs-hud);
+	font-weight: 700;
+	color: var(--rock-900);
+	background: var(--goal);
+	border-radius: var(--r-bar);
+	padding: 4px 10px;
+	font-variant-numeric: tabular-nums;
+}
+
+.daily-root {
+	position: absolute;
+	inset: 0;
+}
+
+.daily-result {
+	position: absolute;
+	inset: 0;
+	z-index: 30;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: var(--scrim);
+	padding: calc(16px + var(--sa-top)) calc(16px + var(--sa-right)) calc(16px + var(--sa-bottom))
+		calc(16px + var(--sa-left));
+	animation: screen-enter var(--t-panel) var(--ease-out) both;
+}
+.daily-result-body {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: var(--sp-2);
+	width: min(86%, 360px);
+	padding: var(--sp-8) var(--sp-6);
+	background: var(--rock-700);
+	border: 3px solid var(--rock-line);
+	border-radius: var(--r-panel);
+	box-shadow:
+		inset 0 2px 0 rgb(242 236 224 / 0.07),
+		inset 0 -3px 0 rgb(14 11 8 / 0.5),
+		var(--shadow-lg);
+}
+.daily-result-title {
+	font-family: var(--font-display);
+	font-size: var(--fs-display);
+	color: var(--goal);
+	text-shadow: 0 0 8px var(--void);
+}
+.daily-result-time {
+	font-size: var(--fs-hero);
+	font-weight: 700;
+	color: var(--ink-inv);
+	font-variant-numeric: tabular-nums;
+	line-height: 1;
+}
+.daily-result-sub,
+.daily-result-streak {
+	font-size: var(--fs-body);
+	color: var(--ink-inv-soft);
+	font-variant-numeric: tabular-nums;
+}
+.daily-result-streak {
+	color: var(--goal);
+}
+.daily-result-buttons {
+	display: flex;
+	align-items: center;
+	gap: var(--sp-4);
+	margin-top: var(--sp-3);
+}
+
 /* ---------- Shop (skin gallery) ---------- */
 
 .shop-root {
