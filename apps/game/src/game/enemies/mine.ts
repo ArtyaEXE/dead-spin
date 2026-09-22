@@ -35,9 +35,20 @@ type MineSetup = {x: number; y: number; r: number; radius: number};
  * Игрок не видит технических колец и шкал, ориентируется на органическую
  * реакцию объекта: тряска и краснение = «отойди», pop = «опоздал, повезло».
  */
-export function createMine(setup: MineSetup, tex: Texture): Enemy {
+export function createMine(setup: MineSetup, tex: Texture, glowTex: Texture): Enemy {
 	const container = new Container();
 	container.position.set(setup.x, setup.y);
+
+	// Жар мины виден как свет, а не только как тинт. Радиус свечения
+	// совпадает с зоной детекции: игрок буквально видит, куда нельзя
+	// подлетать, и учится механике без единой строчки текста.
+	const glow = new Sprite(glowTex);
+	glow.anchor.set(0.5);
+	glow.width = setup.radius * MINE_DETECT_MULT * 2.6;
+	glow.height = setup.radius * MINE_DETECT_MULT * 2.6;
+	glow.blendMode = 'add';
+	glow.alpha = 0;
+	container.addChild(glow);
 
 	const sprite = new Sprite(tex);
 	sprite.anchor.set(0.5);
@@ -71,6 +82,7 @@ export function createMine(setup: MineSetup, tex: Texture): Enemy {
 		const t = (nowMs - burnedAtMs) / BURN_MS;
 		if (t >= 1) {
 			sprite.visible = false;
+			glow.visible = false;
 			return true;
 		}
 		// «Вздулась-лопнула»: scale 1.3 → 1.7, alpha 1 → 0, лёгкое
@@ -79,6 +91,7 @@ export function createMine(setup: MineSetup, tex: Texture): Enemy {
 		sprite.width = baseW * s;
 		sprite.height = baseH * s;
 		sprite.alpha = 1 - t;
+		glow.alpha = (1 - t) * 0.75;
 		return false;
 	}
 
@@ -88,6 +101,9 @@ export function createMine(setup: MineSetup, tex: Texture): Enemy {
 		sprite.width = baseW * s;
 		sprite.height = baseH * s;
 		sprite.tint = heatToTint(heat);
+		// Свет растёт быстрее нагрева: тревога должна опережать опасность,
+		// иначе подсказка приходит уже после того, как поздно.
+		glow.alpha = Math.min(0.75, heat ** 0.6 * 0.75);
 
 		// Базовое покачивание (как раньше) + добавочная тряска от heat.
 		const t = nowMs / 1000;

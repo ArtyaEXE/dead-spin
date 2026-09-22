@@ -1,7 +1,9 @@
 import {worldLabel} from '../game/worlds';
+import {t} from '../i18n';
+import {RoundBtn} from './Icon';
 
 /**
- * Нижний "dashboard-big" бар: имя мира/уровня, пауза, зум ±, и кнопка буста.
+ * Нижняя приборная панель: имя мира и уровня, пауза, зум ±, кнопка тяги.
  *
  * Буст реагирует на pointerdown (покрывает и touchstart, и mousedown),
  * чтобы удерживание гарантированно давало импульс — 1-в-1 с оригиналом
@@ -25,13 +27,20 @@ export function BottomBar(props: {
 				<div class="panel">{worldLabel(props.levelNumber)}</div>
 
 				<div class="bottombar-ctrl">
-					<img src="/btn-pause.png" alt="Pause" onClick={props.onPause} />
-					<img src="/btn-minus.png" alt="Zoom out" onClick={props.onZoomOut} />
-					<img src="/btn-plus.png" alt="Zoom in" onClick={props.onZoomIn} />
+					<RoundBtn icon="pause" label={t('a11y.pause')} size="sm" onClick={props.onPause} />
+					<RoundBtn icon="minus" label={t('a11y.zoomOut')} size="sm" onClick={props.onZoomOut} />
+					<RoundBtn icon="plus" label={t('a11y.zoomIn')} size="sm" onClick={props.onZoomIn} />
 				</div>
 			</div>
 
-			<img class="bottombar-boost" src="/btn-booster.png" alt="Boost" onPointerDown={onBoostDown} />
+			<RoundBtn
+				class="bottombar-boost"
+				icon="boost"
+				label={t('a11y.boost')}
+				size="xl"
+				tone="goal"
+				onPointerDown={onBoostDown}
+			/>
 		</div>
 	);
 }

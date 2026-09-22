@@ -1,6 +1,7 @@
 import {For} from 'solid-js';
 import {audioStore, useAudio} from '../stores/audio';
 import {LOCALES, getLocale, setLocale, t} from '../i18n';
+import {RoundBtn} from './Icon';
 
 /**
  * Экран настроек: громкость музыки и эффектов, язык интерфейса, версия,
@@ -13,9 +14,9 @@ export function Settings(props: {onBack: () => void}) {
 	return (
 		<div class="settings-root">
 			<div class="levels-top">
-				<img class="pressable" src="/btn-close.png" style={{height: '60px'}} alt="Back" onClick={props.onBack} />
+				<RoundBtn icon="close" label={t('a11y.back')} size="md" onClick={props.onBack} />
 				<div class="world-title">{t('settings.title')}</div>
-				<div style={{width: '60px'}} />
+				<div style={{width: '52px'}} />
 			</div>
 
 			<div class="settings-center">
@@ -24,7 +25,7 @@ export function Settings(props: {onBack: () => void}) {
 
 					<div class="setting-row">
 						<div class="setting-display">
-							<img class="icon-inline" src="/icons/music-icon.png" alt="" />
+							<img class="icon-inline" src="/icons/music-icon.svg" alt="" />
 							{t('settings.music')}
 						</div>
 						<input
@@ -40,7 +41,7 @@ export function Settings(props: {onBack: () => void}) {
 
 					<div class="setting-row">
 						<div class="setting-display">
-							<img class="icon-inline" src="/icons/sound-icon.png" alt="" />
+							<img class="icon-inline" src="/icons/sound-icon.svg" alt="" />
 							{t('settings.effects')}
 						</div>
 						<input
@@ -71,6 +72,16 @@ export function Settings(props: {onBack: () => void}) {
 							)}
 						</For>
 					</div>
+				</div>
+
+				{/* Атрибуция CC BY 3.0 — обязательство лицензии game-icons.net.
+				    Стоит в интерфейсе, а не только в репозитории: увидеть её
+				    должен игрок, а не разработчик. */}
+				<div class="settings-credits">
+					{t('settings.icons')}{' '}
+					<a class="settings-link" href="https://game-icons.net" target="_blank" rel="noreferrer">
+						game-icons.net
+					</a>
 				</div>
 
 				<div class="settings-meta">

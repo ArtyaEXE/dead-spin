@@ -5,8 +5,8 @@ import {loadDecoTexture} from '../decorations-cache';
 /**
  * Декорации уровня — 3 типа:
  *  - static: спрайт /deco/static/{src}.png с поворотом r и scale s
- *  - stop:  иконка /icons/deco-stop.png (мигающая, вместо текстового "STOP" из оригинала)
- *  - gravity: ОДНА иконка /icons/deco-gravity-down.png (стрелка вниз),
+ *  - stop:  иконка /icons/deco-stop.svg (мигающая, вместо текстового "STOP" из оригинала)
+ *  - gravity: ОДНА иконка /icons/deco-gravity-down.svg (стрелка вниз),
  *    повёрнутая на угол `r` градусов в направлении вектора гравитации.
  *    Поле `type` в schema оставлено для backward-compat — renderer его
  *    игнорирует, использует только `r`. Для диагональной гравитации
@@ -66,7 +66,7 @@ export function createDecorationsLayer(decorations: readonly Decoration[]): Deco
 			sprite.width = size;
 			sprite.height = size;
 			container.addChild(sprite);
-			void Assets.load<Texture>('/icons/deco-stop.png')
+			void Assets.load<Texture>('/icons/deco-stop.svg')
 				.then((tex) => {
 					sprite.texture = tex;
 					sprite.width = size;
@@ -84,7 +84,7 @@ export function createDecorationsLayer(decorations: readonly Decoration[]): Deco
 			sprite.width = size;
 			sprite.height = size;
 			container.addChild(sprite);
-			void Assets.load<Texture>('/icons/deco-gravity-down.png')
+			void Assets.load<Texture>('/icons/deco-gravity-down.svg')
 				.then((tex) => {
 					sprite.texture = tex;
 					sprite.width = size;

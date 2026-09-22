@@ -1,4 +1,6 @@
 import {createEffect, createSignal, Match, Show, Switch, onMount} from 'solid-js';
+import {Logo} from './ui/Logo';
+import {DailyScreen} from './ui/DailyScreen';
 import {authStore, useAuth} from './stores/auth';
 import {progressStore, useProgress} from './stores/progress';
 import {profileStore} from './stores/profile';
@@ -22,7 +24,8 @@ type Route =
 	| {name: 'levels'}
 	| {name: 'intro'; level: number; comicId: string}
 	| {name: 'outro'; nextLevel: number; comicId: string}
-	| {name: 'game'; level: number};
+	| {name: 'game'; level: number}
+	| {name: 'daily'};
 
 const OUTRO_SEEN_KEY = (id: string): string => `comic-outro-seen-${id}`;
 function isOutroSeen(id: string): boolean {
@@ -104,10 +107,10 @@ export default function App() {
 				<Switch>
 					<Match when={!preloadDone()}>
 						<div class="preload-root">
-							<img class="preload-logo" src="/dead-spin-logo-shadow.png" alt="Dead Spin" />
-							<img class="preload-gear" src="/icons/icon-loading.png" alt="" />
+							<Logo class="preload-logo" />
+							<img class="preload-gear" src="/icons/icon-loading.svg" alt="" />
 							<div class="preload-bar">
-								<div class="preload-bar-fill" style={{width: `${preloadPct()}%`}} />
+								<div class="preload-bar-fill" style={{transform: `scaleX(${preloadPct() / 100})`}} />
 							</div>
 							<div class="preload-pct">{preloadPct()}%</div>
 						</div>
@@ -121,6 +124,10 @@ export default function App() {
 							}}
 							onSettings={() => setRoute({name: 'settings'})}
 							onShop={() => setRoute({name: 'shop'})}
+							onDaily={() => {
+								setMusicPlay(true);
+								setRoute({name: 'daily'});
+							}}
 						/>
 					</Match>
 
@@ -130,6 +137,10 @@ export default function App() {
 
 					<Match when={route().name === 'shop'}>
 						<Shop onBack={() => setRoute({name: 'main'})} />
+					</Match>
+
+					<Match when={route().name === 'daily'}>
+						<DailyScreen onExit={() => setRoute({name: 'main'})} />
 					</Match>
 
 					<Match when={route().name === 'levels'}>

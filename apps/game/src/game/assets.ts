@@ -4,7 +4,21 @@ import {getSkinById, type SkinId} from '../stores/skin';
 /**
  * Текстуры игрового поля — предзагружаем один раз до монтирования сцены.
  * Имена совпадают с путями в public/.
+ *
+ * Все игровые ассеты — вектор. Pixi растеризует SVG один раз при загрузке
+ * (loadSVG → canvas → ImageSource), и `resolution` задаёт, во сколько раз
+ * плотнее холст относительно логического размера текстуры. Берём реальный
+ * DPR устройства с потолком 3: выше разницы уже не видно, а память текстур
+ * растёт квадратично. На 1x это ровно тот же вес, что был бы у PNG, на 3x —
+ * резкая картинка, которой у растра не было вообще.
  */
+
+const SVG_RESOLUTION = Math.min(Math.max(globalThis.devicePixelRatio || 1, 1), 3);
+
+/** Загрузка вектора с растеризацией под DPR. Кэш Pixi ключуется по src. */
+export function loadSvgTexture(src: string): Promise<Texture> {
+	return Assets.load<Texture>({src, data: {resolution: SVG_RESOLUTION}});
+}
 export type GameTextures = {
 	ceresOuter: Texture;
 	ceresInner: Texture;
@@ -16,7 +30,8 @@ export type GameTextures = {
 	vestaInner: Texture;
 	eunomiaOuter: Texture;
 	eunomiaInner: Texture;
-	hole: Texture;
+	finish: Texture;
+	start: Texture;
 	ship: Texture;
 	booster: Texture;
 	star: Texture;
@@ -26,47 +41,55 @@ export type GameTextures = {
 	worm2: Texture; // тело
 	worm3: Texture; // хвост
 	light: Texture;
+	/** Мягкие световые пятна: лампа корабля, свечение цели, жар мины. */
+	lampLight: Texture;
+	goalLight: Texture;
+	dangerLight: Texture;
 	explosion: Texture[]; // 13 кадров 1..13
 };
 
 const SIMPLE_PATHS = {
-	ceresOuter: '/ceres-1.jpg',
-	ceresInner: '/ceres-2.jpg',
-	pallasOuter: '/pallas-1.jpg',
-	pallasInner: '/pallas-2.jpg',
-	junoOuter: '/juno-1.jpg',
-	junoInner: '/juno-2.jpg',
-	vestaOuter: '/vesta-1.jpg',
-	vestaInner: '/vesta-2.jpg',
-	eunomiaOuter: '/eunomia-1.jpg',
-	eunomiaInner: '/eunomia-2.jpg',
-	hole: '/hole.png',
-	ship: '/ship2.png',
-	booster: '/booster-single.png',
-	star: '/star.png',
-	stone: '/enemies/stone/stone.png',
-	mine: '/enemies/mine/mine.png',
-	worm1: '/enemies/worm/s1.png',
-	worm2: '/enemies/worm/s2.png',
-	worm3: '/enemies/worm/s3.png',
-	light: '/light.png',
+	ceresOuter: '/cave/ceres-outer.svg',
+	ceresInner: '/cave/ceres-inner.svg',
+	pallasOuter: '/cave/pallas-outer.svg',
+	pallasInner: '/cave/pallas-inner.svg',
+	junoOuter: '/cave/juno-outer.svg',
+	junoInner: '/cave/juno-inner.svg',
+	vestaOuter: '/cave/vesta-outer.svg',
+	vestaInner: '/cave/vesta-inner.svg',
+	eunomiaOuter: '/cave/eunomia-outer.svg',
+	eunomiaInner: '/cave/eunomia-inner.svg',
+	finish: '/finish.svg',
+	start: '/start.svg',
+	ship: '/ship2.svg',
+	booster: '/booster-single.svg',
+	star: '/star.svg',
+	stone: '/enemies/stone/stone.svg',
+	mine: '/enemies/mine/mine.svg',
+	worm1: '/enemies/worm/s1.svg',
+	worm2: '/enemies/worm/s2.svg',
+	worm3: '/enemies/worm/s3.svg',
+	light: '/dust.svg',
+	lampLight: '/light-lamp.svg',
+	goalLight: '/light-goal.svg',
+	dangerLight: '/light-danger.svg',
 } as const;
 
-const EXPLOSION_FRAMES = Array.from({length: 13}, (_, i) => `/effects/explosion/${i + 1}.png`);
+const EXPLOSION_FRAMES = Array.from({length: 13}, (_, i) => `/effects/explosion/${i + 1}.svg`);
 
 let cached: Promise<GameTextures> | null = null;
 
 /**
  * Грузит текстуру корабля для выбранного скина. Если ассета нет — возвращает
- * дефолтный prospector (ship2.png). Используется в GameWorld.mount чтобы
+ * дефолтный prospector (ship2.svg). Используется в GameWorld.mount чтобы
  * подменить ship после loadGameTextures.
  */
 export async function loadShipTexture(skinId: SkinId): Promise<Texture> {
 	const skin = getSkinById(skinId);
 	try {
-		return await Assets.load<Texture>(skin.src);
+		return await loadSvgTexture(skin.src);
 	} catch {
-		return Assets.load<Texture>('/ship2.png');
+		return loadSvgTexture('/ship2.svg');
 	}
 }
 
@@ -96,12 +119,12 @@ export function loadGameTextures(): Promise<GameTextures> {
 		const simpleEntries = Object.entries(SIMPLE_PATHS) as [keyof typeof SIMPLE_PATHS, string][];
 		const simpleLoaded = await Promise.all(
 			simpleEntries.map(async ([key, path]) => {
-				const tex = await Assets.load<Texture>(path);
+				const tex = await loadSvgTexture(path);
 				return [key, tex] as const;
 			}),
 		);
 
-		const explosionFrames = await Promise.all(EXPLOSION_FRAMES.map((path) => Assets.load<Texture>(path)));
+		const explosionFrames = await Promise.all(EXPLOSION_FRAMES.map(loadSvgTexture));
 
 		const simple = Object.fromEntries(simpleLoaded) as Record<keyof typeof SIMPLE_PATHS, Texture>;
 		return {...simple, explosion: explosionFrames};

@@ -12,15 +12,29 @@ import {Container, Sprite, type Texture} from 'pixi.js';
 export function createPlayer(
 	shipTex: Texture,
 	boosterTex: Texture,
+	lampTex: Texture,
 	nozzle: {x: number; y: number} = {x: -2, y: 40},
 ): {
 	container: Container;
 	booster: Sprite;
+	lamp: Sprite;
 	body: Sprite;
 	boosterBaseScaleX: number;
 	boosterBaseScaleY: number;
 } {
 	const container = new Container();
+
+	// Лампа под корпусом: корабль несёт свой свет. В тёмной пещере это
+	// делает три вещи разом — показывает, где ты, вылепляет пространство
+	// вокруг и не даёт объектам висеть в пустоте. Аддитивный режим, потому
+	// что свет складывается с тем, что под ним, а не закрашивает это.
+	const lamp = new Sprite(lampTex);
+	lamp.anchor.set(0.5);
+	lamp.width = 460;
+	lamp.height = 460;
+	lamp.blendMode = 'add';
+	lamp.alpha = 0.38;
+	container.addChild(lamp);
 
 	const booster = new Sprite(boosterTex);
 	booster.anchor.set(0.5, 0);
@@ -41,5 +55,5 @@ export function createPlayer(
 	body.height = 80;
 	container.addChild(body);
 
-	return {container, booster, body, boosterBaseScaleX, boosterBaseScaleY};
+	return {container, booster, lamp, body, boosterBaseScaleX, boosterBaseScaleY};
 }

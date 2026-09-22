@@ -1,6 +1,8 @@
 import {createSignal, onCleanup, onMount, Show} from 'solid-js';
 import type {Anchor, Caption, Comic, Panel, SoundCue} from '@dead-spin/shared';
 import {audio} from '../game/audio';
+import {t} from '../i18n';
+import {RoundBtn} from './Icon';
 
 /**
  * Универсальный плеер комиксов: проигрывает декларативный Comic
@@ -284,13 +286,9 @@ export function ComicPlayer(props: {comic: Comic; onFinish: () => void}) {
 				<div class="comic-caption">{captionText()}</div>
 			</Show>
 
-			<button type="button" class="comic-skip-all pressable" onClick={finishNow} aria-label="Skip">
-				<img src="/btn-close.png" alt="Skip" />
-			</button>
+			<RoundBtn class="comic-skip-all" icon="close" label={t('a11y.skip')} size="sm" onClick={finishNow} />
 
-			<button type="button" class="comic-skip pressable" onClick={advance} aria-label="Next">
-				<img src="/btn-right.png" alt="Next" />
-			</button>
+			<RoundBtn class="comic-skip" icon="right" label={t('a11y.next')} size="lg" onClick={advance} />
 		</div>
 	);
 }

@@ -2,6 +2,7 @@ import {For, Show, createEffect, onCleanup} from 'solid-js';
 import {getNextLevelNumber} from '@dead-spin/levels';
 import type {Rating} from '@dead-spin/shared';
 import {t} from '../i18n';
+import {RoundBtn} from './Icon';
 import {useProgress} from '../stores/progress';
 import {audio} from '../game/audio';
 
@@ -56,10 +57,10 @@ export function ResultScreen(props: {
 			<div class="result-body">
 				<div class="result-stats">
 					<div class="panel large">
-						<img class="icon-inline" src="/icons/fuel-icon.png" alt="" />-{(props.fuelSpent / 1000).toFixed(2)}
+						<img class="icon-inline" src="/icons/fuel-icon.svg" alt="" />-{(props.fuelSpent / 1000).toFixed(2)}
 					</div>
 					<div class="panel large">
-						<img class="icon-inline" src="/icons/clock-icon.png" alt="" />
+						<img class="icon-inline" src="/icons/clock-icon.svg" alt="" />
 						{printTimer(props.timeMs, true)}
 					</div>
 				</div>
@@ -67,12 +68,12 @@ export function ResultScreen(props: {
 				<Show when={record()}>
 					{(r) => (
 						<div class="panel wide" style={{gap: '8px'}}>
-							<img class="icon-inline" src="/icons/trophy-icon.png" alt="" style={{'margin-right': 'auto'}} />
+							<img class="icon-inline" src="/icons/trophy-icon.svg" alt="" style={{'margin-right': 'auto'}} />
 							<span>
 								<img class="icon-inline" src="/star.png" alt="" /> {r().stars}
 							</span>
 							<span style={{'margin-left': '12px'}}>
-								<img class="icon-inline" src="/icons/clock-icon.png" alt="" /> {printTimer(r().timeMs, true)}
+								<img class="icon-inline" src="/icons/clock-icon.svg" alt="" /> {printTimer(r().timeMs, true)}
 							</span>
 						</div>
 					)}
@@ -83,7 +84,7 @@ export function ResultScreen(props: {
 					fallback={
 						<img
 							class="result-mood"
-							src={props.result === 'loose' ? '/icons/crash-icon.png' : '/icons/pause-icon.png'}
+							src={props.result === 'loose' ? '/icons/crash-icon.svg' : '/icons/pause-icon.svg'}
 							alt=""
 						/>
 					}
@@ -118,24 +119,25 @@ export function ResultScreen(props: {
 				</Show>
 
 				<div class="result-buttons">
-					<img src="/btn-close.png" alt="Exit" onClick={props.onExit} />
+					<RoundBtn icon="close" label={t('a11y.exit')} size="md" onClick={props.onExit} />
 
 					<Show
 						when={props.result === 'pause'}
 						fallback={
-							<img
-								class="primary"
-								classList={{dim: !(props.result === 'win' && nextNumber() !== null)}}
-								src="/btn-right.png"
-								alt="Next"
-								onClick={() => props.result === 'win' && nextNumber() !== null && props.onNext()}
+							<RoundBtn
+								icon="right"
+								label={t('a11y.next')}
+								size="lg"
+								tone="goal"
+								disabled={!(props.result === 'win' && nextNumber() !== null)}
+								onClick={() => props.onNext()}
 							/>
 						}
 					>
-						<img class="primary" src="/btn-play.png" alt="Resume" onClick={props.onResume} />
+						<RoundBtn icon="play" label={t('a11y.resume')} size="lg" tone="goal" onClick={props.onResume} />
 					</Show>
 
-					<img src="/btn-replay.png" alt="Retry" onClick={props.onRetry} />
+					<RoundBtn icon="replay" label={t('a11y.retry')} size="md" onClick={props.onRetry} />
 				</div>
 			</div>
 		</div>

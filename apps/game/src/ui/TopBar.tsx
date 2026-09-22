@@ -16,13 +16,13 @@ export function TopBar(props: {fuel: number; fuelTank: number; time: number; sta
 		<div class="topbar">
 			<div class="panel">
 				<span classList={{'low-fuel': props.fuel < props.fuelTank * LOW_FUEL_FRACTION}}>
-					<img class="icon-inline" src="/icons/fuel-icon.png" alt="" />
+					<img class="icon-inline" src="/icons/fuel-icon.svg" alt="" />
 					{(props.fuel / 1000).toFixed(2)}
 				</span>
 			</div>
 
 			<div class="panel">
-				<img class="icon-inline" src="/icons/clock-icon.png" alt="" />
+				<img class="icon-inline" src="/icons/clock-icon.svg" alt="" />
 				{printTimer(Math.floor(props.time / 1000) * 1000)}
 			</div>
 

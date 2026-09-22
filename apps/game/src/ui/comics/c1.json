@@ -3,13 +3,13 @@
 	"letterbox": false,
 	"panels": [
 		{
-			"img": "/comics/c1-1.jpg",
+			"img": "/comics/c1-1.svg",
 			"duration": 9000,
 			"ken": {"path": ["left", "right", "center"], "scale": 1.1},
 			"enter": [{"sound": "rocket2"}]
 		},
 		{
-			"img": "/comics/c1-2.jpg",
+			"img": "/comics/c1-2.svg",
 			"duration": 9000,
 			"ken": {"path": ["left", "right", "center"], "scale": 1.1},
 			"enter": [
@@ -18,7 +18,7 @@
 			]
 		},
 		{
-			"img": "/comics/c1-3.jpg",
+			"img": "/comics/c1-3.svg",
 			"duration": 9000,
 			"ken": {"path": ["left", "right", "center"], "scale": 1.1},
 			"enter": [{"sound": "ship-alarm", "loop": true, "volume": 0.2}]

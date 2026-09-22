@@ -1,6 +1,6 @@
 import {createEffect, createSignal, onCleanup, onMount, Show} from 'solid-js';
 import {getLevelByNumber, getNextLevelNumber} from '@dead-spin/levels';
-import {computeRating, levelFuelTank, LOW_FUEL_FRACTION, type Rating} from '@dead-spin/shared';
+import {computeRating, levelFuelTank, LOW_FUEL_FRACTION, type Level, type Rating} from '@dead-spin/shared';
 import {progressStore} from '../stores/progress';
 import {profileStore} from '../stores/profile';
 import {syncStore} from '../stores/sync';
@@ -26,12 +26,32 @@ const ZOOM_STEP = 0.2;
 // Shake и взрыв при этом работают сразу, overlay появляется после.
 const RESULT_OVERLAY_DELAY_MS = 500;
 
-export function GameScreen(props: {levelNumber: number; onExit: () => void; onSwitchLevel: (n: number) => void}) {
+/**
+ * Экран игры. Кампания и испытание дня ходят по одному коду намеренно:
+ * параллельный экран разойдётся с этим на первой же правке и вернёт баги
+ * вроде взрыва мины после снятия паузы, который чинили именно здесь.
+ *
+ * Различие описано одним флагом. В режиме `daily` не пишется прогресс
+ * кампании, не считаются ачивки, не грузится призрак и нет туториала:
+ * испытание живёт своей таблицей и своим рекордом дня.
+ */
+export function GameScreen(props: {
+	levelNumber: number;
+	onExit: () => void;
+	onSwitchLevel: (n: number) => void;
+	/** Уровень напрямую. Задан — кампания по номеру не ищется. */
+	level?: Level;
+	mode?: 'campaign' | 'daily';
+	/** Итог забега. Зовётся только в режиме `daily`. */
+	onDailyResult?: (r: {win: boolean; timeMs: number; fuelSpent: number; collected: number; stars: number}) => void;
+}) {
 	let hostRef: HTMLDivElement | undefined;
 	let world: GameWorld | null = null;
 
+	const isDaily = (): boolean => props.mode === 'daily';
+
 	// Топливо — ресурс уровня (GDD §10): бак берётся из JSON уровня.
-	const levelDef = () => getLevelByNumber(props.levelNumber);
+	const levelDef = () => props.level ?? getLevelByNumber(props.levelNumber);
 	const fuelTank = () => levelFuelTank(levelDef() ?? {});
 
 	const [fuel, setFuel] = createSignal(0);
@@ -67,7 +87,7 @@ export function GameScreen(props: {levelNumber: number; onExit: () => void; onSw
 	let overlayTimer: number | null = null;
 
 	const initWorld = (levelNumber: number) => {
-		const level = getLevelByNumber(levelNumber);
+		const level = levelDef();
 		if (!level || !hostRef) return;
 
 		world = new GameWorld(level, levelNumber, {
@@ -95,6 +115,17 @@ export function GameScreen(props: {levelNumber: number; onExit: () => void; onSw
 						fuelSpent: r.fuelSpent,
 					});
 					setRating(rt);
+					if (isDaily()) {
+						props.onDailyResult?.({
+							win: true,
+							timeMs: r.timeMs,
+							fuelSpent: r.fuelSpent,
+							collected: r.collected,
+							stars: rt.stars,
+						});
+						track('daily_win', {collected: r.collected, stars: rt.stars, time_ms: r.timeMs});
+						return;
+					}
 					progressStore.getState().recordLocal(levelNumber, {...rt, timeMs: r.timeMs, fuelSpent: r.fuelSpent});
 					track('level_win', {
 						level: levelNumber,
@@ -121,6 +152,17 @@ export function GameScreen(props: {levelNumber: number; onExit: () => void; onSw
 						recording: recording ?? undefined,
 					});
 				} else if (r.type === 'loose') {
+					if (isDaily()) {
+						props.onDailyResult?.({
+							win: false,
+							timeMs: r.timeMs,
+							fuelSpent: r.fuelSpent,
+							collected: r.collected,
+							stars: 0,
+						});
+						track('daily_loose', {time_ms: r.timeMs});
+						return;
+					}
 					track('level_loose', {
 						level: levelNumber,
 						time_ms: r.timeMs,
@@ -143,8 +185,9 @@ export function GameScreen(props: {levelNumber: number; onExit: () => void; onSw
 
 	// Грузим ghost для текущего уровня (только в групповом контексте — в DM
 	// store просто отдаст null без сети). После успеха setGhostRecording
-	// автоматически применит запись.
-	void ghostStore.getState().load(props.levelNumber);
+	// автоматически применит запись. Испытание дня призраков не имеет:
+	// уровень живёт сутки, копить по нему записи некуда.
+	if (!isDaily()) void ghostStore.getState().load(props.levelNumber);
 
 	const ghost = useGhost();
 	createEffect(() => {
@@ -153,7 +196,9 @@ export function GameScreen(props: {levelNumber: number; onExit: () => void; onSw
 	});
 
 	onMount(() => {
-		const queue = computeTutorialQueue(props.levelNumber);
+		// Туториал привязан к номерам кампании: в испытании он показал бы
+		// подсказку первого уровня посреди сложного забега.
+		const queue = isDaily() ? [] : computeTutorialQueue(props.levelNumber);
 		setTutorialQueue(queue);
 		if (queue.length === 0) initWorld(props.levelNumber);
 	});
@@ -210,7 +255,7 @@ export function GameScreen(props: {levelNumber: number; onExit: () => void; onSw
 			<Show when={ghost().current}>
 				{(g) => (
 					<div class="ghost-badge">
-						<img class="icon-inline" src="/icons/ghost-icon.png" alt="" />
+						<img class="icon-inline" src="/icons/ghost-icon.svg" alt="" />
 						<b>{g().username}</b> — {g().stars}
 						<img class="icon-inline" src="/star.png" alt="" style={{height: '1em'}} />{' '}
 						<code>{fmtTime(g().timeMs)}</code>

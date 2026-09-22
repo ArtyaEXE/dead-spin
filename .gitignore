@@ -27,3 +27,6 @@ pnpm-debug.log*
 
 # lefthook
 lefthook-local.yml
+
+# Собранный дизайн-кит: артефакт, публикуется, не коммитится
+tools/design-system/out/

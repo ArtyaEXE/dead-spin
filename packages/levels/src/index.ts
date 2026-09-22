@@ -1,5 +1,7 @@
 import {LevelSchema, type Level} from '@dead-spin/shared';
 
+export {dailyLevel, endlessLevel, levelFromSeed, seedFromDate, type ProceduralOptions} from './procedural';
+
 // CERES (мир 1) — L1-L15.
 import l1 from './data/1.json' with {type: 'json'};
 import l2 from './data/2.json' with {type: 'json'};

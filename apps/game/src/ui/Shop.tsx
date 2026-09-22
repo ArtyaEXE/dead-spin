@@ -1,6 +1,8 @@
 import {createEffect, For, Show} from 'solid-js';
 import {progressStore, useProgress} from '../stores/progress';
 import {useAuth} from '../stores/auth';
+import {t} from '../i18n';
+import {RoundBtn} from './Icon';
 import {useProfile} from '../stores/profile';
 import {SKINS, getActiveSkinId, setSelectedSkinId, isSkinUnlocked, type SkinId, type SkinDef} from '../stores/skin';
 
@@ -44,7 +46,7 @@ export function Shop(props: {onBack: () => void}) {
 	return (
 		<div class="shop-root">
 			<div class="shop-top">
-				<img class="pressable" src="/btn-close.png" style={{height: '60px'}} alt="" onClick={props.onBack} />
+				<RoundBtn icon="close" label={t('a11y.back')} size="md" onClick={props.onBack} />
 				<div class="shop-top-meters">
 					<div class="panel">
 						<img src="/star.png" style={{height: '28px', 'margin-right': '6px'}} alt="" />
@@ -72,7 +74,7 @@ export function Shop(props: {onBack: () => void}) {
 									<img class="shop-card-img" src={skin.src} alt="" />
 									<Show when={!unlocked()}>
 										<div class="shop-card-lock">
-											<img src="/icons/lock-icon.png" alt="locked" />
+											<img src="/icons/lock-icon.svg" alt="locked" />
 										</div>
 									</Show>
 								</div>

@@ -13,6 +13,7 @@
 			"!apps/api/drizzle",
 			"!packages/levels/src/data",
 			"!apps/game/public",
+			"!apps/game/assets",
 			"!_backups",
 			"!pnpm-lock.yaml"
 		]

@@ -2,6 +2,7 @@ import {For} from 'solid-js';
 import {ACHIEVEMENTS, ACHIEVEMENT_KEYS} from '@dead-spin/shared';
 import {useProfile} from '../stores/profile';
 import {getLocale, t} from '../i18n';
+import {RoundBtn} from './Icon';
 
 /**
  * Экран ачивок — overlay поверх MainMenu. Показывает все ачивки:
@@ -26,13 +27,13 @@ export function AchievementsOverlay(props: {onClose: () => void}) {
 			<div class="ach-card" onClick={(e) => e.stopPropagation()}>
 				<div class="ach-header">
 					<div class="ach-title">
-						<img class="icon-inline" src="/icons/trophy-icon.png" alt="" />
+						<img class="icon-inline" src="/icons/trophy-icon.svg" alt="" />
 						{t('achievements.title')}
 					</div>
 					<div class="ach-count">
 						{unlockedCount()} / {items().length}
 					</div>
-					<img class="pressable ach-close" src="/btn-close.png" alt="" onClick={props.onClose} />
+					<RoundBtn icon="close" label={t('a11y.close')} size="sm" onClick={props.onClose} />
 				</div>
 
 				<div class="ach-grid">
@@ -40,7 +41,7 @@ export function AchievementsOverlay(props: {onClose: () => void}) {
 						{(a) => (
 							<div class="ach-item" classList={{locked: !a.unlocked}}>
 								<div class="ach-emoji">
-									{a.unlocked ? <img src={a.icon} alt="" /> : <img src="/icons/lock-icon.png" alt="locked" />}
+									{a.unlocked ? <img src={a.icon} alt="" /> : <img src="/icons/lock-icon.svg" alt="locked" />}
 								</div>
 								<div class="ach-name">{getLocale() === 'ru' ? a.ru : a.en}</div>
 							</div>
