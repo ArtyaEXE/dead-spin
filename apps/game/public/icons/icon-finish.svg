@@ -1,5 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
-<circle cx="128" cy="128" r="102" fill="#1f1a14" stroke="#14110e" stroke-width="10"/>
-<circle cx="128" cy="128" r="76" fill="none" stroke="#c98a17" stroke-width="8"/>
-<path d="M102 88L128 118L154 88M102 168L128 138L154 168M88 102L118 128L88 154M168 102L138 128L168 154" fill="none" stroke="#ffd24a" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="128" cy="128" r="30" fill="#ffd24a" stroke="#14110e" stroke-width="8"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512"><path fill="#ffd24a" d="M23 24v464h18V386.9c152.3 29.4 277.6 29.4 430 0V488h18V24h-18v16h-23v32h23v32h-23v32h23v232.6c-153.3 29.9-276.7 29.9-430 0V104h23V72H41V24H23zm41 48h32V40H64v32zm32 0v32h32V72H96zm32 0h32V40h-32v32zm32 0v32h32V72h-32zm32 0h32V40h-32v32zm32 0v32h32V72h-32zm32 0h32V40h-32v32zm32 0v32h32V72h-32zm32 0h32V40h-32v32zm32 0v32h32V72h-32zm32 0h32V40h-32v32zm32 0v32h32V72h-32zm0 32h-32v32h32v-32zm-64 0h-32v32h32v-32zm-64 0h-32v32h32v-32zm-64 0h-32v32h32v-32zm-64 0h-32v32h32v-32zm-64 0H64v32h32v-32z"/></svg>

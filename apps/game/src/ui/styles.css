@@ -1619,9 +1619,18 @@ body,
 	opacity: 1;
 }
 
+/* Атрибуция авторам иконок: обязательство лицензии CC BY 3.0. */
+.settings-credits {
+	margin-top: auto;
+	padding: var(--sp-3) var(--sp-1) 0;
+	font-size: var(--fs-hud);
+	line-height: 1.5;
+	color: var(--ink-inv-soft);
+	text-align: center;
+}
+
 /* Версия билда + privacy внизу страницы Settings, мелкими серыми буквами. */
 .settings-meta {
-	margin-top: auto;
 	display: flex;
 	justify-content: space-between;
 	padding: 12px 4px;

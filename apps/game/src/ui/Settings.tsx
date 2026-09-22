@@ -74,6 +74,16 @@ export function Settings(props: {onBack: () => void}) {
 					</div>
 				</div>
 
+				{/* Атрибуция CC BY 3.0 — обязательство лицензии game-icons.net.
+				    Стоит в интерфейсе, а не только в репозитории: увидеть её
+				    должен игрок, а не разработчик. */}
+				<div class="settings-credits">
+					{t('settings.icons')}{' '}
+					<a class="settings-link" href="https://game-icons.net" target="_blank" rel="noreferrer">
+						game-icons.net
+					</a>
+				</div>
+
 				<div class="settings-meta">
 					<div class="settings-version">
 						{t('settings.build')} {__APP_VERSION__}
